@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.google.com/recaptcha/enterprise.js?render=6Ld-dnksAAAAADEhV81p5Ko_BfL1ox2d9NSV_voK"></script>
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
 
@@ -22,7 +23,7 @@
             <h2 class="text-3xl font-black text-indigo-600 mb-2 uppercase text-center">Mi Nómina</h2>
             <p class="text-slate-400 text-center text-xs mb-8 font-bold uppercase tracking-widest">Sincronización en la Nube</p>
             <div class="space-y-4">
-                <input type="email" id="authEmail" placeholder="Usuario" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
+                <input type="email" id="authEmail" placeholder="Correo electrónico" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
                 <input type="password" id="authPassword" placeholder="Contraseña" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
                 <div class="flex flex-col gap-3 pt-4">
                     <button onclick="handleAuth('login')" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all uppercase tracking-widest">Entrar</button>
@@ -187,17 +188,72 @@
 
         window.currentUser = null;
 
-        window.handleAuth = async (type) => {
-            const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPassword').value;
-            const err = document.getElementById('authError');
-            err.classList.add('hidden');
-            if(!email || !pass) { err.innerText = "Ingresa correo y contraseña"; err.classList.remove('hidden'); return; }
-            try {
-                if(type === 'login') await signInWithEmailAndPassword(auth, email, pass);
-                else await createUserWithEmailAndPassword(auth, email, pass);
-            } catch (e) { err.innerText = "Error: Verifica tus datos."; err.classList.remove('hidden'); console.error(e); }
-        };
+        window.handleAuth = async () => {
+    const email = document.getElementById('authEmail').value;
+    const pass = document.getElementById('authPassword').value;
+    const respuestaInput = document.getElementById('authRespuesta');
+    const respuesta = respuestaInput ? respuestaInput.value.toLowerCase().trim() : "";
+    const err = document.getElementById('authError');
+    const btnPrincipal = document.getElementById('btnPrincipal');
+    
+    err.classList.add('hidden');
+    if(!email || !pass) {
+        err.innerText = "Escribe correo y contraseña";
+        err.classList.remove('hidden');
+        return;
+    }
+
+    // Bloqueamos el botón para evitar múltiples clics
+    btnPrincipal.disabled = true;
+    btnPrincipal.innerText = "Procesando...";
+
+    try {
+        if(authMode === 'login') {
+            // LOGIN NORMAL
+            await signInWithEmailAndPassword(auth, email, pass);
+        } else {
+            // REGISTRO CON ESCUDO RECAPTCHA
+            if(!respuesta) { 
+                alert("Por favor, responde la pregunta de seguridad.");
+                btnPrincipal.disabled = false;
+                btnPrincipal.innerText = "Crear Cuenta";
+                return; 
+            }
+
+            // Llamada a la protección de Google
+            grecaptcha.enterprise.ready(async () => {
+                try {
+                    const token = await grecaptcha.enterprise.execute('6Ld-dnksAAAAADEhV81p5Ko_BfL1ox2d9NSV_voK', {action: 'signup'});
+                    
+                    // Si Google da el visto bueno, creamos el usuario en Firebase
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                    
+                    // Guardamos su pregunta de seguridad y el token del "guardaespaldas"
+                    await setDoc(doc(fb_db, "seguridad", userCredential.user.uid), {
+                        pregunta: document.getElementById('authPregunta').value,
+                        respuesta: respuesta,
+                        captchaToken: token,
+                        fechaRegistro: new Date().toISOString()
+                    });
+                    
+                    alert("✅ ¡Bienvenido! Tu cuenta ha sido creada y protegida.");
+                } catch (error) {
+                    console.error("Error en el registro:", error);
+                    err.innerText = "Error al crear cuenta. Intenta de nuevo.";
+                    err.classList.remove('hidden');
+                    btnPrincipal.disabled = false;
+                    btnPrincipal.innerText = "Crear Cuenta";
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Error de Auth:", e);
+        err.innerText = "Error: Usuario no encontrado o contraseña incorrecta.";
+        err.classList.remove('hidden');
+        btnPrincipal.disabled = false;
+        btnPrincipal.innerText = (authMode === 'login') ? "Entrar" : "Crear Cuenta";
+    }
+};
 
         window.handleSignOut = () => signOut(auth);
 
@@ -604,4 +660,3 @@
     </script>
 </body>
 </html>
-
