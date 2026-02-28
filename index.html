@@ -14,16 +14,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://www.google.com/recaptcha/enterprise.js?render=6Ld-dnksAAAAADEhV81p5Ko_BfL1ox2d9NSV_voK"></script>
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
-
+ 
     <div id="authContainer" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm px-4">
         <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700">
             <h2 class="text-3xl font-black text-indigo-600 mb-2 uppercase text-center">Mi Nómina</h2>
             <p class="text-slate-400 text-center text-xs mb-8 font-bold uppercase tracking-widest">Sincronización en la Nube</p>
             <div class="space-y-4">
-                <input type="email" id="authEmail" placeholder="Correo electrónico" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
+                <input type="email" id="authEmail" placeholder="Usuario" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
                 <input type="password" id="authPassword" placeholder="Contraseña" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
                 <div class="flex flex-col gap-3 pt-4">
                     <button onclick="handleAuth('login')" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all uppercase tracking-widest">Entrar</button>
@@ -33,7 +32,7 @@
             </div>
         </div>
     </div>
-
+ 
     <div class="max-w-5xl mx-auto p-4 sm:p-8">
         <header class="mb-8 flex justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
             <div>
@@ -47,13 +46,13 @@
                 <button onclick="handleSignOut()" class="px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all text-xs font-black uppercase tracking-widest border border-rose-100 dark:border-rose-900/30">Salir</button>
             </div>
         </header>
-
+ 
         <nav class="flex gap-2 mb-8 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto">
             <button onclick="showTab('registro')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all bg-indigo-600 text-white shadow-lg">Registros</button>
             <button onclick="showTab('resumen')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">Nómina</button>
             <button onclick="showTab('config')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">Ajustes</button>
         </nav>
-
+ 
         <div id="registro" class="tab-content block animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
                 <form id="formTurno" class="space-y-6">
@@ -72,22 +71,22 @@
                             </select>
                         </div>
                     </div>
-
+ 
                     <div id="secDiagnostico" class="hidden">
                         <input type="text" id="diagnostico" placeholder="Escribe el diagnóstico o motivo aquí..." class="w-full p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-100 dark:border-red-900/30 rounded-xl font-medium dark:text-red-200">
                     </div>
-
+ 
                     <div id="secHoras" class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-indigo-50/50 dark:bg-indigo-900/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
                         <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Entrada</label><input type="time" id="hInicio" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
                         <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Descanso Inicio</label><input type="time" id="hBreakOut" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
                         <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Descanso Fin</label><input type="time" id="hBreakIn" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
                         <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Salida</label><input type="time" id="hFin" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
                     </div>
-
+ 
                     <button type="submit" id="btnGuardar" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none active:scale-[0.98] transition-all uppercase tracking-widest">Guardar Día en Quincena</button>
                 </form>
             </div>
-
+ 
             <div class="mt-10">
                 <h3 class="text-xl font-black text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
                     <span class="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">📅</span>
@@ -96,7 +95,7 @@
                 <div id="listaRegistros" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
             </div>
         </div>
-
+ 
         <div id="resumen" class="tab-content hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"><p class="text-xs font-black text-slate-400 uppercase">Salarial (IBC)</p><p id="resIBC" class="text-2xl font-black text-slate-800 dark:text-slate-100">$0</p></div>
@@ -104,14 +103,14 @@
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"><p class="text-xs font-black text-red-400 uppercase">Deducciones (8%)</p><p id="resDeduc" class="text-2xl font-black text-red-500">-$0</p></div>
                 <div class="bg-indigo-900 p-6 rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none text-white"><p class="text-xs font-black text-indigo-300 uppercase">Neto a Recibir</p><p id="resNeto" class="text-3xl font-black">$0</p></div>
             </div>
-
+ 
             <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <h3 class="text-xs font-black text-slate-400 uppercase mb-4 tracking-widest text-center">Distribución de Ingresos por Concepto (COP)</h3>
                 <div class="relative h-[300px] w-full flex justify-center">
                     <canvas id="nominaChart"></canvas>
                 </div>
             </div>
-
+ 
             <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto">
                 <table class="w-full">
                     <thead><tr class="text-left text-xs font-black text-slate-400 uppercase border-b-2 border-slate-50 dark:border-slate-700"><th class="pb-4">Concepto</th><th class="pb-4 text-center">Cant.</th><th class="pb-4 text-right">Valor</th></tr></thead>
@@ -123,7 +122,7 @@
                 <button onclick="exportarExcel()" class="bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-700 transition-all">Exportar Excel</button>
                 <button onclick="clearQuincena()" class="bg-rose-50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 border-2 border-rose-100 dark:border-rose-900/30 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all">Cerrar Quincena</button>
             </div>
-
+ 
             <div id="secHistorial" class="hidden bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mt-8">
                 <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <span class="w-6 h-6 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-md flex items-center justify-center text-xs">📚</span>
@@ -132,7 +131,7 @@
                 <div id="listaHistorial" class="space-y-3"></div>
             </div>
         </div>
-
+ 
         <div id="config" class="tab-content hidden space-y-6">
             <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl">
                 <h2 class="text-2xl font-black text-indigo-900 dark:text-indigo-400 mb-6 uppercase border-b-4 border-indigo-50 dark:border-slate-700 pb-2">Configuración Maestra</h2>
@@ -167,12 +166,12 @@
             </div>
         </div>
     </div>
-
+ 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
+ 
         const firebaseConfig = {
             apiKey: "AIzaSyBnfx2s3Tl4sh0fMCfKXwImjY2sDggHORA",
             authDomain: "calculadora-nominaweb.firebaseapp.com",
@@ -181,82 +180,27 @@
             messagingSenderId: "527465317262",
             appId: "1:527465317262:web:c951ff57975903bf535adf"
         };
-
+ 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const fb_db = getFirestore(app);
-
+ 
         window.currentUser = null;
-
-        window.handleAuth = async () => {
-    const email = document.getElementById('authEmail').value;
-    const pass = document.getElementById('authPassword').value;
-    const respuestaInput = document.getElementById('authRespuesta');
-    const respuesta = respuestaInput ? respuestaInput.value.toLowerCase().trim() : "";
-    const err = document.getElementById('authError');
-    const btnPrincipal = document.getElementById('btnPrincipal');
-    
-    err.classList.add('hidden');
-    if(!email || !pass) {
-        err.innerText = "Escribe correo y contraseña";
-        err.classList.remove('hidden');
-        return;
-    }
-
-    // Bloqueamos el botón para evitar múltiples clics
-    btnPrincipal.disabled = true;
-    btnPrincipal.innerText = "Procesando...";
-
-    try {
-        if(authMode === 'login') {
-            // LOGIN NORMAL
-            await signInWithEmailAndPassword(auth, email, pass);
-        } else {
-            // REGISTRO CON ESCUDO RECAPTCHA
-            if(!respuesta) { 
-                alert("Por favor, responde la pregunta de seguridad.");
-                btnPrincipal.disabled = false;
-                btnPrincipal.innerText = "Crear Cuenta";
-                return; 
-            }
-
-            // Llamada a la protección de Google
-            grecaptcha.enterprise.ready(async () => {
-                try {
-                    const token = await grecaptcha.enterprise.execute('6Ld-dnksAAAAADEhV81p5Ko_BfL1ox2d9NSV_voK', {action: 'signup'});
-                    
-                    // Si Google da el visto bueno, creamos el usuario en Firebase
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                    
-                    // Guardamos su pregunta de seguridad y el token del "guardaespaldas"
-                    await setDoc(doc(fb_db, "seguridad", userCredential.user.uid), {
-                        pregunta: document.getElementById('authPregunta').value,
-                        respuesta: respuesta,
-                        captchaToken: token,
-                        fechaRegistro: new Date().toISOString()
-                    });
-                    
-                    alert("✅ ¡Bienvenido! Tu cuenta ha sido creada y protegida.");
-                } catch (error) {
-                    console.error("Error en el registro:", error);
-                    err.innerText = "Error al crear cuenta. Intenta de nuevo.";
-                    err.classList.remove('hidden');
-                    btnPrincipal.disabled = false;
-                    btnPrincipal.innerText = "Crear Cuenta";
-                }
-            });
-        }
-    } catch (e) {
-        console.error("Error de Auth:", e);
-        err.innerText = "Error: Usuario no encontrado o contraseña incorrecta.";
-        err.classList.remove('hidden');
-        btnPrincipal.disabled = false;
-        btnPrincipal.innerText = (authMode === 'login') ? "Entrar" : "Crear Cuenta";
-    }
-};
-
+ 
+        window.handleAuth = async (type) => {
+            const email = document.getElementById('authEmail').value;
+            const pass = document.getElementById('authPassword').value;
+            const err = document.getElementById('authError');
+            err.classList.add('hidden');
+            if(!email || !pass) { err.innerText = "Ingresa correo y contraseña"; err.classList.remove('hidden'); return; }
+            try {
+                if(type === 'login') await signInWithEmailAndPassword(auth, email, pass);
+                else await createUserWithEmailAndPassword(auth, email, pass);
+            } catch (e) { err.innerText = "Error: Verifica tus datos."; err.classList.remove('hidden'); console.error(e); }
+        };
+ 
         window.handleSignOut = () => signOut(auth);
-
+ 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 window.currentUser = user;
@@ -267,7 +211,7 @@
                 document.getElementById('authContainer').classList.remove('hidden');
             }
         });
-
+ 
         async function syncFromCloud() {
             if(!window.currentUser) return;
             const docSnap = await getDoc(doc(fb_db, "usuarios", window.currentUser.uid));
@@ -276,19 +220,19 @@
                 window.db = cloudData.db || [];
                 window.historialDB = cloudData.historial || [];
                 window.cfg = cloudData.cfg || window.cfgDefault;
-                
+ 
                 document.getElementById('cfgHora').value = window.cfg.hora;
                 document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
                 document.getElementById('cfgRN').value = window.cfg.rn;
                 document.getElementById('cfgDOM').value = window.cfg.dom;
                 document.getElementById('cfgHED').value = window.cfg.hed;
                 document.getElementById('cfgHEN').value = window.cfg.hen;
-
+ 
                 renderAll();
                 renderHistorial();
             }
         }
-
+ 
         window.saveToCloud = async () => {
             if(!window.currentUser) return;
             await setDoc(doc(fb_db, "usuarios", window.currentUser.uid), {
@@ -298,7 +242,7 @@
             });
         };
     </script>
-
+ 
     <script>
         window.cfgDefault = { hora: 7959, rn: 35, dom: 80, hed: 25, hen: 75, hedd: 105, hend: 155, auxTranspMensual: 250000 };
         window.cfg = {...window.cfgDefault};
@@ -306,9 +250,9 @@
         window.historialDB = [];
         const format = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
         const festivos = ["2026-01-01", "2026-01-12", "2026-03-23", "2026-04-02", "2026-04-03", "2026-05-01", "2026-05-18", "2026-06-08", "2026-06-15", "2026-06-29", "2026-07-20", "2026-08-07", "2026-08-17", "2026-10-12", "2026-11-02", "2026-11-16", "2026-12-08", "2026-12-25"];
-
+ 
         let myChart = null;
-
+ 
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
             const isDark = document.documentElement.classList.contains('dark');
@@ -316,12 +260,12 @@
             document.getElementById('darkIcon').innerText = isDark ? '☀️' : '🌙';
             if(myChart) renderAll();
         }
-
+ 
         if (localStorage.getItem('darkMode') === 'true') {
             document.documentElement.classList.add('dark');
             document.getElementById('darkIcon').innerText = '☀️';
         }
-
+ 
         function showTab(t) {
             document.querySelectorAll('.tab-content').forEach(x => x.classList.add('hidden'));
             document.getElementById(t).classList.remove('hidden');
@@ -332,25 +276,25 @@
             if(t === 'resumen') renderAll();
             if(t === 'config') renderFestivos();
         }
-
+ 
         function toggleTipoDia() {
             const tipo = document.getElementById('tipoDia').value;
             document.getElementById('secHoras').classList.toggle('hidden', tipo !== 'NORMAL');
             document.getElementById('secDiagnostico').classList.toggle('hidden', tipo !== 'INCAPACIDAD' && tipo !== 'COMPENSATORIO');
         }
-
+ 
         function isNocturno(d) { let h = d.getHours(); return h >= 19 || h < 6; }
         function isDomFest(d) {
             let dateStr = d.toLocaleDateString('en-CA');
             return d.getDay() === 0 || festivos.includes(dateStr);
         }
-
+ 
         document.getElementById('formTurno').onsubmit = async (e) => {
             e.preventDefault();
             const tipo = document.getElementById('tipoDia').value;
             const fecha = document.getElementById('fecha').value;
             let registro = { fecha, tipo, pagoSalarial: 0, pagaTransporte: false, desglose: {}, diag: "", rawHoras: null };
-
+ 
             if (tipo === 'NORMAL') {
                 registro.pagaTransporte = true;
                 let hI = document.getElementById('hInicio').value;
@@ -417,9 +361,9 @@
             window.db = window.db.filter(x => x.fecha !== fecha);
             window.db.push(registro);
             window.db.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
-            
+ 
             if(window.saveToCloud) await window.saveToCloud(); // Guarda en nube
-            
+ 
             document.getElementById('btnGuardar').innerText = "Guardar Día en Quincena";
             document.getElementById('btnGuardar').classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
             renderAll();
@@ -427,7 +371,7 @@
             toggleTipoDia();
             alert("✅ Guardado correctamente en la nube.");
         };
-
+ 
         function editReg(fecha) {
             const r = window.db.find(x => x.fecha === fecha);
             if(!r) return;
@@ -448,20 +392,20 @@
             showTab('registro');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
+ 
         function renderChart(sumas) {
             const ctx = document.getElementById('nominaChart').getContext('2d');
             const labelsMap = { ordD:'H. Ordinaria', ordN:'Rec. Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
             const dataLabels = []; const dataValues = [];
             const colors = { ordD: '#6366f1', ordN: '#4338ca', extD: '#fbbf24', extN: '#d97706', domD: '#10b981', domN: '#047857', edd: '#f43f5e', edn: '#be123c', INCAP: '#94a3b8', COMPENSATORIO: '#8b5cf6' };
             const backgroundColors = [];
-
+ 
             for(let k in sumas) {
                 dataLabels.push(labelsMap[k] || k);
                 dataValues.push(sumas[k].v);
                 backgroundColors.push(colors[k] || '#CBD5E1');
             }
-
+ 
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'doughnut',
@@ -473,13 +417,13 @@
                 }
             });
         }
-
+ 
         function renderAll() {
             const list = document.getElementById('listaRegistros');
             list.innerHTML = "";
             let ibc = 0, diasT = 0; let sumas = {};
             const labels = { ordD:'H. Ordinaria', ordN:'Recargo Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
-
+ 
             window.db.forEach(r => {
                 let color = r.tipo === 'NORMAL' ? 'border-indigo-100 dark:border-indigo-900/30' : 'border-rose-100 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-900/10';
                 let horasHtml = (r.tipo === 'NORMAL' && r.rawHoras) ? `<p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">⏱️ ${r.rawHoras.hI} a ${r.rawHoras.hF}${(r.rawHoras.hBO && r.rawHoras.hBI) ? ` | ☕ ${r.rawHoras.hBO} - ${r.rawHoras.hBI}` : ''}</p>` : '';
@@ -495,25 +439,25 @@
                     sumas[k].v += r.desglose[k].v;
                 }
             });
-
+ 
             renderChart(sumas);
-
+ 
             let tr = (window.cfg.auxTranspMensual / 30) * diasT;
             let de = ibc * 0.08;
             document.getElementById('resIBC').innerText = format.format(ibc);
             document.getElementById('resTransp').innerText = format.format(tr);
             document.getElementById('resDeduc').innerText = "-" + format.format(de);
             document.getElementById('resNeto').innerText = format.format(ibc + tr - de);
-
+ 
             const table = document.getElementById('resDetalleTable');
             table.innerHTML = "";
             for(let k in sumas){
                 table.innerHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"><td class="py-4 font-bold text-slate-700 dark:text-slate-300">${labels[k] || k}</td><td class="py-4 text-center font-black text-slate-400">${sumas[k].h.toFixed(2)}</td><td class="py-4 text-right font-black text-slate-800 dark:text-slate-100">${format.format(sumas[k].v)}</td></tr>`;
             }
         }
-
+ 
         function renderFestivos() { document.getElementById('festivosList').innerHTML = festivos.map(f => `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 text-[10px] px-2 py-1 rounded-lg font-bold border border-indigo-100 dark:border-indigo-900/30">${f}</span>`).join(""); }
-
+ 
         async function deleteReg(f) { 
             if(confirm("¿Eliminar este registro?")){ 
                 window.db = window.db.filter(x => x.fecha !== f); 
@@ -521,7 +465,7 @@
                 renderAll(); 
             } 
         }
-
+ 
         async function clearQuincena() { 
             if(window.db.length === 0) return alert("⚠️ No hay registros para cerrar.");
             if(confirm("⚠️ ¿Deseas cerrar esta quincena? Se guardará el total en el historial y se limpiarán los días.")){ 
@@ -530,7 +474,7 @@
                 let neto = ibc + ((window.cfg.auxTranspMensual / 30) * diasT) - (ibc * 0.08);
                 let desde = window.db[0].fecha;
                 let hasta = window.db[window.db.length-1].fecha;
-
+ 
                 window.historialDB.push({ id: Date.now(), desde, hasta, neto });
                 window.db = []; 
                 if(window.saveToCloud) await window.saveToCloud();
@@ -538,7 +482,7 @@
                 renderHistorial();
             } 
         }
-
+ 
         function renderHistorial() {
             const container = document.getElementById('secHistorial');
             const list = document.getElementById('listaHistorial');
@@ -561,7 +505,7 @@
                 </div>
             `).join("");
         }
-
+ 
         async function borrarHistorial(id) {
             if(confirm("¿Estás seguro de eliminar este registro del historial?")) {
                 window.historialDB = window.historialDB.filter(h => h.id !== id);
@@ -569,7 +513,7 @@
                 renderHistorial();
             }
         }
-
+ 
         async function saveConfig() { 
             window.cfg.hora = parseFloat(document.getElementById('cfgHora').value); 
             window.cfg.auxTranspMensual = parseFloat(document.getElementById('cfgTransp').value); 
@@ -581,7 +525,7 @@
             alert("✅ Configuración guardada en la nube."); 
             renderAll(); 
         }
-
+ 
         function downloadBackup() { 
             const dataFull = { registros: window.db, historial: window.historialDB, configuracion: window.cfg };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataFull)); 
@@ -592,7 +536,7 @@
             a.click(); 
             a.remove(); 
         }
-
+ 
         function importBackup(e) { 
             const file = e.target.files[0]; 
             if (!file) return; 
@@ -607,13 +551,13 @@
                     } else if(Array.isArray(imported)) {
                         window.db = imported;
                     }
-                    
+ 
                     // ESTA ES LA LÍNEA CLAVE:
                     if(window.saveToCloud) {
                         await window.saveToCloud(); 
                         alert("✅ Datos sincronizados con la nube correctamente.");
                     }
-                    
+ 
                     renderAll(); 
                     renderHistorial();
                 } catch (err) { 
@@ -622,7 +566,7 @@
             }; 
             reader.readAsText(file); 
         }
-
+ 
         function exportarPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -635,7 +579,7 @@
             doc.autoTable({ startY: 30, head: [['Fecha', 'Estado/Detalle', 'Horas', 'Valor']], body: rows });
             doc.save(`Nomina_${new Date().toISOString().split('T')[0]}.pdf`);
         }
-
+ 
         function exportarExcel() {
             const reporte = window.db.map(r => {
                 let totalHoras = Object.values(r.desglose).reduce((acc, curr) => acc + parseFloat(curr.h), 0).toFixed(2);
@@ -647,7 +591,7 @@
             XLSX.utils.book_append_sheet(wb, ws, "Detalle");
             XLSX.writeFile(wb, "Reporte_Nomina_2026.xlsx");
         }
-
+ 
         // Inicialización visual básica
         document.getElementById('cfgHora').value = window.cfg.hora;
         document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
@@ -660,3 +604,4 @@
     </script>
 </body>
 </html>
+ 
