@@ -1,0 +1,1 @@
+# mi-nomina-2026beta
