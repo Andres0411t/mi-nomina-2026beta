@@ -541,22 +541,28 @@
             const file = e.target.files[0]; 
             if (!file) return; 
             const reader = new FileReader(); 
-            reader.onload = async (e) => { 
+            reader.onload = async (e) => { // Agregamos 'async' aquí
                 try { 
                     const imported = JSON.parse(e.target.result); 
                     if(imported.registros && imported.historial) {
                         window.db = imported.registros;
                         window.historialDB = imported.historial;
                         if(imported.configuracion) window.cfg = imported.configuracion;
-                        alert("✅ Backup completo restaurado");
                     } else if(Array.isArray(imported)) {
                         window.db = imported;
-                        alert("✅ Se restauraron los días (Archivo antiguo)");
                     }
-                    if(window.saveToCloud) await window.saveToCloud();
+                    
+                    // ESTA ES LA LÍNEA CLAVE:
+                    if(window.saveToCloud) {
+                        await window.saveToCloud(); 
+                        alert("✅ Datos sincronizados con la nube correctamente.");
+                    }
+                    
                     renderAll(); 
                     renderHistorial();
-                } catch (err) { alert("Error al leer archivo: Formato no válido"); } 
+                } catch (err) { 
+                    alert("Error al leer archivo: Formato no válido"); 
+                } 
             }; 
             reader.readAsText(file); 
         }
