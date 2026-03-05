@@ -659,27 +659,41 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    // Encabezado del PDF
+  
     doc.setFontSize(16);
-    doc.text("REPORTE DE NÓMINA - HISTORIAL", 14, 20);
+    doc.text("REPORTE DETALLADO DE NÓMINA", 14, 20);
     doc.setFontSize(10);
+    doc.setTextColor(100);
     doc.text(`Período: ${h.desde} al ${h.hasta}`, 14, 28);
     doc.text(`Total Neto Pagado: ${format.format(h.neto)}`, 14, 34);
 
-   
+    
     const rows = h.registros.map(r => {
         let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
+        
+       
+        let horario = "---";
+        if (r.tipo === 'NORMAL' && r.rawHoras) {
+            horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`;
+        }
+
         let totalH = Object.values(r.desglose || {}).reduce((acc, curr) => acc + parseFloat(curr.h || 0), 0).toFixed(2);
-        return [r.fecha, tipoStr, totalH, format.format(r.pagoSalarial)];
+        
+        return [r.fecha, tipoStr, horario, totalH, format.format(r.pagoSalarial)];
     });
 
     
     doc.autoTable({
         startY: 40,
-        head: [['Fecha', 'Detalle/Estado', 'Horas', 'Valor']],
+        head: [['Fecha', 'Estado/Detalle', 'Entrada - Salida', 'Hrs', 'Valor']],
         body: rows,
-        headStyles: { fillColor: [99, 102, 241] }, 
-        theme: 'striped'
+        headStyles: { fillColor: [99, 102, 241], fontSize: 9 }, 
+        columnStyles: {
+            2: { cellWidth: 35 }, 
+            4: { halign: 'right' }
+        },
+        theme: 'striped',
+        styles: { fontSize: 8 }
     });
 
     doc.save(`Nomina_Detalle_${h.desde}_${h.hasta}.pdf`);
@@ -688,3 +702,4 @@
     </script>
 </body>
 </html>
+
