@@ -618,39 +618,53 @@
         }
 
         function exportarPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("REPORTE DE NOMINA QUINCENAL", 14, 20);
-            const rows = window.db.map(r => {
-                let totalHoras = Object.values(r.desglose).reduce((acc, curr) => acc + parseFloat(curr.h), 0).toFixed(2);
-                let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
-                return [r.fecha, tipoStr, totalHoras, format.format(r.pagoSalarial)];
-            });
-            doc.autoTable({ startY: 30, head: [['Fecha', 'Estado/Detalle', 'Horas', 'Valor']], body: rows });
-            doc.save(`Nomina_${new Date().toISOString().split('T')[0]}.pdf`);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    
+    doc.setFontSize(16);
+    doc.text("REPORTE DE NOMINA ACTUAL", 14, 20);
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 26);
+
+    const rows = window.db.map(r => {
+        let totalHoras = Object.values(r.desglose).reduce((acc, curr) => acc + parseFloat(curr.h), 0).toFixed(2);
+        let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
+        
+        
+        let horario = "---";
+        let descanso = "---";
+        
+        if (r.tipo === 'NORMAL' && r.rawHoras) {
+            horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`;
+            if (r.rawHoras.hBO && r.rawHoras.hBI) {
+                descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;
+            }
         }
 
-        function exportarExcel() {
-            const reporte = window.db.map(r => {
-                let totalHoras = Object.values(r.desglose).reduce((acc, curr) => acc + parseFloat(curr.h), 0).toFixed(2);
-                let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
-                return { Fecha: r.fecha, Estado: tipoStr, Horas: Number(totalHoras), Pago: r.pagoSalarial };
-            });
-            const ws = XLSX.utils.json_to_sheet(reporte);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Detalle");
-            XLSX.writeFile(wb, "Reporte_Nomina_2026.xlsx");
-        }
+        return [r.fecha, tipoStr, horario, descanso, totalHoras, format.format(r.pagoSalarial)];
+    });
 
-      
-        document.getElementById('cfgHora').value = window.cfg.hora;
-        document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
-        document.getElementById('cfgRN').value = window.cfg.rn;
-        document.getElementById('cfgDOM').value = window.cfg.dom;
-        document.getElementById('cfgHED').value = window.cfg.hed;
-        document.getElementById('cfgHEN').value = window.cfg.hen;
-        renderAll();
-        renderHistorial(); 
+    doc.autoTable({ 
+        startY: 32, 
+        head: [['Fecha', 'Estado/Detalle', 'Entrada - Salida', 'Descanso', 'Hrs', 'Valor']], 
+        body: rows,
+        headStyles: { fillColor: [79, 70, 229], fontSize: 8, halign: 'center' }, // Color índigo
+        columnStyles: {
+            0: { cellWidth: 22 },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 32, halign: 'center' },
+            3: { cellWidth: 32, halign: 'center' },
+            4: { cellWidth: 15, halign: 'center' },
+            5: { halign: 'right' }
+        },
+        theme: 'striped',
+        styles: { fontSize: 7.5 }
+    });
+
+    doc.save(`Nomina_Actual_${new Date().toISOString().split('T')[0]}.pdf`);
+}
 
         function exportarPDFHistorial(id) {
     const h = window.historialDB.find(x => x.id === id);
@@ -711,5 +725,6 @@
     </script>
 </body>
 </html>
+
 
 
