@@ -659,7 +659,7 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-  
+    
     doc.setFontSize(16);
     doc.text("REPORTE DETALLADO DE NÓMINA", 14, 20);
     doc.setFontSize(10);
@@ -671,35 +671,45 @@
     const rows = h.registros.map(r => {
         let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
         
-       
+        
         let horario = "---";
+        let descanso = "---";
+        
         if (r.tipo === 'NORMAL' && r.rawHoras) {
             horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`;
+           
+            if (r.rawHoras.hBO && r.rawHoras.hBI) {
+                descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;
+            }
         }
 
         let totalH = Object.values(r.desglose || {}).reduce((acc, curr) => acc + parseFloat(curr.h || 0), 0).toFixed(2);
         
-        return [r.fecha, tipoStr, horario, totalH, format.format(r.pagoSalarial)];
+        return [r.fecha, tipoStr, horario, descanso, totalH, format.format(r.pagoSalarial)];
     });
 
-    
+  
     doc.autoTable({
         startY: 40,
-        head: [['Fecha', 'Estado/Detalle', 'Entrada - Salida', 'Hrs', 'Valor']],
+        head: [['Fecha', 'Estado/Detalle', 'Entrada - Salida', 'Descanso', 'Hrs', 'Valor']],
         body: rows,
-        headStyles: { fillColor: [99, 102, 241], fontSize: 9 }, 
+        headStyles: { fillColor: [99, 102, 241], fontSize: 8, halign: 'center' },
         columnStyles: {
-            2: { cellWidth: 35 }, 
-            4: { halign: 'right' }
+            0: { cellWidth: 22 }, // Fecha
+            1: { cellWidth: 35 }, // Estado
+            2: { cellWidth: 32, halign: 'center' }, // Horario
+            3: { cellWidth: 32, halign: 'center' }, // Descanso
+            4: { cellWidth: 15, halign: 'center' }, // Total Horas
+            5: { halign: 'right' }                  // Valor
         },
         theme: 'striped',
-        styles: { fontSize: 8 }
+        styles: { fontSize: 7.5, cellPadding: 2 }
     });
 
     doc.save(`Nomina_Detalle_${h.desde}_${h.hasta}.pdf`);
 }
-
     </script>
 </body>
 </html>
+
 
