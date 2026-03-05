@@ -666,6 +666,38 @@
     doc.save(`Nomina_Actual_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
+        function exportarExcel() {
+    const reporte = window.db.map(r => {
+        let totalHoras = Object.values(r.desglose).reduce((acc, curr) => acc + parseFloat(curr.h), 0).toFixed(2);
+        let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
+        
+       
+        let hEntrada = "---", hSalida = "---", bSalida = "---", bEntrada = "---";
+        if (r.tipo === 'NORMAL' && r.rawHoras) {
+            hEntrada = r.rawHoras.hI || "---";
+            hSalida = r.rawHoras.hF || "---";
+            bSalida = r.rawHoras.hBO || "---";
+            bEntrada = r.rawHoras.hBI || "---";
+        }
+
+        return { 
+            Fecha: r.fecha, 
+            Estado: tipoStr, 
+            Entrada: hEntrada,
+            Salida: hSalida,
+            "Inic. Descanso": bSalida,
+            "Fin Descanso": bEntrada,
+            Horas: Number(totalHoras), 
+            Pago: r.pagoSalarial 
+        };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(reporte);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Detalle Quincena");
+    XLSX.writeFile(wb, `Reporte_Nomina_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
         function exportarPDFHistorial(id) {
     const h = window.historialDB.find(x => x.id === id);
     if (!h || !h.registros) return alert("No hay datos detallados para esta quincena.");
@@ -725,6 +757,7 @@
     </script>
 </body>
 </html>
+
 
 
 
