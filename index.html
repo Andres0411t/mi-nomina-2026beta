@@ -188,16 +188,40 @@
         window.currentUser = null;
 
         window.handleAuth = async (type) => {
-            const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPassword').value;
-            const err = document.getElementById('authError');
-            err.classList.add('hidden');
-            if(!email || !pass) { err.innerText = "Ingresa correo y contraseña"; err.classList.remove('hidden'); return; }
-            try {
-                if(type === 'login') await signInWithEmailAndPassword(auth, email, pass);
-                else await createUserWithEmailAndPassword(auth, email, pass);
-            } catch (e) { err.innerText = "Error: Verifica tus datos."; err.classList.remove('hidden'); console.error(e); }
-        };
+    const email = document.getElementById('authEmail').value;
+    const pass = document.getElementById('authPassword').value;
+    const err = document.getElementById('authError');
+    err.classList.add('hidden');
+
+    if(!email || !pass) { 
+        err.innerText = "Ingresa correo y contraseña"; 
+        err.classList.remove('hidden'); 
+        return; 
+    }
+
+    try {
+        if(type === 'login') {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } else {
+            
+            const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+            const user = userCredential.user;
+
+            
+            await setDoc(doc(fb_db, "usuarios", user.uid), {
+                db: [],
+                historial: [],
+                cfg: window.cfgDefault 
+            });
+            
+            console.log("Perfil inicial creado para usuario nuevo");
+        }
+    } catch (e) { 
+        err.innerText = "Error: Verifica tus datos o el usuario ya existe."; 
+        err.classList.remove('hidden'); 
+        console.error(e); 
+    }
+};
 
         window.handleSignOut = () => signOut(auth);
 
