@@ -376,12 +376,16 @@
 
                 registro.diag = document.getElementById('diagnostico').value || "Incapacidad General";
 
-                registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
+                registro.pagoSalarial = (window.cfg.hora * 8) * 0.6667;
 
                 registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial };
-                
-            ter(x => x.fecha !== fecha);
+
+            }
+
+            window.db = window.db.filter(x => x.fecha !== fecha);
+
             window.db.push(registro);
+
             window.db.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             
             if(window.saveToCloud) await window.saveToCloud(); // Guarda en nube
