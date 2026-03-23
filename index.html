@@ -680,7 +680,12 @@
             let tDiurnas = 0, tNocturnas = 0, tFestivas = 0, tCompensatorio = 0, tTotal = 0;
 
             const rows = window.db.map(r => {
-                let totalHoras = Object.values(r.desglose).reduce((acc, curr) => acc + parseFloat(curr.h), 0).toFixed(2);
+                let totalHoras = Object.entries(r.desglose)
+    .reduce((acc, [key, curr]) => {
+        
+        if (key === 'INCAP') return acc;
+        return acc + parseFloat(curr.h || 0);
+    }, 0).toFixed(2);
                 let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
                 
                 let horario = "---";
@@ -738,7 +743,12 @@
             let tDiurnas = 0, tNocturnas = 0, tFestivas = 0, tCompensatorio = 0, tTotal = 0;
 
             const reporte = window.db.map(r => {
-                let totalHoras = Object.values(r.desglose).reduce((acc, curr) => acc + parseFloat(curr.h), 0).toFixed(2);
+                let totalHoras = Object.entries(r.desglose)
+    .reduce((acc, [key, curr]) => {
+       
+        if (key === 'INCAP') return acc;
+        return acc + parseFloat(curr.h || 0);
+    }, 0).toFixed(2);
                 let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
                 
                 let hEntrada = "---", hSalida = "---", bSalida = "---", bEntrada = "---";
