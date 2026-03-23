@@ -382,6 +382,18 @@
 
             }
 
+            else if (tipo === 'COMPENSATORIO') {
+                registro.pagaTransporte = true; 
+                registro.diag = document.getElementById('diagnostico').value || "Día compensatorio";
+    
+    
+                const valorCompensatorio = 58364; 
+    
+                registro.pagoSalarial = valorCompensatorio;
+                
+                registro.desglose['COMPENSATORIO'] = { h: "7:33", v: valorCompensatorio };
+             }
+
             window.db = window.db.filter(x => x.fecha !== fecha);
 
             window.db.push(registro);
