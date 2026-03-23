@@ -459,7 +459,7 @@
         function renderAll() {
             const list = document.getElementById('listaRegistros');
             list.innerHTML = "";
-            let ibc = 0, diasT = 0; let sumas = {};
+            let ibc = 0, diasT = 0, baseDeducible = 0; let sumas = {};
             const labels = { ordD:'H. Ordinaria', ordN:'Recargo Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
 
             window.db.forEach(r => {
@@ -470,6 +470,12 @@
                     <div class="text-right flex flex-col items-end"><p class="text-sm font-black text-indigo-600 dark:text-indigo-400">${format.format(r.pagoSalarial)}</p><div class="flex gap-3 mt-1"><button onclick="editReg('${r.fecha}')" class="text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase transition-colors">Editar</button><button onclick="deleteReg('${r.fecha}')" class="text-[10px] font-black text-rose-400 hover:text-rose-600 uppercase transition-colors">Borrar</button></div></div>
                 </div>`;
                 ibc += r.pagoSalarial;
+                
+                
+                if (r.tipo !== 'INCAPACIDAD') {
+                    baseDeducible += r.pagoSalarial;
+                }
+
                 if(r.pagaTransporte) diasT++;
                 for(let k in r.desglose){
                     if(!sumas[k]) sumas[k] = {h:0, v:0};
@@ -481,7 +487,8 @@
             renderChart(sumas);
 
             let tr = (window.cfg.auxTranspMensual / 30) * diasT;
-            let de = ibc * 0.08;
+            
+            let de = baseDeducible * 0.08;
             document.getElementById('resIBC').innerText = format.format(ibc);
             document.getElementById('resTransp').innerText = format.format(tr);
             document.getElementById('resDeduc').innerText = "-" + format.format(de);
@@ -507,9 +514,15 @@
         async function clearQuincena() { 
     if(window.db.length === 0) return alert("⚠️ No hay registros para cerrar.");
     if(confirm("⚠️ ¿Deseas cerrar esta quincena? Se guardará el total en el historial y se limpiarán los días.")){ 
-        let ibc = 0; let diasT = 0;
-        window.db.forEach(r => { ibc += r.pagoSalarial; if(r.pagaTransporte) diasT++; });
-        let neto = ibc + ((window.cfg.auxTranspMensual / 30) * diasT) - (ibc * 0.08);
+        let ibc = 0; let baseDeducible = 0; let diasT = 0;
+        window.db.forEach(r => { 
+            ibc += r.pagoSalarial; 
+            if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
+            if(r.pagaTransporte) diasT++; 
+        });
+        
+        
+        let neto = ibc + ((window.cfg.auxTranspMensual / 30) * diasT) - (baseDeducible * 0.08);
         let desde = window.db[0].fecha;
         let hasta = window.db[window.db.length-1].fecha;
 
@@ -689,7 +702,7 @@
         startY: 32, 
         head: [['Fecha', 'Estado/Detalle', 'Entrada - Salida', 'Descanso', 'Hrs', 'Valor']], 
         body: rows,
-        headStyles: { fillColor: [79, 70, 229], fontSize: 8, halign: 'center' }, // Color índigo
+        headStyles: { fillColor: [79, 70, 229], fontSize: 8, halign: 'center' }, 
         columnStyles: {
             0: { cellWidth: 22 },
             1: { cellWidth: 35 },
@@ -832,9 +845,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
