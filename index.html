@@ -377,12 +377,21 @@
                 registro.diag = document.getElementById('diagnostico').value || "Día compensatorio";
                 registro.pagoSalarial = window.cfg.hora * 7.33;
                 registro.desglose['COMPENSATORIO'] = { h: 7.33, v: registro.pagoSalarial };
-            } else if (tipo === 'INCAPACIDAD') {
-                registro.diag = document.getElementById('diagnostico').value || "Incapacidad General";
-                registro.pagoSalarial = (window.cfg.hora * 7.5) * 1;
-                registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial };
-            }
-            window.db = window.db.filter(x => x.fecha !== fecha);
+          } else if (tipo === 'INCAPACIDAD') {
+          registro.diag = document.getElementById('diagnostico').value || "Incapacidad General";
+          
+         
+          const valorDiaReal = 60354; 
+          
+          registro.pagoSalarial = valorDiaReal;
+          
+         
+          registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial }; 
+          
+         
+          registro.pagaTransporte = false;
+      }
+            ter(x => x.fecha !== fecha);
             window.db.push(registro);
             window.db.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             
