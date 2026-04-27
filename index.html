@@ -2114,8 +2114,7 @@
     });
   };
 
-  // Mantener servidor de IA despierto
-  setInterval(() => fetch('https://servidor-1-h0de.onrender.com/ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{}), 10 * 60 * 1000);
+  // Sin servidor intermediario — llamada directa a Gemini
 </script>
 
 <script>
@@ -2359,29 +2358,31 @@ REGLAS:
       return `${rol}: ${m.content}`;
     }).join('\n\n');
 
+    // API key embebida — llamada directa a Gemini (sin servidor intermediario)
+    const GEMINI_API_KEY = document.getElementById('apiKeyInput')?.value?.trim() || 'AIzaSyAiJH3L0R3RFrXIhJxEipZnEHzRn3zw6BE';
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
     try {
-      const res = await fetch('https://servidor-1-h0de.onrender.com/ai', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            text: `${buildSystemPrompt()}\n\nAquí están los datos actuales de mi nómina:\n\n${context}\n\n---\n\nHistorial de conversación:\n${historialTexto}\n\nResponde únicamente al último mensaje del usuario.`
+      const res = await fetch(GEMINI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `${buildSystemPrompt()}\n\nAquí están los datos actuales de mi nómina:\n\n${context}\n\n---\n\nHistorial de conversación:\n${historialTexto}\n\nResponde únicamente al último mensaje del usuario.`
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 3000
           }
-        ]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.4,
-      maxOutputTokens: 3000
-    }
-  })
-});
+        })
+      });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(`API error ${res.status}: ${errData?.error?.message || res.statusText}`);
