@@ -1501,14 +1501,14 @@
       <!-- API Key -->
       <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:1.25rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
-          <label class="form-label" style="margin:0;color:var(--accent);">🔑 API Key de Anthropic</label>
-          <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:.65rem;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Obtener clave →</a>
+          <label class="form-label" style="margin:0;color:var(--accent);">🔑 API Key de Gemini</label>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:.65rem;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Obtener clave →</a>
         </div>
         <div style="display:flex;gap:.6rem;">
-          <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." class="inp" style="flex:1;font-family:var(--font-mono);font-size:.8rem;padding:.65rem .9rem;" oninput="saveApiKey(this.value)">
+          <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="inp" style="flex:1;font-family:var(--font-mono);font-size:.8rem;padding:.65rem .9rem;" oninput="saveApiKey(this.value)">
           <button onclick="toggleApiKeyVisibility()" id="apiKeyEye" style="padding:.65rem .9rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;color:var(--muted);font-size:.9rem;transition:all .2s;flex-shrink:0;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">👁</button>
         </div>
-        <div style="font-size:.65rem;color:var(--muted);margin-top:.5rem;letter-spacing:.03em;">La clave se guarda solo en este navegador (localStorage). Nunca se envía a ningún servidor propio.</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:.5rem;letter-spacing:.03em;">La clave de Gemini se guarda solo en este navegador (localStorage). Nunca se envía a ningún servidor propio.</div>
       </div>
 
       <!-- Preguntas rápidas -->
@@ -2004,12 +2004,12 @@
   }
 
   function saveApiKey(val) {
-    try { localStorage.setItem('nomina_apikey', val); } catch(e) {}
+    try { localStorage.setItem('nomina_gemini_apikey', val); } catch(e) {}
   }
 
   function loadApiKey() {
     try {
-      const saved = localStorage.getItem('nomina_apikey');
+      const saved = localStorage.getItem('nomina_gemini_apikey') || localStorage.getItem('nomina_apikey');
       if (saved) document.getElementById('apiKeyInput').value = saved;
     } catch(e) {}
   }
@@ -2086,10 +2086,10 @@ REGLAS:
     const msg = input.value.trim();
     if (!msg) return;
 
-    // Verificar API key
+    // Verificar API key de Gemini
     const apiKey = (document.getElementById('apiKeyInput')?.value || '').trim();
     if (!apiKey) {
-      appendAIMsg('🔑 Para usar el asistente, ingresa tu API Key de Anthropic en el campo de arriba. Puedes obtenerla en <strong>console.anthropic.com</strong>');
+      appendAIMsg('🔑 Para usar el asistente, ingresa tu API Key de Gemini en el campo de arriba. Puedes obtenerla en <strong>Google AI Studio</strong>.');
       return;
     }
 
@@ -2103,40 +2103,47 @@ REGLAS:
     chatHistory.push({ role: 'user', content: msg });
 
     const context = buildNominaContext();
-    const messagesWithContext = [
-      { role: 'user', content: `Aquí están los datos actuales de mi nómina:\n\n${context}\n\n---\n\n${chatHistory[0].content}` },
-      ...chatHistory.slice(1)
-    ];
+    const historialTexto = chatHistory.map(m => {
+      const rol = m.role === 'assistant' ? 'Asistente' : 'Usuario';
+      return `${rol}: ${m.content}`;
+    }).join('\n\n');
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: buildSystemPrompt(),
-          messages: messagesWithContext
-        })
-      });
+      const res = await fetch('https://servidor-1-h0de.onrender.com/ai', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `${buildSystemPrompt()}\n\nAquí están los datos actuales de mi nómina:\n\n${context}\n\n---\n\nHistorial de conversación:\n${historialTexto}\n\nResponde únicamente al último mensaje del usuario.`
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 1000
+    }
+  })
+});
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(`API error ${res.status}: ${errData?.error?.message || res.statusText}`);
       }
       const data = await res.json();
-      const reply = data.content?.map(b => b.text || '').join('') || 'No pude obtener una respuesta. Intenta de nuevo.';
+      const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'No pude obtener una respuesta. Intenta de nuevo.';
       chatHistory.push({ role: 'assistant', content: reply });
       removeThinking();
       appendAIMsg(reply);
     } catch (err) {
-      console.error('AI error:', err);
+      console.error('Gemini AI error:', err);
       removeThinking();
-      appendAIMsg(`⚠️ Error al conectar: ${err.message}. Intenta de nuevo.`);
+      appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message}. Intenta de nuevo.`);
     }
     input.disabled = false;
     document.getElementById('chatSendBtn').disabled = false;
