@@ -2370,18 +2370,15 @@ REGLAS:
     ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash-lite', key: k }));
     ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash', key: k }));
 
-    // Construir prompt único (evita errores 400 por roles mal alternados)
-    const histFiltered = chatHistory.slice(0, -1); // sin el mensaje actual
-    let historialTextoCorto = '';
-    if (histFiltered.length > 0) {
-      // Solo últimos 6 turnos para no inflar tokens
-      const recent = histFiltered.slice(-6);
-      historialTextoCorto = '\n\nCONVERSACIÓN PREVIA:\n' + recent.map(m =>
+    // Solo últimos 2 turnos de historial para no gastar tokens
+    const histRecent = chatHistory.slice(0, -1).slice(-4); // max 2 pares user/assistant
+    let histTexto = '';
+    if (histRecent.length > 0) {
+      histTexto = '\n\nÚLTIMOS MENSAJES:\n' + histRecent.map(m =>
         `${m.role === 'assistant' ? 'Asistente' : 'Usuario'}: ${m.content}`
       ).join('\n');
     }
-
-    const fullPrompt = `${buildSystemPrompt()}\n\nDATOS DE LA NÓMINA:\n${context}${historialTextoCorto}\n\n---\nPregunta actual: ${msg}`;
+    const fullPrompt = `${buildSystemPrompt()}\n\nDATOS DE LA NÓMINA:\n${context}${histTexto}\n\n---\nPregunta: ${msg}`;
     const contents = [{ role: 'user', parts: [{ text: fullPrompt }] }];
 
     async function tryGemini(model, key) {
