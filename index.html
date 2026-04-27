@@ -1489,26 +1489,61 @@
 
 <!-- ── AUTH ── -->
 <div id="authContainer">
-  <div class="auth-card">
+
+  <!-- Panel Login -->
+  <div class="auth-card" id="authLogin">
     <div class="auth-logo">Mi Nómina</div>
-    <div class="auth-sub">Sincronización en la Nube</div>
+    <div class="auth-sub">Bienvenido de vuelta</div>
     <div class="auth-divider"></div>
     <div style="display:flex;flex-direction:column;gap:.85rem;">
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Correo electrónico</label>
-        <input type="email" id="authEmail" placeholder="tu@correo.com" class="inp">
+        <input type="email" id="authEmail" placeholder="tu@correo.com" class="inp" onkeydown="if(event.key==='Enter')handleAuth('login')">
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Contraseña</label>
-        <input type="password" id="authPassword" placeholder="••••••••" class="inp">
+        <input type="password" id="authPassword" placeholder="••••••••" class="inp" onkeydown="if(event.key==='Enter')handleAuth('login')">
       </div>
       <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem;">
         <button onclick="handleAuth('login')" class="btn btn-primary" style="width:100%;padding:1rem;">Entrar</button>
-        <button onclick="handleAuth('signup')" class="btn btn-ghost" style="width:100%;padding:1rem;">Crear Cuenta</button>
       </div>
       <div id="authError" class="auth-error"></div>
+      <div style="text-align:center;font-size:.8rem;color:var(--muted);margin-top:.25rem;">
+        ¿No tienes cuenta?
+        <button onclick="switchAuthPanel('signup')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-weight:700;font-size:.8rem;padding:0;margin-left:.25rem;">Crear cuenta</button>
+      </div>
     </div>
   </div>
+
+  <!-- Panel Registro -->
+  <div class="auth-card" id="authSignup" style="display:none;">
+    <div class="auth-logo">Mi Nómina</div>
+    <div class="auth-sub">Crear cuenta nueva</div>
+    <div class="auth-divider"></div>
+    <div style="display:flex;flex-direction:column;gap:.85rem;">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Correo electrónico</label>
+        <input type="email" id="signupEmail" placeholder="tu@correo.com" class="inp">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Contraseña</label>
+        <input type="password" id="signupPassword" placeholder="••••••••" class="inp">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Confirmar contraseña</label>
+        <input type="password" id="signupPasswordConfirm" placeholder="••••••••" class="inp" onkeydown="if(event.key==='Enter')handleSignup()">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem;">
+        <button onclick="handleSignup()" class="btn btn-primary" style="width:100%;padding:1rem;">Crear Cuenta</button>
+      </div>
+      <div id="signupError" class="auth-error"></div>
+      <div style="text-align:center;font-size:.8rem;color:var(--muted);margin-top:.25rem;">
+        ¿Ya tienes cuenta?
+        <button onclick="switchAuthPanel('login')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-weight:700;font-size:.8rem;padding:0;margin-left:.25rem;">Iniciar sesión</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ── Toast Container ── -->
@@ -1995,6 +2030,50 @@
   };
 
   window.handleSignOut = () => signOut(auth);
+
+  window.switchAuthPanel = (panel) => {
+    const login  = document.getElementById('authLogin');
+    const signup = document.getElementById('authSignup');
+    document.getElementById('authError').innerText = '';
+    document.getElementById('signupError').innerText = '';
+    if (panel === 'signup') {
+      login.style.display  = 'none';
+      signup.style.display = 'block';
+      signup.style.animation = 'slideUp .35s cubic-bezier(0.16,1,0.3,1)';
+      document.getElementById('signupEmail').focus();
+    } else {
+      signup.style.display = 'none';
+      login.style.display  = 'block';
+      login.style.animation = 'slideUp .35s cubic-bezier(0.16,1,0.3,1)';
+      document.getElementById('authEmail').focus();
+    }
+  };
+
+  window.handleSignup = async () => {
+    const email   = document.getElementById('signupEmail').value.trim();
+    const pass    = document.getElementById('signupPassword').value;
+    const confirm = document.getElementById('signupPasswordConfirm').value;
+    const err     = document.getElementById('signupError');
+    err.style.display = 'none';
+    if (!email || !pass || !confirm) {
+      err.innerText = 'Completa todos los campos'; err.style.display = 'block'; return;
+    }
+    if (pass !== confirm) {
+      err.innerText = 'Las contraseñas no coinciden'; err.style.display = 'block'; return;
+    }
+    if (pass.length < 6) {
+      err.innerText = 'La contraseña debe tener al menos 6 caracteres'; err.style.display = 'block'; return;
+    }
+    try {
+      const uc = await createUserWithEmailAndPassword(auth, email, pass);
+      await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
+    } catch (e) {
+      err.innerText = e.code === 'auth/email-already-in-use'
+        ? 'Ese correo ya está registrado'
+        : 'Error al crear cuenta. Verifica los datos.';
+      err.style.display = 'block';
+    }
+  };
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
