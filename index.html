@@ -1498,19 +1498,6 @@
         </div>
       </div>
 
-      <!-- API Key -->
-      <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:1.25rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
-          <label class="form-label" style="margin:0;color:var(--accent);">🔑 API Key de Gemini</label>
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size:.65rem;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Obtener clave →</a>
-        </div>
-        <div style="display:flex;gap:.6rem;">
-          <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="inp" style="flex:1;font-family:var(--font-mono);font-size:.8rem;padding:.65rem .9rem;" oninput="saveApiKey(this.value)">
-          <button onclick="toggleApiKeyVisibility()" id="apiKeyEye" style="padding:.65rem .9rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;color:var(--muted);font-size:.9rem;transition:all .2s;flex-shrink:0;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">👁</button>
-        </div>
-        <div style="font-size:.65rem;color:var(--muted);margin-top:.5rem;letter-spacing:.03em;">La clave de Gemini se guarda solo en este navegador (localStorage). Nunca se envía a ningún servidor propio.</div>
-      </div>
-
       <!-- Preguntas rápidas -->
       <div style="font-size:.65rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;">Preguntas frecuentes</div>
       <div class="quick-pills">
@@ -2086,12 +2073,6 @@ REGLAS:
     const msg = input.value.trim();
     if (!msg) return;
 
-    // Verificar API key de Gemini
-    const apiKey = (document.getElementById('apiKeyInput')?.value || '').trim();
-    if (!apiKey) {
-      appendAIMsg('🔑 Para usar el asistente, ingresa tu API Key de Gemini en el campo de arriba. Puedes obtenerla en <strong>Google AI Studio</strong>.');
-      return;
-    }
 
     input.value = '';
     input.style.height = 'auto';
