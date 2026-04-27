@@ -1664,24 +1664,17 @@
         </div>
       </div>
 
-      <!-- Barra de estado del servidor -->
-      <div id="serverStatus" style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;background:var(--accent-dim);border:1px solid rgba(201,168,76,0.2);border-radius:8px;margin-bottom:.6rem;font-size:.72rem;color:var(--accent);font-weight:600;">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite;flex-shrink:0;"></span>
-        <span id="serverStatusText">Calentando el asistente, un momento...</span>
-      </div>
-
       <!-- Input -->
       <div class="chat-input-row">
         <textarea
           id="chatInput"
           class="chat-input"
-          placeholder="Espera un momento mientras el asistente inicia..."
+          placeholder="Pregunta algo sobre tu nómina... ej: ¿cuánto gané en horas nocturnas?"
           rows="1"
           onkeydown="handleChatKey(event)"
           oninput="autoResize(this)"
-          disabled
         ></textarea>
-        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar" disabled>➤</button>
+        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar">➤</button>
       </div>
       <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:.6rem;letter-spacing:.04em;">
         El asistente conoce tus registros, horas, recargos y configuración actual
@@ -2121,41 +2114,8 @@
     });
   };
 
-  // Despertar servidor y habilitar chat cuando esté listo
-  window.AI_URL = 'https://servidor-1-h0de.onrender.com/ai';
-  window.serverReady = false;
-
-  const setServerReady = () => {
-    if (window.serverReady) return;
-    window.serverReady = true;
-    const status = document.getElementById('serverStatus');
-    const statusText = document.getElementById('serverStatusText');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('chatSendBtn');
-    if (status) { status.style.background = 'rgba(90,173,143,0.12)'; status.style.borderColor = 'rgba(90,173,143,0.3)'; status.style.color = 'var(--success)'; }
-    if (statusText) statusText.innerHTML = '✓ Asistente listo';
-    if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'Pregunta algo sobre tu nómina...'; }
-    if (sendBtn) sendBtn.disabled = false;
-    setTimeout(() => { if (status) status.style.display = 'none'; }, 2000);
-  };
-
-  const pingServer = async () => {
-    try {
-      // Usar GET para despertar el servidor sin procesar nada
-      const res = await fetch('https://servidor-1-h0de.onrender.com/', { method: 'GET' });
-      if (res.status !== 500) setServerReady();
-    } catch(e) {
-      // Red caída, intentar igual habilitar tras timeout
-    }
-  };
-
-  pingServer();
-  const warmupInterval = setInterval(() => {
-    if (window.serverReady) { clearInterval(warmupInterval); return; }
-    pingServer();
-  }, 6000);
-  // Mantener vivo cada 9 minutos
-  setInterval(() => fetch(window.AI_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{}), 9 * 60 * 1000);
+  // Mantener servidor de IA despierto
+  setInterval(() => fetch('https://servidor-1-h0de.onrender.com/ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{}), 10 * 60 * 1000);
 </script>
 
 <script>
@@ -2383,6 +2343,7 @@ REGLAS:
     const msg = input.value.trim();
     if (!msg) return;
 
+
     input.value = '';
     input.style.height = 'auto';
     appendUserMsg(msg);
@@ -2392,27 +2353,38 @@ REGLAS:
 
     chatHistory.push({ role: 'user', content: msg });
 
-    // Solo los últimos 6 mensajes del historial para no sobrecargar el payload
-    const historialReciente = chatHistory.slice(-6).map(m => {
+    const context = buildNominaContext();
+    const historialTexto = chatHistory.map(m => {
       const rol = m.role === 'assistant' ? 'Asistente' : 'Usuario';
       return `${rol}: ${m.content}`;
     }).join('\n\n');
 
-    const context = buildNominaContext();
-    const promptText = `${buildSystemPrompt()}\n\nDAtos de nómina:\n${context}\n\n---\nConversación reciente:\n${historialReciente}\n\nResponde solo al último mensaje del usuario.`;
-
     try {
-      const res = await fetch(window.AI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: promptText }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 3000 }
-        })
-      });
+      const res = await fetch('https://servidor-1-h0de.onrender.com/ai', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `${buildSystemPrompt()}\n\nAquí están los datos actuales de mi nómina:\n\n${context}\n\n---\n\nHistorial de conversación:\n${historialTexto}\n\nResponde únicamente al último mensaje del usuario.`
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 3000
+    }
+  })
+});
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(`Error ${res.status}: ${errData?.error?.message || res.statusText}`);
+        throw new Error(`API error ${res.status}: ${errData?.error?.message || res.statusText}`);
       }
       const data = await res.json();
       const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'No pude obtener una respuesta. Intenta de nuevo.';
@@ -2420,14 +2392,10 @@ REGLAS:
       removeThinking();
       appendAIMsg(reply);
     } catch (err) {
-      console.error('AI error:', err);
+      console.error('Gemini AI error:', err);
       removeThinking();
-      appendAIMsg(`⚠️ Error al conectar con el asistente. Intenta de nuevo en unos segundos.`);
+      appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message}. Intenta de nuevo.`);
     }
-    input.disabled = false;
-    document.getElementById('chatSendBtn').disabled = false;
-    input.focus();
-  }
     input.disabled = false;
     document.getElementById('chatSendBtn').disabled = false;
     input.focus();
