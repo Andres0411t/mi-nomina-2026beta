@@ -2114,8 +2114,11 @@
     });
   };
 
-  // Mantener servidor de IA despierto
-  setInterval(() => fetch('https://servidor-1-h0de.onrender.com/ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{}), 10 * 60 * 1000);
+  // Despertar servidor al cargar y mantenerlo activo cada 10 min
+  const AI_URL = 'https://servidor-1-h0de.onrender.com/ai';
+  const pingServer = () => fetch(AI_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{});
+  pingServer(); // ping inmediato al abrir la web
+  setInterval(pingServer, 10 * 60 * 1000);
 </script>
 
 <script>
@@ -2364,21 +2367,29 @@ REGLAS:
       generationConfig: { temperature: 0.4, maxOutputTokens: 3000 }
     });
 
-    const fetchWithRetry = async (url, options, maxRetries = 3, delayMs = 4000) => {
+    const fetchWithRetry = async (url, options, maxRetries = 4, delayMs = 15000) => {
       for (let i = 0; i < maxRetries; i++) {
-        const res = await fetch(url, options);
-        if (res.ok) return res;
-        if (res.status === 500 && i < maxRetries - 1) {
-          await new Promise(r => setTimeout(r, delayMs));
-          continue;
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) return res;
+          if ((res.status === 500 || res.status === 502 || res.status === 503) && i < maxRetries - 1) {
+            await new Promise(r => setTimeout(r, delayMs));
+            continue;
+          }
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(`Error ${res.status}: ${errData?.error?.message || res.statusText}`);
+        } catch(e) {
+          if (i < maxRetries - 1 && (e.message.includes('fetch') || e.message.includes('500') || e.message.includes('502') || e.message.includes('503'))) {
+            await new Promise(r => setTimeout(r, delayMs));
+            continue;
+          }
+          throw e;
         }
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(`API error ${res.status}: ${errData?.error?.message || res.statusText}`);
       }
     };
 
     try {
-      const res = await fetchWithRetry('https://servidor-1-h0de.onrender.com/ai', {
+      const res = await fetchWithRetry(AI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload
