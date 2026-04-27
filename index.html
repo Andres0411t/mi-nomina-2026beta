@@ -1864,6 +1864,9 @@
       document.getElementById('cfgHED').value = window.cfg.hed;
       document.getElementById('cfgHEN').value = window.cfg.hen;
       renderAll(); renderHistorial();
+      // Si el usuario entra al Dashboard antes de que termine la sincronización,
+      // refrescarlo automáticamente cuando ya llegaron los datos de Firebase.
+      if (!document.getElementById('dashboard').classList.contains('hidden')) renderDashboard();
     }
   }
 
