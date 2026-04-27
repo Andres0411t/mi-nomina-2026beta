@@ -733,22 +733,7 @@
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
-  @media (max-width: 600px) {
-  .time-block {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .time-block label {
-    font-size: 14px;
-  }
-
-  .time-block .inp {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-}
+  @media(max-width:600px) { .dash-kpi-grid { grid-template-columns: 1fr 1fr; } }
 
   .kpi-card {
     background: var(--surface);
