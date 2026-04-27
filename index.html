@@ -2115,9 +2115,9 @@
   };
 
   // Despertar servidor al cargar y mantenerlo activo cada 10 min
-  const AI_URL = 'https://servidor-1-h0de.onrender.com/ai';
-  const pingServer = () => fetch(AI_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{});
-  pingServer(); // ping inmediato al abrir la web
+  window.AI_URL = 'https://servidor-1-h0de.onrender.com/ai';
+  const pingServer = () => fetch(window.AI_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{});
+  pingServer();
   setInterval(pingServer, 10 * 60 * 1000);
 </script>
 
@@ -2389,7 +2389,7 @@ REGLAS:
     };
 
     try {
-      const res = await fetchWithRetry(AI_URL, {
+      const res = await fetchWithRetry(window.AI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: payload
