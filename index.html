@@ -1331,6 +1331,49 @@
       row-gap: .85rem !important;
     }
   }
+
+
+  /* ── Mobile horario minimal fix ── */
+  @media (max-width: 600px) {
+    #secHoras {
+      padding: .9rem .85rem !important;
+    }
+    #secHoras .form-row.col4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      column-gap: .7rem !important;
+      row-gap: .7rem !important;
+    }
+    #secHoras .form-label {
+      font-size: .49rem !important;
+      letter-spacing: .05em !important;
+      line-height: 1.1 !important;
+      margin-bottom: .28rem !important;
+    }
+    #secHoras .inp,
+    #secHoras input[type="time"].inp {
+      padding: .45rem .35rem !important;
+      min-height: 42px !important;
+      height: 42px !important;
+      border-radius: 9px !important;
+      font-size: 14px !important;
+      text-align: center !important;
+    }
+  }
+
+
+
+  /* ── Mobile horario compact polish ── */
+  @media (max-width: 600px) {
+    #secHoras {
+      padding: .9rem .85rem !important;
+    }
+    #secHoras > div:first-child {
+      font-size: .62rem !important;
+      letter-spacing: .11em !important;
+      margin-bottom: .85rem !important;
+    }
+  }
+
 </style>
 </head>
 <body>
