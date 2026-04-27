@@ -2200,122 +2200,81 @@
   const chatHistory = [];
 
   function buildNominaContext() {
-    const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-    const labelsTipo = { NORMAL:'Turno Laborado', INCAPACIDAD:'Incapacidad', COMPENSATORIO:'Compensatorio Remunerado', NO_LABORADO:'Día No Citado' };
-    const labelsH = { ordD:'Horas Ordinarias Diurnas', ordN:'Recargo Nocturno', extD:'Extra Diurna', extN:'Extra Nocturna', domD:'Dominical/Festivo Diurno', domN:'Dominical/Festivo Nocturno', edd:'Extra Dominical Diurno', edn:'Extra Dominical Nocturno', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
-
-    // ── 1. CONFIGURACIÓN ──
+    const f = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
     const cfg = window.cfg || {};
-    const cfgSection = `CONFIGURACIÓN LABORAL:
-- Valor hora ordinaria: ${fmt.format(cfg.hora)}
-- Recargo nocturno: ${cfg.rn}% | Dominical/Festivo: ${cfg.dom}%
-- Extra diurna: ${cfg.hed}% | Extra nocturna: ${cfg.hen}%
-- Extra dominical diurna: ${cfg.hedd}% | Extra dominical nocturna: ${cfg.hend}%
-- Auxilio transporte mensual: ${fmt.format(cfg.auxTranspMensual)}
-- Deducciones empleado: Salud 4% + Pensión 4% = 8% sobre IBC
-- Festivos 2026 configurados: ${festivos.join(', ')}`;
-
-    // ── 2. QUINCENA ACTUAL ──
-    let ibcQ = 0, diasT = 0, baseDeducible = 0;
-    let horasTot = 0, horasOrdD = 0, horasOrdN = 0, horasExtD = 0, horasExtN = 0, horasDomD = 0, horasDomN = 0, horasEdd = 0, horasEdn = 0;
     const db = window.db || [];
 
-    const lines = db.map(r => {
+    let ibcQ=0, diasT=0, baseD=0;
+    let tot=0, ordD=0, ordN=0, extD=0, extN=0, domD=0, domN=0, edd=0, edn=0;
+
+    // Una línea por día con breakdown de horas relevantes (omite ceros)
+    const diasLines = db.map(r => {
       ibcQ += r.pagoSalarial;
-      if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
+      if (r.tipo !== 'INCAPACIDAD') baseD += r.pagoSalarial;
       if (r.pagaTransporte) diasT++;
       const d = r.desglose || {};
-      horasOrdD += parseFloat(d.ordD?.h||0); horasOrdN += parseFloat(d.ordN?.h||0);
-      horasExtD += parseFloat(d.extD?.h||0); horasExtN += parseFloat(d.extN?.h||0);
-      horasDomD += parseFloat(d.domD?.h||0); horasDomN += parseFloat(d.domN?.h||0);
-      horasEdd  += parseFloat(d.edd?.h||0);  horasEdn  += parseFloat(d.edn?.h||0);
-      horasTot  += Object.entries(d).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
-      const desglose = Object.entries(d).map(([k,v])=>
-        `    • ${labelsH[k]||k}: ${parseFloat(v.h).toFixed(2)}h = ${fmt.format(v.v)}`
-      ).join('\n');
-      const horario = (r.tipo==='NORMAL'&&r.rawHoras) ? ` | ${r.rawHoras.hI}–${r.rawHoras.hF}${r.rawHoras.hBO?` (descanso ${r.rawHoras.hBO}–${r.rawHoras.hBI})`:''}` : '';
-      return `  [${r.fecha}] ${labelsTipo[r.tipo]||r.tipo}${r.diag?' — '+r.diag:''}${horario}\n  Pago: ${fmt.format(r.pagoSalarial)}\n${desglose}`;
+      const vOrdD=parseFloat(d.ordD?.h||0), vOrdN=parseFloat(d.ordN?.h||0);
+      const vExtD=parseFloat(d.extD?.h||0), vExtN=parseFloat(d.extN?.h||0);
+      const vDomD=parseFloat(d.domD?.h||0), vDomN=parseFloat(d.domN?.h||0);
+      const vEdd=parseFloat(d.edd?.h||0),   vEdn=parseFloat(d.edn?.h||0);
+      ordD+=vOrdD; ordN+=vOrdN; extD+=vExtD; extN+=vExtN;
+      domD+=vDomD; domN+=vDomN; edd+=vEdd;   edn+=vEdn;
+      const hDia = Object.entries(d).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
+      tot += hDia;
+      const tipo = r.tipo==='NORMAL'?'T':(r.tipo==='COMPENSATORIO'?'C':(r.tipo==='INCAPACIDAD'?'I':'NL'));
+      // Solo mostrar tipos de hora que tienen valor > 0
+      const partes = [];
+      if(vOrdD) partes.push(`ordD=${vOrdD.toFixed(1)}`);
+      if(vOrdN) partes.push(`ordN=${vOrdN.toFixed(1)}`);
+      if(vExtD) partes.push(`extD=${vExtD.toFixed(1)}`);
+      if(vExtN) partes.push(`extN=${vExtN.toFixed(1)}`);
+      if(vDomD) partes.push(`domD=${vDomD.toFixed(1)}`);
+      if(vDomN) partes.push(`domN=${vDomN.toFixed(1)}`);
+      if(vEdd)  partes.push(`edd=${vEdd.toFixed(1)}`);
+      if(vEdn)  partes.push(`edn=${vEdn.toFixed(1)}`);
+      return `${r.fecha} ${tipo} ${partes.join(' ')} pago=${f.format(r.pagoSalarial)}`;
     });
 
-    const tr = (cfg.auxTranspMensual / 30) * diasT;
-    const de = baseDeducible * 0.08;
-    const neto = ibcQ + tr - de;
-    const diasRestantes = Math.max(15 - db.length, 0);
-    const promDia = db.length > 0 ? ibcQ / db.length : 0;
-    const ibcProy = ibcQ + promDia * diasRestantes;
-    const trProy = (cfg.auxTranspMensual / 30) * Math.min(diasT + diasRestantes, 15);
-    const deProy = ibcProy * 0.08;
-    const netoProy = ibcProy + trProy - deProy;
+    const tr = (cfg.auxTranspMensual/30)*diasT;
+    const de = baseD*0.08;
+    const neto = ibcQ+tr-de;
+    const restantes = Math.max(15-db.length,0);
+    const promDia = db.length>0 ? ibcQ/db.length : 0;
+    const netoProy = (ibcQ+promDia*restantes)*0.92 + (cfg.auxTranspMensual/30)*Math.min(diasT+restantes,15);
 
-    const quincenaSection = db.length === 0
-      ? 'QUINCENA ACTUAL: Sin registros aún.'
-      : `QUINCENA ACTUAL — ${db.length} de 15 días registrados | Faltan: ${diasRestantes}
-
-REGISTROS DETALLADOS:
-${lines.join('\n\n')}
-
-RESUMEN DE HORAS ACUMULADAS:
-- Ordinarias diurnas: ${horasOrdD.toFixed(2)}h
-- Recargo nocturno: ${horasOrdN.toFixed(2)}h
-- Extra diurna: ${horasExtD.toFixed(2)}h
-- Extra nocturna: ${horasExtN.toFixed(2)}h
-- Dominical/Festivo diurno: ${horasDomD.toFixed(2)}h
-- Dominical/Festivo nocturno: ${horasDomN.toFixed(2)}h
-- Extra dominical diurno: ${horasEdd.toFixed(2)}h
-- Extra dominical nocturno: ${horasEdn.toFixed(2)}h
-- TOTAL HORAS: ${horasTot.toFixed(2)}h
-
-TOTALES QUINCENA ACTUAL:
-- IBC bruto acumulado: ${fmt.format(ibcQ)}
-- Auxilio de transporte (${diasT} días): ${fmt.format(tr)}
-- Deducciones salud+pensión (8%): -${fmt.format(de)}
-- NETO ACTUAL: ${fmt.format(neto)}
-
-PROYECCIÓN A 15 DÍAS (basada en promedio ${fmt.format(promDia)}/día):
-- IBC proyectado: ${fmt.format(ibcProy)}
-- Transporte proyectado: ${fmt.format(trProy)}
-- Deducciones proyectadas: -${fmt.format(deProy)}
-- NETO PROYECTADO: ${fmt.format(netoProy)}`;
-
-    // ── 3. HISTORIAL DE QUINCENAS ANTERIORES ──
+    // Historial: solo últimas 5 quincenas, una línea cada una
     const hist = window.historialDB || [];
-    let histSection = 'HISTORIAL DE QUINCENAS ANTERIORES: Sin quincenas cerradas aún.';
-    if (hist.length > 0) {
-      const histLines = hist.map(h => {
-        let hIbc = 0, hDiasT = 0, hBaseD = 0, hHoras = 0;
-        (h.registros || []).forEach(r => {
-          hIbc += r.pagoSalarial;
-          if (r.tipo !== 'INCAPACIDAD') hBaseD += r.pagoSalarial;
-          if (r.pagaTransporte) hDiasT++;
-          hHoras += Object.entries(r.desglose||{}).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
-        });
-        const hTr = (cfg.auxTranspMensual / 30) * hDiasT;
-        const hDe = hBaseD * 0.08;
-        return `  Período: ${h.desde} al ${h.hasta} | Días: ${(h.registros||[]).length} | Horas: ${hHoras.toFixed(1)}h\n  IBC: ${fmt.format(hIbc)} | Transporte: ${fmt.format(hTr)} | Deducciones: -${fmt.format(hDe)} | NETO: ${fmt.format(h.neto||hIbc+hTr-hDe)}`;
+    const histResumen = hist.slice(-5).map(h => {
+      let hIbc=0, hDiasT=0, hBaseD=0;
+      let hOrdD=0,hOrdN=0,hExtD=0,hExtN=0,hDomD=0,hDomN=0;
+      (h.registros||[]).forEach(r => {
+        hIbc+=r.pagoSalarial;
+        if(r.tipo!=='INCAPACIDAD') hBaseD+=r.pagoSalarial;
+        if(r.pagaTransporte) hDiasT++;
+        const d=r.desglose||{};
+        hOrdD+=parseFloat(d.ordD?.h||0); hOrdN+=parseFloat(d.ordN?.h||0);
+        hExtD+=parseFloat(d.extD?.h||0); hExtN+=parseFloat(d.extN?.h||0);
+        hDomD+=parseFloat(d.domD?.h||0); hDomN+=parseFloat(d.domN?.h||0);
       });
-      histSection = `HISTORIAL DE QUINCENAS ANTERIORES — ${hist.length} quincenas cerradas:\n${histLines.join('\n\n')}`;
+      const hTr=(cfg.auxTranspMensual/30)*hDiasT;
+      const hDe=hBaseD*0.08;
+      const hNeto=h.neto||(hIbc+hTr-hDe);
+      return `${h.desde}→${h.hasta} dias=${( h.registros||[]).length} ordD=${hOrdD.toFixed(1)} ordN=${hOrdN.toFixed(1)} extD=${hExtD.toFixed(1)} extN=${hExtN.toFixed(1)} domD=${hDomD.toFixed(1)} domN=${hDomN.toFixed(1)} neto=${f.format(hNeto)}`;
+    });
+    const promHist = hist.length>0 ? f.format(hist.reduce((a,h)=>a+(h.neto||0),0)/hist.length) : 'N/A';
+    const mejorHist = hist.length>0 ? f.format(Math.max(...hist.map(h=>h.neto||0))) : 'N/A';
 
-      // Estadísticas históricas
-      const netoPromHist = hist.reduce((a,h)=>a+(h.neto||0),0) / hist.length;
-      const mejorQuincena = hist.reduce((a,h)=>(h.neto||0)>(a.neto||0)?h:a, hist[0]);
-      histSection += `\n\nESTADÍSTICAS HISTÓRICAS:
-- Promedio neto por quincena: ${fmt.format(netoPromHist)}
-- Mejor quincena: ${mejorQuincena.desde} al ${mejorQuincena.hasta} con ${fmt.format(mejorQuincena.neto||0)}
-- Total acumulado histórico: ${fmt.format(hist.reduce((a,h)=>a+(h.neto||0),0))}`;
-    }
+    return `NÓMINA Andrés Troconis
+CFG: hora=${f.format(cfg.hora)} rn=${cfg.rn}% dom=${cfg.dom}% hed=${cfg.hed}% hen=${cfg.hen}% hedd=${cfg.hedd}% hend=${cfg.hend}% transp=${f.format(cfg.auxTranspMensual)} deduc=8%
 
-    return `════════════════════════════════════
-DATOS COMPLETOS DE MI NÓMINA — App de Andrés Troconis
-════════════════════════════════════
+QUINCENA ACTUAL ${db.length}/15 días (faltan ${restantes}):
+${diasLines.length ? diasLines.join('\n') : 'Sin registros aún'}
+TOTALES HORAS: ordD=${ordD.toFixed(1)} ordN=${ordN.toFixed(1)} extD=${extD.toFixed(1)} extN=${extN.toFixed(1)} domD=${domD.toFixed(1)} domN=${domN.toFixed(1)} edd=${edd.toFixed(1)} edn=${edn.toFixed(1)} TOTAL=${tot.toFixed(1)}
+TOTALES $: IBC=${f.format(ibcQ)} transp=${f.format(tr)} deduc=-${f.format(de)} NETO=${f.format(neto)} proy15d=${f.format(netoProy)}
 
-${cfgSection}
-
-════════════════════════════════════
-${quincenaSection}
-
-════════════════════════════════════
-${histSection}
-════════════════════════════════════`;
+HISTORIAL últimas ${histResumen.length} quincenas:
+${histResumen.length ? histResumen.join('\n') : 'Sin historial'}
+${hist.length>0?`promedio=${promHist} mejor=${mejorHist}`:''}`;
   }
 
   function buildSystemPrompt() {
