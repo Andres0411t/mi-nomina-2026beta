@@ -2409,30 +2409,12 @@ ${hist.length>0?`promedio=${promHist} mejor=${mejorHist}`:''}`;
       return `${rol}: ${m.content}`;
     }).join('\n\n');
 
-    // 7 API keys con fallback automático — prioritario: flash-lite para ahorrar cuota
-    const CUSTOM_KEY = document.getElementById('apiKeyInput')?.value?.trim();
-    const ALL_KEYS = [
-      'AIzaSyBV6gvYMJLsdZfXJ4DdYp_IWaWcAqoHHzc',
-      'AIzaSyCMBkjyGtImWD8IKSwQWRgdnl21GFkUDsk',
-      'AIzaSyA-63uCaCbhLlDFAPl_z1ED9kjLduSnS90',
-      'AIzaSyAjvxox8zQAd5uJaoFJsH7DfIGusLZfSUU',
-      'AIzaSyAPrxS3FhA4nmfqvKQF84VrdTMP9Na3iMk',
-      'AIzaSyC1_ZC3tx6M_IyNr4yqe_0K19MXB0hOmUU',
-      'AIzaSyCeotE31cpe4lNi-mqwF1HcnV_nzr1IDGE',
-      'AIzaSyBhGveR_ShbLuHhUxriiSCuim8gZqGq9WA',
-      'AIzaSyC6hWMNOrJ1keki1RQSETILoHxgX4UD3E0',
-      'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug',
-      'AIzaSyAiJH3L0R3RFrXIhJxEipZnEHzRn3zw6BE',
-    ];
-    if (CUSTOM_KEY && !ALL_KEYS.includes(CUSTOM_KEY)) ALL_KEYS.unshift(CUSTOM_KEY);
+    // Worker URL — pon aquí la URL de tu Cloudflare Worker después de desplegarlo
+    const WORKER_URL = 'https://nomina-ia.nayelisjesus-0411.workers.dev
+';
 
-    // Prioridad: lite con cada key primero, luego flash normal como último recurso
-    const MODELS = [];
-    ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash-lite', key: k }));
-    ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash', key: k }));
-
-    // Solo últimos 2 turnos de historial para no gastar tokens
-    const histRecent = chatHistory.slice(0, -1).slice(-4); // max 2 pares user/assistant
+    // Solo últimos 2 turnos de historial
+    const histRecent = chatHistory.slice(0, -1).slice(-4);
     let histTexto = '';
     if (histRecent.length > 0) {
       histTexto = '\n\nÚLTIMOS MENSAJES:\n' + histRecent.map(m =>
@@ -2440,51 +2422,28 @@ ${hist.length>0?`promedio=${promHist} mejor=${mejorHist}`:''}`;
       ).join('\n');
     }
     const fullPrompt = `${buildSystemPrompt()}\n\nDATOS DE LA NÓMINA:\n${context}${histTexto}\n\n---\nPregunta: ${msg}`;
-    const contents = [{ role: 'user', parts: [{ text: fullPrompt }] }];
-
-    async function tryGemini(model, key) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 600 } })
-      });
-      const status = res.status;
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        if (status === 429 || status === 404 || status === 503 || status === 400) {
-          throw new Error(`FALLBACK:${status}:${errData?.error?.message || ''}`);
-        }
-        throw new Error(`Error ${status}: ${errData?.error?.message || res.statusText}`);
-      }
-      const data = await res.json();
-      return data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'Sin respuesta. Intenta de nuevo.';
-    }
 
     try {
-      let reply = null;
-      let lastErr = null;
-      for (const { model, key } of MODELS) {
-        try {
-          reply = await tryGemini(model, key);
-          break;
-        } catch (e) {
-          lastErr = e;
-          if (!e.message.startsWith('FALLBACK:')) throw e;
-          console.warn('Fallback:', e.message);
-        }
+      const res = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: fullPrompt })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || `Error ${res.status}`);
       }
-      if (!reply) throw lastErr;
+      const reply = data.reply || 'Sin respuesta. Intenta de nuevo.';
       chatHistory.push({ role: 'assistant', content: reply });
       removeThinking();
       appendAIMsg(reply);
     } catch (err) {
       console.error('Gemini AI error:', err);
       removeThinking();
-      if (err.message.includes('FALLBACK:429')) {
-        appendAIMsg('⚠️ Cuota agotada en todos los modelos y keys. Espera unos minutos e intenta de nuevo.');
+      if (err.message.includes('429') || err.message.toLowerCase().includes('cuota')) {
+        appendAIMsg('⚠️ Cuota agotada en todos los modelos. Espera unos minutos e intenta de nuevo.');
       } else {
-        appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message.replace('FALLBACK:', '')}. Intenta de nuevo.`);
+        appendAIMsg(`⚠️ Error al conectar con el asistente: ${err.message}. Intenta de nuevo.`);
       }
     }
     input.disabled = false;
