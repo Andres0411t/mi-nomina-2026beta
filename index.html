@@ -2352,15 +2352,23 @@ REGLAS:
       return `${rol}: ${m.content}`;
     }).join('\n\n');
 
-    // Dos API keys y dos modelos con fallback automático
-    const API_KEY_1 = document.getElementById('apiKeyInput')?.value?.trim() || 'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug';
-    const API_KEY_2 = 'AIzaSyAiJH3L0R3RFrXIhJxEipZnEHzRn3zw6BE';
-    const MODELS = [
-      { model: 'gemini-2.5-flash', key: API_KEY_1 },
-      { model: 'gemini-2.5-flash-lite', key: API_KEY_1 },
-      { model: 'gemini-2.5-flash', key: API_KEY_2 },
-      { model: 'gemini-2.5-flash-lite', key: API_KEY_2 },
+    // 7 API keys con fallback automático — prioritario: flash-lite para ahorrar cuota
+    const CUSTOM_KEY = document.getElementById('apiKeyInput')?.value?.trim();
+    const ALL_KEYS = [
+      'AIzaSyBV6gvYMJLsdZfXJ4DdYp_IWaWcAqoHHzc',
+      'AIzaSyC1_ZC3tx6M_IyNr4yqe_0K19MXB0hOmUU',
+      'AIzaSyCeotE31cpe4lNi-mqwF1HcnV_nzr1IDGE',
+      'AIzaSyBhGveR_ShbLuHhUxriiSCuim8gZqGq9WA',
+      'AIzaSyC6hWMNOrJ1keki1RQSETILoHxgX4UD3E0',
+      'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug',
+      'AIzaSyAiJH3L0R3RFrXIhJxEipZnEHzRn3zw6BE',
     ];
+    if (CUSTOM_KEY && !ALL_KEYS.includes(CUSTOM_KEY)) ALL_KEYS.unshift(CUSTOM_KEY);
+
+    // Prioridad: lite con cada key primero, luego flash normal como último recurso
+    const MODELS = [];
+    ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash-lite', key: k }));
+    ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash', key: k }));
 
     // Construir contents correctamente para Gemini (user/model alternados)
     const contents = [];
