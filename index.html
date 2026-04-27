@@ -2370,21 +2370,19 @@ REGLAS:
     ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash-lite', key: k }));
     ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash', key: k }));
 
-    // Construir contents correctamente para Gemini (user/model alternados)
-    const contents = [];
-    const systemAndContext = `${buildSystemPrompt()}\n\nDATOS ACTUALES DE LA NÓMINA:\n${context}`;
-    const histFiltered = chatHistory.slice(0, -1);
-
-    if (histFiltered.length === 0) {
-      contents.push({ role: 'user', parts: [{ text: `${systemAndContext}\n\n---\n\nPregunta: ${msg}` }] });
-    } else {
-      contents.push({ role: 'user', parts: [{ text: `${systemAndContext}\n\n---\n\nPrimera pregunta: ${histFiltered[0].content}` }] });
-      for (let i = 1; i < histFiltered.length; i++) {
-        const role = histFiltered[i].role === 'assistant' ? 'model' : 'user';
-        contents.push({ role, parts: [{ text: histFiltered[i].content }] });
-      }
-      contents.push({ role: 'user', parts: [{ text: msg }] });
+    // Construir prompt único (evita errores 400 por roles mal alternados)
+    const histFiltered = chatHistory.slice(0, -1); // sin el mensaje actual
+    let historialTextoCorto = '';
+    if (histFiltered.length > 0) {
+      // Solo últimos 6 turnos para no inflar tokens
+      const recent = histFiltered.slice(-6);
+      historialTextoCorto = '\n\nCONVERSACIÓN PREVIA:\n' + recent.map(m =>
+        `${m.role === 'assistant' ? 'Asistente' : 'Usuario'}: ${m.content}`
+      ).join('\n');
     }
+
+    const fullPrompt = `${buildSystemPrompt()}\n\nDATOS DE LA NÓMINA:\n${context}${historialTextoCorto}\n\n---\nPregunta actual: ${msg}`;
+    const contents = [{ role: 'user', parts: [{ text: fullPrompt }] }];
 
     async function tryGemini(model, key) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
@@ -2393,12 +2391,11 @@ REGLAS:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 1200 } })
       });
+      const status = res.status;
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const status = res.status;
-        // Solo hacer fallback en 429 (cuota) y 404 (modelo no encontrado)
-        if (status === 429 || status === 404 || status === 503) {
-          throw new Error(`FALLBACK:${status}`);
+        if (status === 429 || status === 404 || status === 503 || status === 400) {
+          throw new Error(`FALLBACK:${status}:${errData?.error?.message || ''}`);
         }
         throw new Error(`Error ${status}: ${errData?.error?.message || res.statusText}`);
       }
@@ -2415,8 +2412,8 @@ REGLAS:
           break;
         } catch (e) {
           lastErr = e;
-          if (!e.message.startsWith('FALLBACK:')) throw e; // error real, no intentar más
-          // si es fallback (429/404/503), intentar siguiente
+          if (!e.message.startsWith('FALLBACK:')) throw e;
+          console.warn('Fallback:', e.message);
         }
       }
       if (!reply) throw lastErr;
@@ -2426,11 +2423,10 @@ REGLAS:
     } catch (err) {
       console.error('Gemini AI error:', err);
       removeThinking();
-      const msg429 = err.message.includes('FALLBACK:429') || err.message.includes('429');
-      if (msg429) {
-        appendAIMsg('⚠️ Cuota agotada en todos los modelos. Espera unos minutos e intenta de nuevo.');
+      if (err.message.includes('FALLBACK:429')) {
+        appendAIMsg('⚠️ Cuota agotada en todos los modelos y keys. Espera unos minutos e intenta de nuevo.');
       } else {
-        appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message}. Intenta de nuevo.`);
+        appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message.replace('FALLBACK:', '')}. Intenta de nuevo.`);
       }
     }
     input.disabled = false;
