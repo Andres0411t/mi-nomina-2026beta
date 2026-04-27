@@ -2122,63 +2122,141 @@
   const chatHistory = [];
 
   function buildNominaContext() {
-    if (!window.db || window.db.length === 0) {
-      return "El usuario no tiene registros en la quincena actual.";
-    }
     const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
     const labelsTipo = { NORMAL:'Turno Laborado', INCAPACIDAD:'Incapacidad', COMPENSATORIO:'Compensatorio Remunerado', NO_LABORADO:'Día No Citado' };
     const labelsH = { ordD:'Horas Ordinarias Diurnas', ordN:'Recargo Nocturno', extD:'Extra Diurna', extN:'Extra Nocturna', domD:'Dominical/Festivo Diurno', domN:'Dominical/Festivo Nocturno', edd:'Extra Dominical Diurno', edn:'Extra Dominical Nocturno', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
 
-    let ibc = 0, diasT = 0, baseDeducible = 0;
-    const lines = window.db.map(r => {
-      ibc += r.pagoSalarial;
+    // ── 1. CONFIGURACIÓN ──
+    const cfg = window.cfg || {};
+    const cfgSection = `CONFIGURACIÓN LABORAL:
+- Valor hora ordinaria: ${fmt.format(cfg.hora)}
+- Recargo nocturno: ${cfg.rn}% | Dominical/Festivo: ${cfg.dom}%
+- Extra diurna: ${cfg.hed}% | Extra nocturna: ${cfg.hen}%
+- Extra dominical diurna: ${cfg.hedd}% | Extra dominical nocturna: ${cfg.hend}%
+- Auxilio transporte mensual: ${fmt.format(cfg.auxTranspMensual)}
+- Deducciones empleado: Salud 4% + Pensión 4% = 8% sobre IBC
+- Festivos 2026 configurados: ${festivos.join(', ')}`;
+
+    // ── 2. QUINCENA ACTUAL ──
+    let ibcQ = 0, diasT = 0, baseDeducible = 0;
+    let horasTot = 0, horasOrdD = 0, horasOrdN = 0, horasExtD = 0, horasExtN = 0, horasDomD = 0, horasDomN = 0, horasEdd = 0, horasEdn = 0;
+    const db = window.db || [];
+
+    const lines = db.map(r => {
+      ibcQ += r.pagoSalarial;
       if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
       if (r.pagaTransporte) diasT++;
-      let desglose = Object.entries(r.desglose || {}).map(([k,v]) =>
-        `  • ${labelsH[k]||k}: ${parseFloat(v.h).toFixed(2)}h = ${fmt.format(v.v)}`
+      const d = r.desglose || {};
+      horasOrdD += parseFloat(d.ordD?.h||0); horasOrdN += parseFloat(d.ordN?.h||0);
+      horasExtD += parseFloat(d.extD?.h||0); horasExtN += parseFloat(d.extN?.h||0);
+      horasDomD += parseFloat(d.domD?.h||0); horasDomN += parseFloat(d.domN?.h||0);
+      horasEdd  += parseFloat(d.edd?.h||0);  horasEdn  += parseFloat(d.edn?.h||0);
+      horasTot  += Object.entries(d).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
+      const desglose = Object.entries(d).map(([k,v])=>
+        `    • ${labelsH[k]||k}: ${parseFloat(v.h).toFixed(2)}h = ${fmt.format(v.v)}`
       ).join('\n');
-      let horario = (r.tipo==='NORMAL'&&r.rawHoras) ? ` | Horario: ${r.rawHoras.hI}–${r.rawHoras.hF}${r.rawHoras.hBO?` (descanso ${r.rawHoras.hBO}–${r.rawHoras.hBI})`:''}` : '';
-      return `Fecha: ${r.fecha} | Estado: ${labelsTipo[r.tipo]||r.tipo}${r.diag?' ('+r.diag+')':''}${horario}\n  Pago bruto: ${fmt.format(r.pagoSalarial)}\n${desglose}`;
+      const horario = (r.tipo==='NORMAL'&&r.rawHoras) ? ` | ${r.rawHoras.hI}–${r.rawHoras.hF}${r.rawHoras.hBO?` (descanso ${r.rawHoras.hBO}–${r.rawHoras.hBI})`:''}` : '';
+      return `  [${r.fecha}] ${labelsTipo[r.tipo]||r.tipo}${r.diag?' — '+r.diag:''}${horario}\n  Pago: ${fmt.format(r.pagoSalarial)}\n${desglose}`;
     });
 
-    const tr = (window.cfg.auxTranspMensual / 30) * diasT;
+    const tr = (cfg.auxTranspMensual / 30) * diasT;
     const de = baseDeducible * 0.08;
-    const neto = ibc + tr - de;
+    const neto = ibcQ + tr - de;
+    const diasRestantes = Math.max(15 - db.length, 0);
+    const promDia = db.length > 0 ? ibcQ / db.length : 0;
+    const ibcProy = ibcQ + promDia * diasRestantes;
+    const trProy = (cfg.auxTranspMensual / 30) * Math.min(diasT + diasRestantes, 15);
+    const deProy = ibcProy * 0.08;
+    const netoProy = ibcProy + trProy - deProy;
 
-    return `QUINCENA ACTUAL — ${window.db.length} registros
-
-CONFIGURACIÓN LABORAL:
-- Valor hora ordinaria: ${fmt.format(window.cfg.hora)}
-- Recargo nocturno: ${window.cfg.rn}%
-- Dominical/Festivo: ${window.cfg.dom}%
-- Extra diurna: ${window.cfg.hed}% | Extra nocturna: ${window.cfg.hen}%
-- Auxilio transporte mensual: ${fmt.format(window.cfg.auxTranspMensual)}
+    const quincenaSection = db.length === 0
+      ? 'QUINCENA ACTUAL: Sin registros aún.'
+      : `QUINCENA ACTUAL — ${db.length} de 15 días registrados | Faltan: ${diasRestantes}
 
 REGISTROS DETALLADOS:
 ${lines.join('\n\n')}
 
-TOTALES:
-- IBC (salarial bruto): ${fmt.format(ibc)}
-- Auxilio de transporte: ${fmt.format(tr)} (${diasT} días con transporte)
-- Deducciones salud+pensión (8% sobre ${fmt.format(baseDeducible)}): -${fmt.format(de)}
-- NETO A RECIBIR: ${fmt.format(neto)}`;
+RESUMEN DE HORAS ACUMULADAS:
+- Ordinarias diurnas: ${horasOrdD.toFixed(2)}h
+- Recargo nocturno: ${horasOrdN.toFixed(2)}h
+- Extra diurna: ${horasExtD.toFixed(2)}h
+- Extra nocturna: ${horasExtN.toFixed(2)}h
+- Dominical/Festivo diurno: ${horasDomD.toFixed(2)}h
+- Dominical/Festivo nocturno: ${horasDomN.toFixed(2)}h
+- Extra dominical diurno: ${horasEdd.toFixed(2)}h
+- Extra dominical nocturno: ${horasEdn.toFixed(2)}h
+- TOTAL HORAS: ${horasTot.toFixed(2)}h
+
+TOTALES QUINCENA ACTUAL:
+- IBC bruto acumulado: ${fmt.format(ibcQ)}
+- Auxilio de transporte (${diasT} días): ${fmt.format(tr)}
+- Deducciones salud+pensión (8%): -${fmt.format(de)}
+- NETO ACTUAL: ${fmt.format(neto)}
+
+PROYECCIÓN A 15 DÍAS (basada en promedio ${fmt.format(promDia)}/día):
+- IBC proyectado: ${fmt.format(ibcProy)}
+- Transporte proyectado: ${fmt.format(trProy)}
+- Deducciones proyectadas: -${fmt.format(deProy)}
+- NETO PROYECTADO: ${fmt.format(netoProy)}`;
+
+    // ── 3. HISTORIAL DE QUINCENAS ANTERIORES ──
+    const hist = window.historialDB || [];
+    let histSection = 'HISTORIAL DE QUINCENAS ANTERIORES: Sin quincenas cerradas aún.';
+    if (hist.length > 0) {
+      const histLines = hist.map(h => {
+        let hIbc = 0, hDiasT = 0, hBaseD = 0, hHoras = 0;
+        (h.registros || []).forEach(r => {
+          hIbc += r.pagoSalarial;
+          if (r.tipo !== 'INCAPACIDAD') hBaseD += r.pagoSalarial;
+          if (r.pagaTransporte) hDiasT++;
+          hHoras += Object.entries(r.desglose||{}).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
+        });
+        const hTr = (cfg.auxTranspMensual / 30) * hDiasT;
+        const hDe = hBaseD * 0.08;
+        return `  Período: ${h.desde} al ${h.hasta} | Días: ${(h.registros||[]).length} | Horas: ${hHoras.toFixed(1)}h\n  IBC: ${fmt.format(hIbc)} | Transporte: ${fmt.format(hTr)} | Deducciones: -${fmt.format(hDe)} | NETO: ${fmt.format(h.neto||hIbc+hTr-hDe)}`;
+      });
+      histSection = `HISTORIAL DE QUINCENAS ANTERIORES — ${hist.length} quincenas cerradas:\n${histLines.join('\n\n')}`;
+
+      // Estadísticas históricas
+      const netoPromHist = hist.reduce((a,h)=>a+(h.neto||0),0) / hist.length;
+      const mejorQuincena = hist.reduce((a,h)=>(h.neto||0)>(a.neto||0)?h:a, hist[0]);
+      histSection += `\n\nESTADÍSTICAS HISTÓRICAS:
+- Promedio neto por quincena: ${fmt.format(netoPromHist)}
+- Mejor quincena: ${mejorQuincena.desde} al ${mejorQuincena.hasta} con ${fmt.format(mejorQuincena.neto||0)}
+- Total acumulado histórico: ${fmt.format(hist.reduce((a,h)=>a+(h.neto||0),0))}`;
+    }
+
+    return `════════════════════════════════════
+DATOS COMPLETOS DE MI NÓMINA — App de Andrés Troconis
+════════════════════════════════════
+
+${cfgSection}
+
+════════════════════════════════════
+${quincenaSection}
+
+════════════════════════════════════
+${histSection}
+════════════════════════════════════`;
   }
 
   function buildSystemPrompt() {
-    return `Eres un asistente experto en nómina laboral colombiana, integrado dentro de la app "Mi Nómina" de Andrés Troconis. Tu rol es analizar los datos reales de su quincena y responder preguntas con precisión, claridad y un tono cercano pero profesional.
+    return `Eres un asistente experto en nómina laboral colombiana, integrado dentro de la app "Mi Nómina" de Andrés Troconis. Tienes acceso COMPLETO a todos sus datos: configuración salarial, cada registro de la quincena actual con su desglose hora por hora, proyecciones, y el historial completo de todas las quincenas cerradas.
 
-Tienes acceso completo a todos los registros de la quincena actual: fechas, tipos de día, horas trabajadas por categoría (ordinarias, nocturnas, extras, dominicales), pagos individuales y totales.
+CAPACIDADES:
+- Puedes responder sobre cualquier dato de la app: horas trabajadas, pagos por tipo, deducciones, transporte, proyecciones, comparaciones entre quincenas, tendencias históricas, días festivos, etc.
+- Puedes hacer cálculos sobre los datos: cuánto gana por tipo de hora, qué porcentaje representan las extras, cuál fue su mejor quincena, etc.
+- Puedes dar recomendaciones basadas en los patrones que ves en los datos.
 
 REGLAS:
-- Responde siempre en español
-- Responde completo y no cortes respuestas importantes. Si haces análisis de ritmo, proyección, totales o recomendaciones, incluye la explicación completa en una sola respuesta. Evita terminar con frases inconclusas.
-- Usa números exactos del contexto cuando respondas (no inventes cifras)
-- Si el usuario pregunta algo que no está en los datos, díselo claramente
-- Puedes hacer observaciones proactivas útiles: "noto que trabajaste muchos festivos", "tus horas extras representan X% de tu ingreso", etc.
-- Cuando menciones valores en pesos, usa formato colombiano (ej: $1.234.567)
-- Puedes usar emojis con moderación para hacer la respuesta más escaneable
-- Nunca termines la respuesta a mitad de una idea, lista o cálculo. Si necesitas resumir, prioriza cerrar bien la respuesta antes que extenderte.
-- NO uses tablas markdown, solo texto y listas con guiones o bullets simples`;
+- Responde siempre en español con tono cercano pero profesional
+- Usa SIEMPRE los números exactos del contexto. Nunca inventes cifras.
+- Si algo no está en los datos, dilo claramente.
+- Formato colombiano para valores: $1.234.567
+- Emojis con moderación para hacer la respuesta escaneable
+- Nunca cortes una respuesta a mitad. Cierra bien cada idea antes de terminar.
+- NO uses tablas markdown, solo texto con bullets o guiones
+- Si el usuario saluda o hace preguntas generales, responde amablemente y ofrece lo que puedes analizar de sus datos`;
   }
 
   async function sendChat() {
