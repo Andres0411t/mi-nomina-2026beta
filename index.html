@@ -2319,22 +2319,16 @@ ${histSection}
   }
 
   function buildSystemPrompt() {
-    return `Eres un asistente experto en nómina laboral colombiana, integrado dentro de la app "Mi Nómina" de Andrés Troconis. Tienes acceso COMPLETO a todos sus datos: configuración salarial, cada registro de la quincena actual con su desglose hora por hora, proyecciones, y el historial completo de todas las quincenas cerradas.
-
-CAPACIDADES:
-- Puedes responder sobre cualquier dato de la app: horas trabajadas, pagos por tipo, deducciones, transporte, proyecciones, comparaciones entre quincenas, tendencias históricas, días festivos, etc.
-- Puedes hacer cálculos sobre los datos: cuánto gana por tipo de hora, qué porcentaje representan las extras, cuál fue su mejor quincena, etc.
-- Puedes dar recomendaciones basadas en los patrones que ves en los datos.
+    return `Eres un asistente experto en nómina laboral colombiana dentro de la app "Mi Nómina" de Andrés Troconis. Tienes acceso completo a sus datos: horas, pagos, deducciones, proyecciones e historial.
 
 REGLAS:
-- Responde siempre en español con tono cercano pero profesional
-- Usa SIEMPRE los números exactos del contexto. Nunca inventes cifras.
-- Si algo no está en los datos, dilo claramente.
-- Formato colombiano para valores: $1.234.567
-- Emojis con moderación para hacer la respuesta escaneable
-- Nunca cortes una respuesta a mitad. Cierra bien cada idea antes de terminar.
-- NO uses tablas markdown, solo texto con bullets o guiones
-- Si el usuario saluda o hace preguntas generales, responde amablemente y ofrece lo que puedes analizar de sus datos`;
+- Responde en español, tono directo y cercano
+- Usa los números exactos del contexto, nunca inventes cifras
+- Formato colombiano: $1.234.567
+- Respuestas CORTAS y COMPLETAS: ve al grano, no des rodeos, pero no dejes ideas cortadas
+- Máximo 4-6 bullets o 3-4 oraciones por respuesta. Si hay mucho que decir, prioriza lo más importante
+- Sin tablas markdown, solo bullets o guiones
+- Emojis solo cuando aporten claridad`;
   }
 
   async function sendChat() {
@@ -2358,9 +2352,15 @@ REGLAS:
       return `${rol}: ${m.content}`;
     }).join('\n\n');
 
-    // API key embebida — llamada directa a Gemini (sin servidor intermediario)
-    const GEMINI_API_KEY = document.getElementById('apiKeyInput')?.value?.trim() || 'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug';
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // Dos API keys y dos modelos con fallback automático
+    const API_KEY_1 = document.getElementById('apiKeyInput')?.value?.trim() || 'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug';
+    const API_KEY_2 = 'AIzaSyAiJH3L0R3RFrXIhJxEipZnEHzRn3zw6BE';
+    const MODELS = [
+      { model: 'gemini-2.5-flash', key: API_KEY_1 },
+      { model: 'gemini-2.5-flash-lite', key: API_KEY_1 },
+      { model: 'gemini-2.5-flash', key: API_KEY_2 },
+      { model: 'gemini-2.5-flash-lite', key: API_KEY_2 },
+    ];
 
     // Construir contents correctamente para Gemini (user/model alternados)
     const contents = [];
@@ -2378,31 +2378,49 @@ REGLAS:
       contents.push({ role: 'user', parts: [{ text: msg }] });
     }
 
-    try {
-      const res = await fetch(GEMINI_URL, {
+    async function tryGemini(model, key) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: { temperature: 0.4, maxOutputTokens: 2000 }
-        })
+        body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 1200 } })
       });
       if (!res.ok) {
-        let errMsg = `Error ${res.status}`;
-        try { const errData = await res.json(); errMsg = `Error ${res.status}: ${errData?.error?.message || res.statusText}`; } catch(_) {}
-        throw new Error(errMsg);
+        const errData = await res.json().catch(() => ({}));
+        const status = res.status;
+        // Solo hacer fallback en 429 (cuota) y 404 (modelo no encontrado)
+        if (status === 429 || status === 404 || status === 503) {
+          throw new Error(`FALLBACK:${status}`);
+        }
+        throw new Error(`Error ${status}: ${errData?.error?.message || res.statusText}`);
       }
       const data = await res.json();
-      const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'Sin respuesta. Intenta de nuevo.';
+      return data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'Sin respuesta. Intenta de nuevo.';
+    }
+
+    try {
+      let reply = null;
+      let lastErr = null;
+      for (const { model, key } of MODELS) {
+        try {
+          reply = await tryGemini(model, key);
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (!e.message.startsWith('FALLBACK:')) throw e; // error real, no intentar más
+          // si es fallback (429/404/503), intentar siguiente
+        }
+      }
+      if (!reply) throw lastErr;
       chatHistory.push({ role: 'assistant', content: reply });
       removeThinking();
       appendAIMsg(reply);
     } catch (err) {
       console.error('Gemini AI error:', err);
       removeThinking();
-      const isCorsError = err.message === 'Failed to fetch' || err.message.includes('NetworkError') || err.message.includes('CORS');
-      if (isCorsError) {
-        appendAIMsg('⚠️ Error de red: El archivo está abierto localmente (file://). Sube el archivo a un servidor o usa Live Server en VS Code.');
+      const msg429 = err.message.includes('FALLBACK:429') || err.message.includes('429');
+      if (msg429) {
+        appendAIMsg('⚠️ Cuota agotada en todos los modelos. Espera unos minutos e intenta de nuevo.');
       } else {
         appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message}. Intenta de nuevo.`);
       }
