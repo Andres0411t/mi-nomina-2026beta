@@ -1252,9 +1252,12 @@
     font-weight: 600;
   }
 
-  /* ── Mobile form overflow fix v2 ── */
+  /* ── Mobile form overflow fix v3 ── */
   @media (max-width: 600px) {
-    #registro .card,
+    #registro .card {
+      overflow: hidden !important;
+    }
+
     #formTurno,
     #formTurno .form-row,
     #formTurno .form-group,
@@ -1266,13 +1269,10 @@
       width: 100% !important;
     }
 
-    #formTurno .form-row {
-      overflow: hidden;
-    }
-
     #formTurno .form-row.col2 {
       grid-template-columns: minmax(0, 1fr) !important;
-      gap: .95rem !important;
+      gap: 1rem !important;
+      overflow: visible !important;
     }
 
     #formTurno .inp,
@@ -1287,29 +1287,48 @@
       box-sizing: border-box !important;
     }
 
+    #formTurno input[type="date"].inp {
+      inline-size: 100% !important;
+      max-inline-size: 100% !important;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
     #secHoras {
+      padding: .9rem .75rem !important;
       overflow: hidden !important;
     }
 
     #secHoras .form-row.col4 {
+      display: grid !important;
       grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      column-gap: .45rem !important;
-      row-gap: .85rem !important;
+      column-gap: .9rem !important;
+      row-gap: 1rem !important;
+      overflow: visible !important;
     }
 
     #secHoras .form-label {
-      font-size: .52rem !important;
-      letter-spacing: .055em !important;
+      font-size: .48rem !important;
+      letter-spacing: .045em !important;
       line-height: 1.15 !important;
-      margin-bottom: .35rem !important;
-      white-space: normal !important;
-      overflow-wrap: anywhere !important;
-      word-break: normal !important;
+      margin-bottom: .32rem !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
     }
 
     #secHoras .inp {
-      padding: .62rem .38rem !important;
-      min-height: 54px !important;
+      padding: .52rem .32rem !important;
+      min-height: 48px !important;
+      height: 48px !important;
+      font-size: 14px !important;
+    }
+  }
+
+  @media (max-width: 380px) {
+    #secHoras .form-row.col4 {
+      grid-template-columns: minmax(0, 1fr) !important;
+      row-gap: .85rem !important;
     }
   }
 </style>
