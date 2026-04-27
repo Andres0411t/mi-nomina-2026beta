@@ -341,10 +341,11 @@
     display: block;
     margin-bottom: .5rem;
   }
-  .form-group { margin-bottom: 1.25rem; }
-  .form-row { display: grid; gap: 1.25rem; }
-  .form-row.col2 { grid-template-columns: 1fr 1fr; }
-  .form-row.col4 { grid-template-columns: repeat(4, 1fr); }
+  .form-group { margin-bottom: 1.25rem; min-width: 0; }
+  .form-row { display: grid; gap: 1.25rem; min-width: 0; }
+  .form-row > * { min-width: 0; }
+  .form-row.col2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .form-row.col4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
   @media(max-width: 640px) {
     .form-row.col2, .form-row.col4 { grid-template-columns: 1fr 1fr; }
@@ -358,6 +359,30 @@
   @media(max-width: 600px) {
     .form-row { gap: .75rem; }
     .form-row.col2, .form-row.col4 { grid-template-columns: 1fr 1fr; }
+  }
+
+  (max-width: 600px) {
+    .form-row { gap: .75rem; }
+    .form-row.col2, .form-row.col4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .form-label {
+      font-size: .6rem;
+      letter-spacing: .09em;
+      line-height: 1.25;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .form-row.col2 .inp,
+    .form-row.col4 .inp,
+    select.inp,
+    input[type="date"].inp,
+    input[type="time"].inp {
+      min-width: 0;
+      width: 100%;
+    }
+    select.inp {
+      background-position: right .65rem center;
+      padding-right: 1.85rem;
+    }
   }
 
   .time-block {
@@ -1841,9 +1866,19 @@
   }
 
   // Restore saved theme on load
-  try {
-    if (localStorage.getItem('nomina_theme') === 'light') { lightMode = true; applyTheme(true); }
-  } catch(e) {}
+  function getSavedThemeMode() {
+    try { return localStorage.getItem('nomina_theme') === 'light'; }
+    catch(e) { return false; }
+  }
+
+  lightMode = getSavedThemeMode();
+  applyTheme(lightMode);
+
+  window.addEventListener('pageshow', () => {
+    lightMode = getSavedThemeMode();
+    applyTheme(lightMode);
+    if (myChart) renderAll();
+  });
 
   function toggleDarkMode() {
     lightMode = !lightMode;
