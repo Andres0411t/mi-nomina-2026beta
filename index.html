@@ -67,6 +67,13 @@
     background: rgba(14,14,16,0.96);
     backdrop-filter: blur(20px);
     padding: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+  }
+  #authContainer.visible {
+    opacity: 1;
+    pointer-events: all;
   }
   .auth-card {
     background: var(--surface);
@@ -392,6 +399,21 @@
       width: 100%;
     }
   }
+  /* Inputs de hora más compactos */
+  .time-block input[type="time"].inp {
+    padding: .5rem .6rem;
+    font-size: .8rem;
+    border-width: 1px;
+    border-radius: 8px;
+    min-width: 0;
+    width: 100%;
+  }
+  @media(max-width: 600px) {
+    .time-block input[type="time"].inp {
+      padding: .45rem .4rem;
+      font-size: 14px !important;
+    }
+  }
 
   .diag-block {
     background: var(--danger-dim);
@@ -445,6 +467,51 @@
     white-space: nowrap;
   }
   .reg-actions { display: flex; gap: 1rem; margin-top: .35rem; }
+
+  /* ── Desglose expandible ── */
+  .reg-desglose {
+    display: none;
+    margin-top: .85rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--border);
+    width: 100%;
+    animation: slideUp .2s ease both;
+  }
+  .reg-desglose.open { display: block; }
+  .reg-item { flex-wrap: wrap; }
+  .reg-item-main { display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%; }
+  .desglose-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .3rem 0;
+    font-size: .78rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .desglose-row:last-child { border-bottom: none; }
+  .desglose-label { color: var(--muted); font-weight: 500; }
+  .desglose-horas { font-family: var(--font-mono); color: var(--muted); font-size: .72rem; margin: 0 .75rem; }
+  .desglose-valor { font-family: var(--font-serif); font-weight: 600; color: var(--accent); font-size: .82rem; }
+  .toggle-desglose {
+    font-size: .6rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 0;
+    margin-top: .35rem;
+    transition: color .15s;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+  }
+  .toggle-desglose:hover { color: var(--accent); }
+  .toggle-desglose .arrow { transition: transform .2s; display: inline-block; }
+  .toggle-desglose.open .arrow { transform: rotate(180deg); }
+
   .reg-action-btn {
     font-size: .65rem;
     font-weight: 700;
@@ -1902,11 +1969,11 @@
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       window.currentUser = user;
-      document.getElementById('authContainer').classList.add('hidden');
+      document.getElementById('authContainer').classList.remove('visible');
       await syncFromCloud();
     } else {
       window.currentUser = null;
-      document.getElementById('authContainer').classList.remove('hidden');
+      document.getElementById('authContainer').classList.add('visible');
     }
   });
 
@@ -2498,19 +2565,40 @@ REGLAS:
         if (r.rawHoras.hBO && r.rawHoras.hBI) timeStr += ` · ☕ ${r.rawHoras.hBO}–${r.rawHoras.hBI}`;
       }
 
+      const labelsDesglose = { ordD:'H. Ordinaria Diurna', ordN:'Recargo Nocturno', extD:'Extra Diurna', extN:'Extra Nocturna', domD:'Dom/Fest Diurno', domN:'Dom/Fest Nocturno', edd:'Extra Dom. Diurno', edn:'Extra Dom. Nocturno', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
+      const desgloseKeys = Object.keys(r.desglose || {});
+      const hasDesglose = desgloseKeys.length > 0;
+      const desgloseId = `dsg_${r.fecha.replace(/-/g,'')}`;
+
+      let desgloseHtml = '';
+      if (hasDesglose) {
+        desgloseHtml = desgloseKeys.map(k => {
+          const d = r.desglose[k];
+          return `<div class="desglose-row">
+            <span class="desglose-label">${labelsDesglose[k]||k}</span>
+            <span class="desglose-horas">${parseFloat(d.h).toFixed(2)}h</span>
+            <span class="desglose-valor">${format.format(d.v)}</span>
+          </div>`;
+        }).join('');
+      }
+
       list.innerHTML += `<div class="reg-item ${colorClass}">
-        <div>
-          <div class="reg-date">${r.fecha}</div>
-          <div class="reg-type">${typeLabel}</div>
-          ${timeStr ? `<div class="reg-time">${timeStr}</div>` : ''}
-        </div>
-        <div style="text-align:right;">
-          <div class="reg-amount">${format.format(r.pagoSalarial)}</div>
-          <div class="reg-actions">
-            <button onclick="openEditModal('${r.fecha}')" class="reg-action-btn edit">Editar</button>
-            <button onclick="deleteReg('${r.fecha}')" class="reg-action-btn del">Borrar</button>
+        <div class="reg-item-main">
+          <div>
+            <div class="reg-date">${r.fecha}</div>
+            <div class="reg-type">${typeLabel}</div>
+            ${timeStr ? `<div class="reg-time">${timeStr}</div>` : ''}
+            ${hasDesglose ? `<button class="toggle-desglose" id="btn_${desgloseId}" onclick="toggleDesglose('${desgloseId}')"><span class="arrow">▾</span> Ver desglose</button>` : ''}
+          </div>
+          <div style="text-align:right;">
+            <div class="reg-amount">${format.format(r.pagoSalarial)}</div>
+            <div class="reg-actions">
+              <button onclick="openEditModal('${r.fecha}')" class="reg-action-btn edit">Editar</button>
+              <button onclick="deleteReg('${r.fecha}')" class="reg-action-btn del">Borrar</button>
+            </div>
           </div>
         </div>
+        ${hasDesglose ? `<div class="reg-desglose" id="${desgloseId}">${desgloseHtml}</div>` : ''}
       </div>`;
 
       ibc += r.pagoSalarial;
@@ -2545,6 +2633,16 @@ REGLAS:
     for (let k in sumas) {
       table.innerHTML += `<tr><td style="font-weight:600;">${labels[k]||k}</td><td class="center">${sumas[k].h.toFixed(2)}</td><td class="right">${format.format(sumas[k].v)}</td></tr>`;
     }
+  }
+
+  function toggleDesglose(id) {
+    const panel = document.getElementById(id);
+    const btn = document.getElementById('btn_' + id);
+    if (!panel || !btn) return;
+    const isOpen = panel.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.querySelector('.arrow').style.transform = isOpen ? 'rotate(180deg)' : '';
+    btn.innerHTML = `<span class="arrow" style="transform:${isOpen?'rotate(180deg)':''};display:inline-block;transition:transform .2s;">▾</span> ${isOpen ? 'Ocultar desglose' : 'Ver desglose'}`;
   }
 
   function renderFestivos() {
