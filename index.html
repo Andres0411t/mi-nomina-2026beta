@@ -125,9 +125,10 @@
   .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
   .inp::placeholder { color: var(--muted); }
   @media(max-width: 480px) {
-    .inp, select.inp, input[type="time"].inp, input[type="date"].inp {
+    .inp, select.inp, input[type="date"].inp {
       font-size: 16px !important;
     }
+    /* Los time inputs del time-block tienen su propio tamaño compacto */
   }
 
   /* ── Buttons ── */
@@ -379,39 +380,33 @@
     margin: 1.25rem 0;
     border-left: 3px solid var(--accent);
   }
-  @media(max-width: 600px) {
-    .time-block {
-      padding: 1rem;
-    }
-    .time-block .form-row {
-      gap: .85rem !important;
-    }
-    .time-block .form-label {
-      font-size: .54rem;
-      letter-spacing: .065em;
-      line-height: 1.25;
-      min-height: 1.35em;
-    }
-    .time-block .inp {
-      padding: .7rem .5rem;
-      font-size: 16px !important;
-      min-width: 0;
-      width: 100%;
-    }
-  }
-  /* Inputs de hora más compactos */
+  /* Inputs de hora compactos */
   .time-block input[type="time"].inp {
-    padding: .5rem .6rem;
-    font-size: .8rem;
+    padding: .4rem .55rem;
+    font-size: .78rem;
     border-width: 1px;
     border-radius: 8px;
     min-width: 0;
     width: 100%;
+    height: auto;
   }
-  @media(max-width: 600px) {
+  @media(max-width: 640px) {
+    .time-block { padding: .75rem; }
+    .time-block .form-row.col4 {
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem !important;
+    }
+    .time-block .form-group { margin-bottom: 0; }
+    .time-block .form-label {
+      font-size: .56rem;
+      letter-spacing: .05em;
+      margin-bottom: .25rem;
+    }
     .time-block input[type="time"].inp {
-      padding: .45rem .4rem;
-      font-size: 14px !important;
+      padding: .35rem .4rem;
+      font-size: 13px !important;
+      border-width: 1px;
+      height: 36px;
     }
   }
 
