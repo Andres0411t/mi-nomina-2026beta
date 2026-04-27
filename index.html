@@ -2359,8 +2359,8 @@ REGLAS:
     }).join('\n\n');
 
     // API key embebida — llamada directa a Gemini (sin servidor intermediario)
-    const GEMINI_API_KEY = document.getElementById('apiKeyInput')?.value?.trim() || 'AIzaSyAiJH3L0R3RFrXIhJxEipZnEHzRn3zw6BE';
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const GEMINI_API_KEY = document.getElementById('apiKeyInput')?.value?.trim() || 'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug';
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     try {
       const res = await fetch(GEMINI_URL, {
