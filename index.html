@@ -2278,19 +2278,117 @@ ${hist.length>0?`promedio=${promHist} mejor=${mejorHist}`:''}`;
   }
 
   function buildSystemPrompt() {
-    return `Eres un asistente experto en nómina laboral colombiana dentro de la app "Mi Nómina" de Andrés Troconis. Tienes acceso completo a sus datos: horas, pagos, deducciones, proyecciones e historial.
-
-REGLAS:
-- Responde en español, tono directo y cercano
-- Usa los números exactos del contexto, nunca inventes cifras
-- Formato colombiano: $1.234.567
-- Respuestas CORTAS y COMPLETAS: ve al grano, no des rodeos, pero no dejes ideas cortadas
-- Máximo 4-6 bullets o 3-4 oraciones por respuesta. Si hay mucho que decir, prioriza lo más importante
-- Sin tablas markdown, solo bullets o guiones
-- Emojis solo cuando aporten claridad`;
+    return `Asistente de nómina colombiana. Usa solo los datos del contexto. Responde en español, corto y directo, formato $1.234.567, sin tablas.`;
   }
 
-  async function sendChat() {
+  // Contexto inteligente: solo manda lo que la pregunta necesita
+  function buildContextForQuery(msg) {
+    const q = msg.toLowerCase();
+    const f = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+    const cfg = window.cfg || {};
+    const db = window.db || [];
+    const hist = window.historialDB || [];
+
+    // Detectar qué necesita la pregunta
+    const necesitaDias    = /fecha|día|turno|registro|horario|específic|cuál día|qué día/.test(q);
+    const necesitaHoras   = /hora|nocturna|diurna|extra|dominical|festiv|recargo/.test(q);
+    const necesitaTotales = /total|cuánto|gané|neto|bruto|deduc|transport|salud|pensión|pago|quincena|proyec/.test(q);
+    const necesitaHist    = /historial|anterior|quincena pasada|promedio|mejor|acumulado|comparar|antes/.test(q);
+    const necesitaCfg     = /valor hora|configuración|porcentaje|tarifa|salario|sueldo/.test(q);
+
+    // Si no detecta nada específico, manda resumen básico
+    const esPreguntaGeneral = !necesitaDias && !necesitaHoras && !necesitaTotales && !necesitaHist && !necesitaCfg;
+
+    let partes = [];
+
+    // Siempre: estado general breve
+    let ibcQ=0, diasT=0, baseD=0, tot=0;
+    let ordD=0,ordN=0,extD=0,extN=0,domD=0,domN=0,edd=0,edn=0;
+    db.forEach(r => {
+      ibcQ+=r.pagoSalarial;
+      if(r.tipo!=='INCAPACIDAD') baseD+=r.pagoSalarial;
+      if(r.pagaTransporte) diasT++;
+      const d=r.desglose||{};
+      ordD+=parseFloat(d.ordD?.h||0); ordN+=parseFloat(d.ordN?.h||0);
+      extD+=parseFloat(d.extD?.h||0); extN+=parseFloat(d.extN?.h||0);
+      domD+=parseFloat(d.domD?.h||0); domN+=parseFloat(d.domN?.h||0);
+      edd+=parseFloat(d.edd?.h||0);   edn+=parseFloat(d.edn?.h||0);
+      tot+=Object.entries(d).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
+    });
+    const tr=(cfg.auxTranspMensual/30)*diasT;
+    const de=baseD*0.08;
+    const neto=ibcQ+tr-de;
+    const restantes=Math.max(15-db.length,0);
+
+    partes.push(`Quincena: ${db.length}/15 días | NETO=${f.format(neto)} | IBC=${f.format(ibcQ)} | Transp=${f.format(tr)} | Deduc=-${f.format(de)} | Faltan ${restantes} días`);
+
+    // Horas totales si pregunta sobre horas o es general
+    if (necesitaHoras || esPreguntaGeneral) {
+      const horasParts = [];
+      if(ordD) horasParts.push(`ordD=${ordD.toFixed(1)}`);
+      if(ordN) horasParts.push(`ordN=${ordN.toFixed(1)}`);
+      if(extD) horasParts.push(`extD=${extD.toFixed(1)}`);
+      if(extN) horasParts.push(`extN=${extN.toFixed(1)}`);
+      if(domD) horasParts.push(`domD=${domD.toFixed(1)}`);
+      if(domN) horasParts.push(`domN=${domN.toFixed(1)}`);
+      if(edd)  horasParts.push(`edd=${edd.toFixed(1)}`);
+      if(edn)  horasParts.push(`edn=${edn.toFixed(1)}`);
+      partes.push(`Horas totales: ${horasParts.join(' ')} | TOTAL=${tot.toFixed(1)}`);
+    }
+
+    // Detalle por día solo si pregunta por días específicos o horas
+    if (necesitaDias || necesitaHoras) {
+      const diasLines = db.map(r => {
+        const d=r.desglose||{};
+        const vOrdD=parseFloat(d.ordD?.h||0),vOrdN=parseFloat(d.ordN?.h||0);
+        const vExtD=parseFloat(d.extD?.h||0),vExtN=parseFloat(d.extN?.h||0);
+        const vDomD=parseFloat(d.domD?.h||0),vDomN=parseFloat(d.domN?.h||0);
+        const vEdd=parseFloat(d.edd?.h||0),vEdn=parseFloat(d.edn?.h||0);
+        const tipo=r.tipo==='NORMAL'?'T':(r.tipo==='COMPENSATORIO'?'C':(r.tipo==='INCAPACIDAD'?'I':'NL'));
+        const p=[];
+        if(vOrdD) p.push(`ordD=${vOrdD.toFixed(1)}`);
+        if(vOrdN) p.push(`ordN=${vOrdN.toFixed(1)}`);
+        if(vExtD) p.push(`extD=${vExtD.toFixed(1)}`);
+        if(vExtN) p.push(`extN=${vExtN.toFixed(1)}`);
+        if(vDomD) p.push(`domD=${vDomD.toFixed(1)}`);
+        if(vDomN) p.push(`domN=${vDomN.toFixed(1)}`);
+        if(vEdd)  p.push(`edd=${vEdd.toFixed(1)}`);
+        if(vEdn)  p.push(`edn=${vEdn.toFixed(1)}`);
+        return `${r.fecha} ${tipo} ${p.join(' ')} pago=${f.format(r.pagoSalarial)}`;
+      });
+      partes.push('Días:\n'+diasLines.join('\n'));
+    }
+
+    // Configuración solo si pregunta por tarifas
+    if (necesitaCfg) {
+      partes.push(`CFG: hora=${f.format(cfg.hora)} rn=${cfg.rn}% dom=${cfg.dom}% hed=${cfg.hed}% hen=${cfg.hen}% hedd=${cfg.hedd}% hend=${cfg.hend}% transp=${f.format(cfg.auxTranspMensual)}`);
+    }
+
+    // Historial solo si pregunta por quincenas anteriores
+    if (necesitaHist && hist.length > 0) {
+      const histLines = hist.slice(-5).map(h => {
+        let hIbc=0,hDiasT=0,hBaseD=0,hOrdN=0,hExtD=0,hExtN=0,hDomD=0,hDomN=0;
+        (h.registros||[]).forEach(r=>{
+          hIbc+=r.pagoSalarial;
+          if(r.tipo!=='INCAPACIDAD') hBaseD+=r.pagoSalarial;
+          if(r.pagaTransporte) hDiasT++;
+          const d=r.desglose||{};
+          hOrdN+=parseFloat(d.ordN?.h||0);
+          hExtD+=parseFloat(d.extD?.h||0); hExtN+=parseFloat(d.extN?.h||0);
+          hDomD+=parseFloat(d.domD?.h||0); hDomN+=parseFloat(d.domN?.h||0);
+        });
+        const hNeto=h.neto||(hIbc+(cfg.auxTranspMensual/30)*hDiasT-hBaseD*0.08);
+        return `${h.desde}→${h.hasta} neto=${f.format(hNeto)} dias=${(h.registros||[]).length} ordN=${hOrdN.toFixed(1)} extD=${hExtD.toFixed(1)} extN=${hExtN.toFixed(1)} dom=${(hDomD+hDomN).toFixed(1)}`;
+      });
+      const promedio = f.format(hist.reduce((a,h)=>a+(h.neto||0),0)/hist.length);
+      const mejor = f.format(Math.max(...hist.map(h=>h.neto||0)));
+      partes.push(`Historial:\n${histLines.join('\n')}\npromedio=${promedio} mejor=${mejor}`);
+    }
+
+    return partes.join('\n\n');
+  }
+
+    async function sendChat() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
     if (!msg) return;
@@ -2305,7 +2403,7 @@ REGLAS:
 
     chatHistory.push({ role: 'user', content: msg });
 
-    const context = buildNominaContext();
+    const context = buildContextForQuery(msg);
     const historialTexto = chatHistory.map(m => {
       const rol = m.role === 'assistant' ? 'Asistente' : 'Usuario';
       return `${rol}: ${m.content}`;
@@ -2316,8 +2414,8 @@ REGLAS:
     const ALL_KEYS = [
       'AIzaSyBV6gvYMJLsdZfXJ4DdYp_IWaWcAqoHHzc',
       'AIzaSyA-63uCaCbhLlDFAPl_z1ED9kjLduSnS90',
-      'AIzaSyAPrxS3FhA4nmfqvKQF84VrdTMP9Na3iMk',
       'AIzaSyAjvxox8zQAd5uJaoFJsH7DfIGusLZfSUU',
+      'AIzaSyAPrxS3FhA4nmfqvKQF84VrdTMP9Na3iMk',
       'AIzaSyC1_ZC3tx6M_IyNr4yqe_0K19MXB0hOmUU',
       'AIzaSyCeotE31cpe4lNi-mqwF1HcnV_nzr1IDGE',
       'AIzaSyBhGveR_ShbLuHhUxriiSCuim8gZqGq9WA',
@@ -2348,7 +2446,7 @@ REGLAS:
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 1200 } })
+        body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 600 } })
       });
       const status = res.status;
       if (!res.ok) {
