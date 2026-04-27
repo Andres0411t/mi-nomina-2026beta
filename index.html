@@ -2034,6 +2034,9 @@
       db: window.db, historial: window.historialDB, cfg: window.cfg
     });
   };
+
+  // Mantener servidor de IA despierto
+  setInterval(() => fetch('https://servidor-1-h0de.onrender.com/ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{}), 10 * 60 * 1000);
 </script>
 
 <script>
