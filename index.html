@@ -2360,42 +2360,52 @@ REGLAS:
 
     // API key embebida — llamada directa a Gemini (sin servidor intermediario)
     const GEMINI_API_KEY = document.getElementById('apiKeyInput')?.value?.trim() || 'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug';
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+
+    // Construir contents correctamente para Gemini (user/model alternados)
+    const contents = [];
+    const systemAndContext = `${buildSystemPrompt()}\n\nDATOS ACTUALES DE LA NÓMINA:\n${context}`;
+    const histFiltered = chatHistory.slice(0, -1);
+
+    if (histFiltered.length === 0) {
+      contents.push({ role: 'user', parts: [{ text: `${systemAndContext}\n\n---\n\nPregunta: ${msg}` }] });
+    } else {
+      contents.push({ role: 'user', parts: [{ text: `${systemAndContext}\n\n---\n\nPrimera pregunta: ${histFiltered[0].content}` }] });
+      for (let i = 1; i < histFiltered.length; i++) {
+        const role = histFiltered[i].role === 'assistant' ? 'model' : 'user';
+        contents.push({ role, parts: [{ text: histFiltered[i].content }] });
+      }
+      contents.push({ role: 'user', parts: [{ text: msg }] });
+    }
 
     try {
       const res = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: `${buildSystemPrompt()}\n\nAquí están los datos actuales de mi nómina:\n\n${context}\n\n---\n\nHistorial de conversación:\n${historialTexto}\n\nResponde únicamente al último mensaje del usuario.`
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 3000
-          }
+          contents,
+          generationConfig: { temperature: 0.4, maxOutputTokens: 2000 }
         })
       });
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(`API error ${res.status}: ${errData?.error?.message || res.statusText}`);
+        let errMsg = `Error ${res.status}`;
+        try { const errData = await res.json(); errMsg = `Error ${res.status}: ${errData?.error?.message || res.statusText}`; } catch(_) {}
+        throw new Error(errMsg);
       }
       const data = await res.json();
-      const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'No pude obtener una respuesta. Intenta de nuevo.';
+      const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'Sin respuesta. Intenta de nuevo.';
       chatHistory.push({ role: 'assistant', content: reply });
       removeThinking();
       appendAIMsg(reply);
     } catch (err) {
       console.error('Gemini AI error:', err);
       removeThinking();
-      appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message}. Intenta de nuevo.`);
+      const isCorsError = err.message === 'Failed to fetch' || err.message.includes('NetworkError') || err.message.includes('CORS');
+      if (isCorsError) {
+        appendAIMsg('⚠️ Error de red: El archivo está abierto localmente (file://). Sube el archivo a un servidor o usa Live Server en VS Code.');
+      } else {
+        appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message}. Intenta de nuevo.`);
+      }
     }
     input.disabled = false;
     document.getElementById('chatSendBtn').disabled = false;
