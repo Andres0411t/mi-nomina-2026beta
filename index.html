@@ -1664,17 +1664,24 @@
         </div>
       </div>
 
+      <!-- Barra de estado del servidor -->
+      <div id="serverStatus" style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;background:var(--accent-dim);border:1px solid rgba(201,168,76,0.2);border-radius:8px;margin-bottom:.6rem;font-size:.72rem;color:var(--accent);font-weight:600;">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite;flex-shrink:0;"></span>
+        <span id="serverStatusText">Calentando el asistente, un momento...</span>
+      </div>
+
       <!-- Input -->
       <div class="chat-input-row">
         <textarea
           id="chatInput"
           class="chat-input"
-          placeholder="Pregunta algo sobre tu nómina... ej: ¿cuánto gané en horas nocturnas?"
+          placeholder="Espera un momento mientras el asistente inicia..."
           rows="1"
           onkeydown="handleChatKey(event)"
           oninput="autoResize(this)"
+          disabled
         ></textarea>
-        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar">➤</button>
+        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar" disabled>➤</button>
       </div>
       <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:.6rem;letter-spacing:.04em;">
         El asistente conoce tus registros, horas, recargos y configuración actual
@@ -2114,7 +2121,41 @@
     });
   };
 
-  // Sin servidor intermediario — llamada directa a Gemini
+  // Despertar servidor y habilitar chat cuando esté listo
+  window.AI_URL = 'https://servidor-1-h0de.onrender.com/ai';
+  window.serverReady = false;
+
+  const setServerReady = () => {
+    if (window.serverReady) return;
+    window.serverReady = true;
+    const status = document.getElementById('serverStatus');
+    const statusText = document.getElementById('serverStatusText');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('chatSendBtn');
+    if (status) { status.style.background = 'rgba(90,173,143,0.12)'; status.style.borderColor = 'rgba(90,173,143,0.3)'; status.style.color = 'var(--success)'; }
+    if (statusText) statusText.innerHTML = '✓ Asistente listo';
+    if (chatInput) { chatInput.disabled = false; chatInput.placeholder = 'Pregunta algo sobre tu nómina...'; }
+    if (sendBtn) sendBtn.disabled = false;
+    setTimeout(() => { if (status) status.style.display = 'none'; }, 2000);
+  };
+
+  const pingServer = async () => {
+    try {
+      // Usar GET para despertar el servidor sin procesar nada
+      const res = await fetch('https://servidor-1-h0de.onrender.com/', { method: 'GET' });
+      if (res.status !== 500) setServerReady();
+    } catch(e) {
+      // Red caída, intentar igual habilitar tras timeout
+    }
+  };
+
+  pingServer();
+  const warmupInterval = setInterval(() => {
+    if (window.serverReady) { clearInterval(warmupInterval); return; }
+    pingServer();
+  }, 6000);
+  // Mantener vivo cada 9 minutos
+  setInterval(() => fetch(window.AI_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{}), 9 * 60 * 1000);
 </script>
 
 <script>
@@ -2319,23 +2360,28 @@ ${histSection}
   }
 
   function buildSystemPrompt() {
-    return `Eres un asistente experto en nómina laboral colombiana dentro de la app "Mi Nómina" de Andrés Troconis. Tienes acceso completo a sus datos: horas, pagos, deducciones, proyecciones e historial.
+    return `Eres un asistente experto en nómina laboral colombiana, integrado dentro de la app "Mi Nómina" de Andrés Troconis. Tienes acceso COMPLETO a todos sus datos: configuración salarial, cada registro de la quincena actual con su desglose hora por hora, proyecciones, y el historial completo de todas las quincenas cerradas.
+
+CAPACIDADES:
+- Puedes responder sobre cualquier dato de la app: horas trabajadas, pagos por tipo, deducciones, transporte, proyecciones, comparaciones entre quincenas, tendencias históricas, días festivos, etc.
+- Puedes hacer cálculos sobre los datos: cuánto gana por tipo de hora, qué porcentaje representan las extras, cuál fue su mejor quincena, etc.
+- Puedes dar recomendaciones basadas en los patrones que ves en los datos.
 
 REGLAS:
-- Responde en español, tono directo y cercano
-- Usa los números exactos del contexto, nunca inventes cifras
-- Formato colombiano: $1.234.567
-- Respuestas CORTAS y COMPLETAS: ve al grano, no des rodeos, pero no dejes ideas cortadas
-- Máximo 4-6 bullets o 3-4 oraciones por respuesta. Si hay mucho que decir, prioriza lo más importante
-- Sin tablas markdown, solo bullets o guiones
-- Emojis solo cuando aporten claridad`;
+- Responde siempre en español con tono cercano pero profesional
+- Usa SIEMPRE los números exactos del contexto. Nunca inventes cifras.
+- Si algo no está en los datos, dilo claramente.
+- Formato colombiano para valores: $1.234.567
+- Emojis con moderación para hacer la respuesta escaneable
+- Nunca cortes una respuesta a mitad. Cierra bien cada idea antes de terminar.
+- NO uses tablas markdown, solo texto con bullets o guiones
+- Si el usuario saluda o hace preguntas generales, responde amablemente y ofrece lo que puedes analizar de sus datos`;
   }
 
   async function sendChat() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
     if (!msg) return;
-
 
     input.value = '';
     input.style.height = 'auto';
@@ -2346,93 +2392,42 @@ REGLAS:
 
     chatHistory.push({ role: 'user', content: msg });
 
-    const context = buildNominaContext();
-    const historialTexto = chatHistory.map(m => {
+    // Solo los últimos 6 mensajes del historial para no sobrecargar el payload
+    const historialReciente = chatHistory.slice(-6).map(m => {
       const rol = m.role === 'assistant' ? 'Asistente' : 'Usuario';
       return `${rol}: ${m.content}`;
     }).join('\n\n');
 
-    // 7 API keys con fallback automático — prioritario: flash-lite para ahorrar cuota
-    const CUSTOM_KEY = document.getElementById('apiKeyInput')?.value?.trim();
-    const ALL_KEYS = [
-      'AIzaSyBV6gvYMJLsdZfXJ4DdYp_IWaWcAqoHHzc',
-      'AIzaSyC1_ZC3tx6M_IyNr4yqe_0K19MXB0hOmUU',
-      'AIzaSyCeotE31cpe4lNi-mqwF1HcnV_nzr1IDGE',
-      'AIzaSyBhGveR_ShbLuHhUxriiSCuim8gZqGq9WA',
-      'AIzaSyC6hWMNOrJ1keki1RQSETILoHxgX4UD3E0',
-      'AIzaSyCG9K6KAbxZckP196Atp00XXbdbwosFmug',
-      'AIzaSyAiJH3L0R3RFrXIhJxEipZnEHzRn3zw6BE',
-    ];
-    if (CUSTOM_KEY && !ALL_KEYS.includes(CUSTOM_KEY)) ALL_KEYS.unshift(CUSTOM_KEY);
+    const context = buildNominaContext();
+    const promptText = `${buildSystemPrompt()}\n\nDAtos de nómina:\n${context}\n\n---\nConversación reciente:\n${historialReciente}\n\nResponde solo al último mensaje del usuario.`;
 
-    // Prioridad: lite con cada key primero, luego flash normal como último recurso
-    const MODELS = [];
-    ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash-lite', key: k }));
-    ALL_KEYS.forEach(k => MODELS.push({ model: 'gemini-2.5-flash', key: k }));
-
-    // Construir contents correctamente para Gemini (user/model alternados)
-    const contents = [];
-    const systemAndContext = `${buildSystemPrompt()}\n\nDATOS ACTUALES DE LA NÓMINA:\n${context}`;
-    const histFiltered = chatHistory.slice(0, -1);
-
-    if (histFiltered.length === 0) {
-      contents.push({ role: 'user', parts: [{ text: `${systemAndContext}\n\n---\n\nPregunta: ${msg}` }] });
-    } else {
-      contents.push({ role: 'user', parts: [{ text: `${systemAndContext}\n\n---\n\nPrimera pregunta: ${histFiltered[0].content}` }] });
-      for (let i = 1; i < histFiltered.length; i++) {
-        const role = histFiltered[i].role === 'assistant' ? 'model' : 'user';
-        contents.push({ role, parts: [{ text: histFiltered[i].content }] });
-      }
-      contents.push({ role: 'user', parts: [{ text: msg }] });
-    }
-
-    async function tryGemini(model, key) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-      const res = await fetch(url, {
+    try {
+      const res = await fetch(window.AI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 1200 } })
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: promptText }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 3000 }
+        })
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const status = res.status;
-        // Solo hacer fallback en 429 (cuota) y 404 (modelo no encontrado)
-        if (status === 429 || status === 404 || status === 503) {
-          throw new Error(`FALLBACK:${status}`);
-        }
-        throw new Error(`Error ${status}: ${errData?.error?.message || res.statusText}`);
+        throw new Error(`Error ${res.status}: ${errData?.error?.message || res.statusText}`);
       }
       const data = await res.json();
-      return data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'Sin respuesta. Intenta de nuevo.';
-    }
-
-    try {
-      let reply = null;
-      let lastErr = null;
-      for (const { model, key } of MODELS) {
-        try {
-          reply = await tryGemini(model, key);
-          break;
-        } catch (e) {
-          lastErr = e;
-          if (!e.message.startsWith('FALLBACK:')) throw e; // error real, no intentar más
-          // si es fallback (429/404/503), intentar siguiente
-        }
-      }
-      if (!reply) throw lastErr;
+      const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || 'No pude obtener una respuesta. Intenta de nuevo.';
       chatHistory.push({ role: 'assistant', content: reply });
       removeThinking();
       appendAIMsg(reply);
     } catch (err) {
-      console.error('Gemini AI error:', err);
+      console.error('AI error:', err);
       removeThinking();
-      const msg429 = err.message.includes('FALLBACK:429') || err.message.includes('429');
-      if (msg429) {
-        appendAIMsg('⚠️ Cuota agotada en todos los modelos. Espera unos minutos e intenta de nuevo.');
-      } else {
-        appendAIMsg(`⚠️ Error al conectar con Gemini: ${err.message}. Intenta de nuevo.`);
-      }
+      appendAIMsg(`⚠️ Error al conectar con el asistente. Intenta de nuevo en unos segundos.`);
     }
+    input.disabled = false;
+    document.getElementById('chatSendBtn').disabled = false;
+    input.focus();
+  }
     input.disabled = false;
     document.getElementById('chatSendBtn').disabled = false;
     input.focus();
