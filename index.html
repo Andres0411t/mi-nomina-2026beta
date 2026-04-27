@@ -1,930 +1,2794 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Nómina</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Nómina · Andrés Troconis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a33;
+    --border2: #3a3a46;
+    --text: #f0efe8;
+    --muted: #7a7a8a;
+    --accent: #c9a84c;
+    --accent2: #e8c96a;
+    --accent-dim: rgba(201,168,76,0.12);
+    --accent-glow: rgba(201,168,76,0.25);
+    --danger: #e05a5a;
+    --danger-dim: rgba(224,90,90,0.1);
+    --success: #5aad8f;
+    --success-dim: rgba(90,173,143,0.1);
+    --info: #6a8fe8;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    --font-sans: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── Noise Texture ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: .6;
+  }
+
+  /* ── Auth ── */
+  #authContainer {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(14,14,16,0.96);
+    backdrop-filter: blur(20px);
+    padding: 1rem;
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 24px;
+    padding: 3rem 2.5rem;
+    max-width: 420px; width: 100%;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.08);
+    animation: slideUp .5s cubic-bezier(0.16,1,0.3,1);
+  }
+  .auth-logo {
+    font-family: var(--font-serif);
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -1px;
+    text-align: center;
+    margin-bottom: .25rem;
+  }
+  .auth-sub {
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .auth-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 2rem 0;
+  }
+
+  /* ── Inputs ── */
+  .inp {
+    width: 100%;
+    padding: .85rem 1.1rem;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: .9rem;
+    font-weight: 500;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  .inp::placeholder { color: var(--muted); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: .5rem;
+    padding: .85rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: .8rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: all .2s cubic-bezier(0.16,1,0.3,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,.06);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .btn:hover::after { opacity: 1; }
+  .btn:active { transform: scale(.97); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #1a1400;
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  .btn-primary:hover { background: var(--accent2); box-shadow: 0 6px 28px var(--accent-glow); }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+  .btn-danger {
+    background: var(--danger-dim);
+    color: var(--danger);
+    border: 1.5px solid rgba(224,90,90,0.2);
+  }
+  .btn-danger:hover { background: var(--danger); color: white; }
+
+  .btn-success {
+    background: var(--success-dim);
+    color: var(--success);
+    border: 1.5px solid rgba(90,173,143,0.2);
+  }
+  .btn-success:hover { background: var(--success); color: white; }
+
+  .btn-dark {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1.5px solid var(--border2);
+  }
+  .btn-dark:hover { background: var(--border); }
+
+  /* ── Layout ── */
+  .wrapper {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    padding: 1.5rem 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  .header-logo {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .header-sub {
+    font-size: .65rem;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: .2rem;
+  }
+  .header-actions { display: flex; align-items: center; gap: .75rem; }
+
+  .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all .2s;
+    color: var(--muted);
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 2.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .4rem;
+    overflow-x: auto;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: .75rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: .8rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all .25s;
+    white-space: nowrap;
+    min-width: 100px;
+  }
+  .nav-btn:hover { color: var(--text); background: var(--surface2); }
+  .nav-btn.active {
+    background: var(--accent);
+    color: #1a1400;
+    box-shadow: 0 2px 12px var(--accent-glow);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+  }
+  .card + .card, .card + .section-title { margin-top: 1.5rem; }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-top: 2rem;
+  }
+  .section-title::before {
+    content: '';
+    width: 3px; height: 1.1rem;
+    background: var(--accent);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Form ── */
+  .form-label {
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: .5rem;
+  }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-row { display: grid; gap: 1.25rem; }
+  .form-row.col2 { grid-template-columns: 1fr 1fr; }
+  .form-row.col4 { grid-template-columns: repeat(4, 1fr); }
+
+  @media(max-width: 640px) {
+    .form-row.col2, .form-row.col4 { grid-template-columns: 1fr 1fr; }
+  }
+  @media(max-width: 400px) {
+    .form-row.col4 { grid-template-columns: 1fr 1fr; }
+  }
+
+  .time-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin: 1.25rem 0;
+    border-left: 3px solid var(--accent);
+  }
+
+  .diag-block {
+    background: var(--danger-dim);
+    border: 1.5px solid rgba(224,90,90,0.2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  /* ── Registry Items ── */
+  .reg-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: border-color .2s, transform .15s;
+    animation: slideUp .3s ease both;
+  }
+  .reg-item:hover { border-color: var(--border2); transform: translateX(2px); }
+  .reg-item.danger { border-left: 3px solid var(--danger); }
+  .reg-item.accent { border-left: 3px solid var(--accent); }
+  .reg-item.success { border-left: 3px solid var(--success); }
+
+  .reg-date {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    letter-spacing: .05em;
+    margin-bottom: .25rem;
+  }
+  .reg-type {
+    font-weight: 600;
+    font-size: .9rem;
+    color: var(--text);
+  }
+  .reg-time {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    margin-top: .2rem;
+  }
+  .reg-amount {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .reg-actions { display: flex; gap: 1rem; margin-top: .35rem; }
+  .reg-action-btn {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color .15s;
+  }
+  .reg-action-btn.edit { color: var(--info); }
+  .reg-action-btn.edit:hover { color: #9ab5ff; }
+  .reg-action-btn.del { color: var(--danger); }
+  .reg-action-btn.del:hover { color: #ff8a8a; }
+
+  /* ── Stats ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  @media(max-width: 640px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.primary::after { background: var(--accent); }
+  .stat-card.green::after { background: var(--success); }
+  .stat-card.red::after { background: var(--danger); }
+  .stat-card.featured {
+    background: linear-gradient(135deg, #1c1700 0%, #221d00 100%);
+    border-color: var(--accent);
+    box-shadow: 0 4px 30px var(--accent-glow);
+  }
+  .stat-card.featured::after { background: var(--accent); height: 3px; }
+
+  .stat-label {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .75rem;
+  }
+  .stat-label.accent { color: var(--accent); }
+  .stat-label.green { color: var(--success); }
+  .stat-label.red { color: var(--danger); }
+
+  .stat-val {
+    font-family: var(--font-serif);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .stat-card.featured .stat-val { font-size: 2rem; color: var(--accent2); }
+
+  /* ── Table ── */
+  .table { width: 100%; border-collapse: collapse; }
+  .table thead th {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0 0 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .table thead th.right { text-align: right; }
+  .table thead th.center { text-align: center; }
+  .table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  .table tbody tr:last-child { border-bottom: none; }
+  .table tbody tr:hover { background: var(--surface2); }
+  .table td {
+    padding: .9rem 0;
+    font-size: .88rem;
+    color: var(--text);
+  }
+  .table td.center { text-align: center; font-family: var(--font-mono); color: var(--muted); }
+  .table td.right {
+    text-align: right;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* ── Chart wrapper ── */
+  .chart-wrap {
+    height: 280px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0;
+  }
+
+  /* ── Config ── */
+  .config-section-title {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media(max-width: 500px) { .config-grid { grid-template-columns: 1fr; } }
+
+  .festivos-wrap { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .festivo-tag {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    padding: .25rem .6rem;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 6px;
+  }
+
+  /* ── Historial ── */
+  .hist-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.1rem 1.25rem;
+    transition: border-color .2s;
+    margin-bottom: .75rem;
+  }
+  .hist-item:hover { border-color: var(--border2); }
+  .hist-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .5rem; }
+  .hist-action {
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color .15s;
+  }
+  .hist-action.pdf { color: var(--success); }
+  .hist-action.pdf:hover { color: #7dd9b5; }
+  .hist-action.excel { color: var(--info); }
+  .hist-action.excel:hover { color: #9ab5ff; }
+  .hist-action.eye { color: var(--accent); }
+  .hist-action.eye:hover { color: var(--accent2); }
+  .hist-action.trash { color: var(--danger); }
+  .hist-action.trash:hover { color: #ff8a8a; }
+
+  .hist-detail {
+    display: none;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .hist-detail.open { display: block; }
+  .hist-detail::-webkit-scrollbar { width: 4px; }
+  .hist-detail::-webkit-scrollbar-track { background: transparent; }
+  .hist-detail::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  /* ── Backup ── */
+  .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media(max-width:500px) { .backup-grid { grid-template-columns: 1fr; } }
+
+  /* ── Error/Alerts ── */
+  .auth-error {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--danger);
+    text-align: center;
+    margin-top: 1rem;
+    display: none;
+    padding: .75rem;
+    background: var(--danger-dim);
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Select styling ── */
+  select.inp {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7a8a' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
+  }
+  select.inp option { background: var(--surface2); color: var(--text); }
+
+  /* ── Animations ── */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .tab-content { animation: fadeIn .3s ease; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 1.75rem 0;
+  }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .2rem .6rem;
+    border-radius: 6px;
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .badge-accent { background: var(--accent-dim); color: var(--accent); }
+  .badge-success { background: var(--success-dim); color: var(--success); }
+  .badge-danger { background: var(--danger-dim); color: var(--danger); }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 6px; }
+
+  /* ── Export buttons ── */
+  .export-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 1.5rem; }
+  @media(max-width:500px) { .export-row { grid-template-columns: 1fr; } }
+
+  /* ── Light mode toggle (optional) ── */
+  .hidden { display: none !important; }
+
+  /* ── Dashboard ── */
+  .dash-hero {
+    background: linear-gradient(135deg, #1a1500 0%, #0e0e10 60%);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 40px var(--accent-glow);
+  }
+  .dash-hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .dash-hero-label {
+    font-size: .65rem; font-weight: 700; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: .5rem;
+  }
+  .dash-hero-amount {
+    font-family: var(--font-serif);
+    font-size: 3rem; font-weight: 700;
+    color: var(--accent2); line-height: 1;
+    margin-bottom: .5rem;
+  }
+  .dash-hero-sub { font-size: .85rem; color: var(--muted); }
+
+  .dash-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media(max-width:600px) { .dash-kpi-grid { grid-template-columns: 1fr 1fr; } }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    transition: border-color .2s, transform .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .kpi-label {
+    font-size: .62rem; font-weight: 700; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: .6rem;
+  }
+  .kpi-val {
+    font-family: var(--font-serif);
+    font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1;
+  }
+  .kpi-val.accent { color: var(--accent); }
+  .kpi-val.success { color: var(--success); }
+  .kpi-val.danger { color: var(--danger); }
+  .kpi-val.info { color: var(--info); }
+  .kpi-sub {
+    font-size: .72rem; color: var(--muted); margin-top: .4rem;
+  }
+  .kpi-icon {
+    position: absolute; top: 1rem; right: 1rem;
+    font-size: 1.4rem; opacity: .15;
+  }
+
+  /* Progress bar */
+  .progress-wrap { margin-bottom: 1.5rem; }
+  .progress-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: .75rem;
+  }
+  .progress-title {
+    font-size: .7rem; font-weight: 700; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .progress-pct {
+    font-family: var(--font-mono);
+    font-size: .85rem; font-weight: 500; color: var(--accent);
+  }
+  .progress-track {
+    height: 6px; background: var(--surface2);
+    border-radius: 99px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width .8s cubic-bezier(0.16,1,0.3,1);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .progress-fill.over { background: linear-gradient(90deg, var(--success), #7de8c0); }
+  .progress-fill.low { background: linear-gradient(90deg, var(--danger), #f0a0a0); }
+
+  /* Ritmo badge */
+  .ritmo-badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .35rem .85rem; border-radius: 99px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+    margin-top: .75rem;
+  }
+  .ritmo-ok { background: var(--success-dim); color: var(--success); border: 1px solid rgba(90,173,143,0.25); }
+  .ritmo-low { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(224,90,90,0.25); }
+  .ritmo-great { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(201,168,76,0.25); }
+
+  /* Bar chart */
+  .bar-chart-wrap {
+    height: 180px;
+    display: flex; align-items: flex-end; gap: 5px;
+    padding: .5rem 0 0 0;
+    overflow-x: auto;
+  }
+  .bar-col {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-end;
+    gap: 4px; flex: 1; min-width: 24px; max-width: 48px;
+    height: 100%;
+  }
+  .bar-fill {
+    width: 100%; border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, var(--accent2), var(--accent));
+    transition: height .7s cubic-bezier(0.16,1,0.3,1);
+    position: relative; cursor: pointer;
+    min-height: 3px;
+    flex-shrink: 0;
+  }
+  .bar-fill.incap { background: linear-gradient(180deg, #f09090, var(--danger)); }
+  .bar-fill.comp { background: linear-gradient(180deg, #b084e8, #7040b0); }
+  .bar-fill:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: 105%; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); color: var(--text); border: 1px solid var(--border2);
+    padding: .3rem .6rem; border-radius: 6px;
+    font-size: .65rem; font-family: var(--font-mono); white-space: nowrap;
+    z-index: 10; pointer-events: none;
+  }
+  .bar-label {
+    font-family: var(--font-mono); font-size: .55rem;
+    color: var(--muted); text-align: center; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
+
+  /* Dash rows */
+  .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media(max-width:640px) { .dash-row { grid-template-columns: 1fr; } }
+
+  /* Projection card */
+  .proj-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .75rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: .88rem;
+  }
+  .proj-item:last-child { border-bottom: none; }
+  .proj-item-label { color: var(--muted); font-weight: 500; }
+  .proj-item-val { font-family: var(--font-serif); font-weight: 700; color: var(--text); }
+  .proj-item-val.accent { color: var(--accent); }
+  .proj-item-val.success { color: var(--success); }
+  .proj-item-val.danger { color: var(--danger); }
+
+  /* Tip box */
+  .tip-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    font-size: .82rem;
+    color: var(--muted);
+    margin-top: 1.5rem;
+    line-height: 1.7;
+  }
+  .tip-box strong { color: var(--accent); }
+
+  /* ── AI Assistant ── */
+  .ai-header {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+  .ai-avatar {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, #1a1500, #2a2000);
+    border: 1.5px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 0 16px var(--accent-glow);
+    flex-shrink: 0;
+  }
+  .ai-avatar-pulse {
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 16px var(--accent-glow); }
+    50% { box-shadow: 0 0 28px rgba(201,168,76,0.45); }
+  }
+
+  .chat-window {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 320px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .85rem;
+    margin-bottom: 1rem;
+    scroll-behavior: smooth;
+  }
+  .chat-window::-webkit-scrollbar { width: 4px; }
+  .chat-window::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  .chat-msg {
+    display: flex; gap: .75rem; align-items: flex-start;
+    animation: slideUp .3s ease;
+  }
+  .chat-msg.user { flex-direction: row-reverse; }
+
+  .chat-bubble {
+    max-width: 80%;
+    padding: .85rem 1.1rem;
+    border-radius: 14px;
+    font-size: .875rem;
+    line-height: 1.65;
+  }
+  .chat-msg.ai .chat-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-top-left-radius: 4px;
+  }
+  .chat-msg.user .chat-bubble {
+    background: linear-gradient(135deg, #1c1700, #2a2200);
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--accent2);
+    border-top-right-radius: 4px;
+  }
+  .chat-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem; flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .chat-icon.ai { background: var(--accent-dim); border: 1px solid rgba(201,168,76,0.2); }
+  .chat-icon.user { background: var(--surface); border: 1px solid var(--border); }
+
+  .chat-input-row {
+    display: flex; gap: .75rem; align-items: flex-end;
+  }
+  .chat-input {
+    flex: 1;
+    padding: .85rem 1.1rem;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: .9rem;
+    outline: none;
+    resize: none;
+    min-height: 50px;
+    max-height: 120px;
+    transition: border-color .2s, box-shadow .2s;
+    line-height: 1.5;
+  }
+  .chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  .chat-input::placeholder { color: var(--muted); }
+
+  .chat-send-btn {
+    width: 50px; height: 50px;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    transition: all .2s;
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px var(--accent-glow);
+  }
+  .chat-send-btn:hover { background: var(--accent2); transform: scale(1.05); }
+  .chat-send-btn:active { transform: scale(.95); }
+  .chat-send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  .ai-thinking {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .85rem 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    border-top-left-radius: 4px;
+    font-size: .8rem; color: var(--muted);
+    max-width: 140px;
+  }
+  .dot-flashing {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .dot-flashing span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent);
+    animation: dotFlash 1.2s ease infinite;
+  }
+  .dot-flashing span:nth-child(2) { animation-delay: .2s; }
+  .dot-flashing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes dotFlash {
+    0%, 80%, 100% { opacity: .25; transform: scale(.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  .quick-pills {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+    margin-bottom: 1rem;
+  }
+  .quick-pill {
+    padding: .4rem .85rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: .72rem; font-weight: 600;
+    color: var(--muted); cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .quick-pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .ai-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 200px; gap: .75rem;
+    color: var(--muted); font-size: .85rem; text-align: center;
+  }
+  .ai-empty-icon { font-size: 2.5rem; opacity: .3; }
+
+  /* ── Subtle grid background ── */
+  .wrapper::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 960px; height: 100vh;
+    background-image:
+      linear-gradient(rgba(201,168,76,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,168,76,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* ── Toast Notifications ── */
+  #toastContainer {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    pointer-events: none;
+  }
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    font-size: .875rem;
+    color: var(--text);
+    min-width: 280px;
+    max-width: 400px;
+    animation: toastIn .35s cubic-bezier(0.16,1,0.3,1);
+    pointer-events: auto;
+  }
+  .toast.toastOut {
+    animation: toastOut .3s ease forwards;
+  }
+  .toast-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .toast-success .toast-icon { background: var(--success-dim); color: var(--success); }
+  .toast-error .toast-icon { background: var(--danger-dim); color: var(--danger); }
+  .toast-info .toast-icon { background: var(--accent-dim); color: var(--accent); }
+  .toast-warning .toast-icon { background: rgba(255,200,80,0.15); color: #ffc850; }
+  .toast-message { flex: 1; line-height: 1.4; }
+  .toast-close {
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 1rem; padding: .25rem;
+    transition: color .15s;
+  }
+  .toast-close:hover { color: var(--text); }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(40px); }
+  }
+
+  /* ── Edit Modal ── */
+  #editModal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(14,14,16,0.85);
+    backdrop-filter: blur(8px);
+    padding: 1rem;
+  }
+  #editModal.open { display: flex; }
+  .modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    animation: modalIn .3s cubic-bezier(0.16,1,0.3,1);
+  }
+  .modal-card.modalOut {
+    animation: modalOut .25s ease forwards;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes modalOut {
+    from { opacity: 1; transform: scale(1) translateY(0); }
+    to { opacity: 0; transform: scale(.95) translateY(10px); }
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+  }
+  .modal-close:hover { border-color: var(--danger); color: var(--danger); }
+  .modal-actions {
+    display: flex;
+    gap: .75rem;
+    margin-top: 1.5rem;
+  }
+  .modal-actions .btn { flex: 1; }
+
+  /* ── History Search ── */
+  .hist-search {
+    display: flex;
+    gap: .75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .hist-search .inp {
+    flex: 1;
+    min-width: 180px;
+  }
+  .hist-search .inp[type="date"] {
+    flex: 0 0 auto;
+    min-width: 150px;
+  }
+  .hist-search .btn {
+    padding: .75rem 1rem;
+  }
+
+  /* ── Deductions Card ── */
+  .deductions-card {
+    background: linear-gradient(135deg, #1a1515 0%, #1e1a1a 100%);
+    border: 1px solid rgba(224,90,90,0.2);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+  .deductions-title {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--danger);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .deductions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .deduction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .75rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: var(--radius-sm);
+  }
+  .deduction-label {
+    font-size: .8rem;
+    color: var(--muted);
+  }
+  .deduction-value {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--danger);
+  }
+  .deduction-total {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .deduction-total .deduction-label {
+    color: var(--text);
+    font-weight: 600;
+  }
+</style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+<body>
 
-    <div id="authContainer" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm px-4">
-        <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700">
-            <h2 class="text-3xl font-black text-indigo-600 mb-2 uppercase text-center">Mi Nómina</h2>
-            <p class="text-slate-400 text-center text-xs mb-8 font-bold uppercase tracking-widest">Sincronización en la Nube</p>
-            <div class="space-y-4">
-                <input type="email" id="authEmail" placeholder="Correo electrónico" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
-                <input type="password" id="authPassword" placeholder="Contraseña" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl outline-none font-bold dark:text-white">
-                <div class="flex flex-col gap-3 pt-4">
-                    <button onclick="handleAuth('login')" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all uppercase tracking-widest">Entrar</button>
-                    <button onclick="handleAuth('signup')" class="w-full py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black rounded-xl hover:bg-slate-200 transition-all uppercase tracking-widest">Crear Cuenta</button>
-                </div>
-                <p id="authError" class="text-rose-500 text-xs font-bold text-center mt-4 hidden"></p>
-            </div>
+<!-- ── AUTH ── -->
+<div id="authContainer">
+  <div class="auth-card">
+    <div class="auth-logo">Mi Nómina</div>
+    <div class="auth-sub">Sincronización en la Nube</div>
+    <div class="auth-divider"></div>
+    <div style="display:flex;flex-direction:column;gap:.85rem;">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Correo electrónico</label>
+        <input type="email" id="authEmail" placeholder="tu@correo.com" class="inp">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Contraseña</label>
+        <input type="password" id="authPassword" placeholder="••••••••" class="inp">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem;">
+        <button onclick="handleAuth('login')" class="btn btn-primary" style="width:100%;padding:1rem;">Entrar</button>
+        <button onclick="handleAuth('signup')" class="btn btn-ghost" style="width:100%;padding:1rem;">Crear Cuenta</button>
+      </div>
+      <div id="authError" class="auth-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ── -->
+<div id="toastContainer"></div>
+
+<!-- ── Edit Modal ── -->
+<div id="editModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Editar Registro</div>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <form id="formEditModal">
+      <input type="hidden" id="editFecha">
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" id="editFechaDisplay" class="inp" disabled style="opacity:0.6;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Estado del día</label>
+        <select id="editTipoDia" onchange="toggleEditTipoDia()" class="inp">
+          <option value="NORMAL">Turno Laborado</option>
+          <option value="COMPENSATORIO">Compensatorio Remunerado</option>
+          <option value="INCAPACIDAD">Incapacidad</option>
+          <option value="NO_LABORADO">Día No Citado</option>
+        </select>
+      </div>
+      <div id="editSecDiagnostico" class="hidden">
+        <div class="diag-block">
+          <label class="form-label" style="color:var(--danger);">Diagnóstico / Motivo</label>
+          <input type="text" id="editDiagnostico" placeholder="Escribe el diagnóstico o motivo..." class="inp" style="background:transparent;border-color:rgba(224,90,90,0.3);color:var(--text);">
         </div>
+      </div>
+      <div id="editSecHoras" class="time-block">
+        <div style="font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1.1rem;">Horario del Turno</div>
+        <div class="form-row" style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Entrada</label>
+            <input type="time" id="editHInicio" class="inp">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Salida</label>
+            <input type="time" id="editHFin" class="inp">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Descanso inicio</label>
+            <input type="time" id="editHBreakOut" class="inp">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Descanso fin</label>
+            <input type="time" id="editHBreakIn" class="inp">
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" onclick="closeEditModal()" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div class="wrapper">
+
+  <!-- Header -->
+  <header class="header">
+    <div>
+      <div class="header-logo">Mi Nómina</div>
+      <div class="header-sub">Control Quincenal · Andrés Troconis</div>
+    </div>
+    <div class="header-actions">
+      <div class="icon-btn" onclick="toggleDarkMode()" title="Modo claro" id="modeBtn" style="cursor:pointer;">☀</div>
+      <button onclick="handleSignOut()" class="btn btn-danger" style="padding:.55rem 1rem;font-size:.72rem;">Salir</button>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showTab('registro', this)">Registros</button>
+    <button class="nav-btn" onclick="showTab('dashboard', this)">Dashboard</button>
+    <button class="nav-btn" onclick="showTab('asistente', this)">✦ Asistente IA</button>
+    <button class="nav-btn" onclick="showTab('resumen', this)">Nómina</button>
+    <button class="nav-btn" onclick="showTab('config', this)">Ajustes</button>
+  </nav>
+
+  <!-- ═══ ASISTENTE IA ═══ -->
+  <div id="asistente" class="tab-content hidden">
+    <div class="card">
+
+      <div class="ai-header">
+        <div class="ai-avatar ai-avatar-pulse">✦</div>
+        <div>
+          <div style="font-family:var(--font-serif);font-size:1.3rem;font-weight:600;color:var(--text);line-height:1.2;">Asistente de Nómina</div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem;">Análisis inteligente de tu quincena</div>
+        </div>
+      </div>
+
+      <!-- API Key -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:1.25rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+          <label class="form-label" style="margin:0;color:var(--accent);">🔑 API Key de Anthropic</label>
+          <a href="https://console.anthropic.com/settings/keys" target="_blank" style="font-size:.65rem;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Obtener clave →</a>
+        </div>
+        <div style="display:flex;gap:.6rem;">
+          <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." class="inp" style="flex:1;font-family:var(--font-mono);font-size:.8rem;padding:.65rem .9rem;" oninput="saveApiKey(this.value)">
+          <button onclick="toggleApiKeyVisibility()" id="apiKeyEye" style="padding:.65rem .9rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;color:var(--muted);font-size:.9rem;transition:all .2s;flex-shrink:0;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">👁</button>
+        </div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:.5rem;letter-spacing:.03em;">La clave se guarda solo en este navegador (localStorage). Nunca se envía a ningún servidor propio.</div>
+      </div>
+
+      <!-- Preguntas rápidas -->
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;">Preguntas frecuentes</div>
+      <div class="quick-pills">
+        <button class="quick-pill" onclick="sendQuickQuestion('¿Cuánto gané en total esta quincena y cómo se desglosa?')">¿Cuánto gané en total?</button>
+        <button class="quick-pill" onclick="sendQuickQuestion('¿Cuántas horas extras trabajé y cuánto me pagaron por ellas?')">Horas extras</button>
+        <button class="quick-pill" onclick="sendQuickQuestion('¿Cuánto gané en domingos o festivos?')">Ingresos festivos</button>
+        <button class="quick-pill" onclick="sendQuickQuestion('¿Cuál fue mi mejor día de la quincena y por qué fue tan bueno?')">Mejor día</button>
+        <button class="quick-pill" onclick="sendQuickQuestion('¿Cómo está mi ritmo de trabajo comparado con una quincena ideal de 15 días?')">Mi ritmo</button>
+        <button class="quick-pill" onclick="sendQuickQuestion('¿Cuánto se me va en deducciones y para qué sirven?')">Deducciones</button>
+        <button class="quick-pill" onclick="sendQuickQuestion('Dame un resumen ejecutivo de mi quincena actual con consejos.')">Resumen ejecutivo</button>
+      </div>
+
+      <div style="height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:.75rem 0 1rem;"></div>
+
+      <!-- Ventana de chat -->
+      <div class="chat-window" id="chatWindow">
+        <div class="ai-empty" id="chatEmpty">
+          <div class="ai-empty-icon">✦</div>
+          <div>Pregúntame lo que quieras sobre tu quincena.<br><span style="font-size:.75rem;opacity:.6;">Tengo acceso completo a todos tus registros.</span></div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-row">
+        <textarea
+          id="chatInput"
+          class="chat-input"
+          placeholder="Pregunta algo sobre tu nómina... ej: ¿cuánto gané en horas nocturnas?"
+          rows="1"
+          onkeydown="handleChatKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar">➤</button>
+      </div>
+      <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:.6rem;letter-spacing:.04em;">
+        El asistente conoce tus registros, horas, recargos y configuración actual
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div id="dashboard" class="tab-content hidden">
+
+    <!-- Hero: Proyección Neto -->
+    <div class="dash-hero">
+      <div class="dash-hero-label">Proyección al cierre de quincena</div>
+      <div class="dash-hero-amount" id="dashProyNeto">$0</div>
+      <div class="dash-hero-sub" id="dashProySub">Basado en tu ritmo actual de ingresos</div>
+      <div id="dashRitmoBadge" style="margin-top:1rem;"></div>
     </div>
 
-    <div class="max-w-5xl mx-auto p-4 sm:p-8">
-        <header class="mb-8 flex justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <div>
-                <h1 class="text-3xl font-black text-indigo-900 dark:text-indigo-400 uppercase">Mi Nómina</h1>
-                <p class="text-sm font-bold text-slate-400">Control Total Quincenal • Creador: Andrés Troconis.</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
-                    <span id="darkIcon">🌙</span>
-                </button>
-                <button onclick="handleSignOut()" class="px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all text-xs font-black uppercase tracking-widest border border-rose-100 dark:border-rose-900/30">Salir</button>
-            </div>
-        </header>
-
-        <nav class="flex gap-2 mb-8 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto">
-            <button onclick="showTab('registro')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all bg-indigo-600 text-white shadow-lg">Registros</button>
-            <button onclick="showTab('resumen')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">Nómina</button>
-            <button onclick="showTab('config')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700">Ajustes</button>
-        </nav>
-
-        <div id="registro" class="tab-content block animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
-                <form id="formTurno" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">Fecha de Inicio</label>
-                            <input type="date" id="fecha" required class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold dark:text-white">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">Estado</label>
-                            <select id="tipoDia" onchange="toggleTipoDia()" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-xl font-bold cursor-pointer dark:text-white">
-                                <option value="NORMAL">✅ Turno Laborado</option>
-                                <option value="COMPENSATORIO">🌟 Compensatorio Remunerado</option>
-                                <option value="INCAPACIDAD">🏥 Incapacidad</option>
-                                <option value="NO_LABORADO">❌ Día No Citado</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="secDiagnostico" class="hidden">
-                        <input type="text" id="diagnostico" placeholder="Escribe el diagnóstico o motivo aquí..." class="w-full p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-100 dark:border-red-900/30 rounded-xl font-medium dark:text-red-200">
-                    </div>
-
-                    <div id="secHoras" class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-indigo-50/50 dark:bg-indigo-900/20 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
-                        <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Entrada</label><input type="time" id="hInicio" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Descanso Inicio</label><input type="time" id="hBreakOut" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Descanso Fin</label><input type="time" id="hBreakIn" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-black text-indigo-400 uppercase">Salida</label><input type="time" id="hFin" class="w-full p-3 rounded-lg border dark:bg-slate-700 dark:border-slate-600 shadow-sm font-bold dark:text-white"></div>
-                    </div>
-
-                    <button type="submit" id="btnGuardar" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none active:scale-[0.98] transition-all uppercase tracking-widest">Guardar Día en Quincena</button>
-                </form>
-            </div>
-
-            <div class="mt-10">
-                <h3 class="text-xl font-black text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">📅</span>
-                    Historial Registrado
-                </h3>
-                <div id="listaRegistros" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-            </div>
-        </div>
-
-        <div id="resumen" class="tab-content hidden space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"><p class="text-xs font-black text-slate-400 uppercase">Salarial (IBC)</p><p id="resIBC" class="text-2xl font-black text-slate-800 dark:text-slate-100">$0</p></div>
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"><p class="text-xs font-black text-green-500 uppercase">Transporte</p><p id="resTransp" class="text-2xl font-black text-green-600">$0</p></div>
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"><p class="text-xs font-black text-red-400 uppercase">Deducciones (8%)</p><p id="resDeduc" class="text-2xl font-black text-red-500">-$0</p></div>
-                <div class="bg-indigo-900 p-6 rounded-2xl shadow-xl shadow-indigo-200 dark:shadow-none text-white"><p class="text-xs font-black text-indigo-300 uppercase">Neto a Recibir</p><p id="resNeto" class="text-3xl font-black">$0</p></div>
-            </div>
-
-            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <h3 class="text-xs font-black text-slate-400 uppercase mb-4 tracking-widest text-center">Distribución de Ingresos por Concepto (COP)</h3>
-                <div class="relative h-[300px] w-full flex justify-center">
-                    <canvas id="nominaChart"></canvas>
-                </div>
-            </div>
-
-            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto">
-                <table class="w-full">
-                    <thead><tr class="text-left text-xs font-black text-slate-400 uppercase border-b-2 border-slate-50 dark:border-slate-700"><th class="pb-4">Concepto</th><th class="pb-4 text-center">Cant.</th><th class="pb-4 text-right">Valor</th></tr></thead>
-                    <tbody id="resDetalleTable" class="divide-y divide-slate-50 dark:divide-slate-700"></tbody>
-                </table>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <button onclick="exportarPDF()" class="bg-slate-900 dark:bg-slate-700 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-black dark:hover:bg-slate-600 transition-all">Exportar PDF</button>
-                <button onclick="exportarExcel()" class="bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-700 transition-all">Exportar Excel</button>
-                <button onclick="clearQuincena()" class="bg-rose-50 dark:bg-rose-900/10 text-rose-600 dark:text-rose-400 border-2 border-rose-100 dark:border-rose-900/30 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all">Cerrar Quincena</button>
-            </div>
-
-            <div id="secHistorial" class="hidden bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mt-8">
-                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-md flex items-center justify-center text-xs">📚</span>
-                    Bitácora de Quincenas Pasadas
-                </h3>
-                <div id="listaHistorial" class="space-y-3"></div>
-            </div>
-        </div>
-
-        <div id="config" class="tab-content hidden space-y-6">
-            <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl">
-                <h2 class="text-2xl font-black text-indigo-900 dark:text-indigo-400 mb-6 uppercase border-b-4 border-indigo-50 dark:border-slate-700 pb-2">Configuración Maestra</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-4">
-                        <h3 class="font-black text-slate-400 text-xs uppercase tracking-tighter">Valores Base (COP)</h3>
-                        <div><label class="text-xs font-bold text-slate-600 dark:text-slate-300">VALOR HORA ORDINARIA</label><input type="number" id="cfgHora" class="w-full mt-1 p-3 bg-slate-50 dark:bg-slate-700 border rounded-lg font-bold dark:text-white dark:border-slate-600"></div>
-                        <div><label class="text-xs font-bold text-slate-600 dark:text-slate-300">AUXILIO TRANSPORTE MENSUAL</label><input type="number" id="cfgTransp" class="w-full mt-1 p-3 bg-slate-50 dark:bg-slate-700 border rounded-lg font-bold dark:text-white dark:border-slate-600"></div>
-                    </div>
-                    <div class="space-y-4">
-                        <h3 class="font-black text-slate-400 text-xs uppercase tracking-tighter">Recargos de Ley (%)</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-[10px] font-bold dark:text-slate-300">NOCTURNO</label><input type="number" id="cfgRN" class="w-full p-2 bg-slate-50 dark:bg-slate-700 border rounded-lg font-bold dark:text-white dark:border-slate-600"></div>
-                            <div><label class="text-[10px] font-bold dark:text-slate-300">DOM/FEST</label><input type="number" id="cfgDOM" class="w-full p-2 bg-slate-50 dark:bg-slate-700 border rounded-lg font-bold dark:text-white dark:border-slate-600"></div>
-                            <div><label class="text-[10px] font-bold dark:text-slate-300">EXTRA DIURNA</label><input type="number" id="cfgHED" class="w-full p-2 bg-slate-50 dark:bg-slate-700 border rounded-lg font-bold dark:text-white dark:border-slate-600"></div>
-                            <div><label class="text-[10px] font-bold dark:text-slate-300">EXTRA NOC.</label><input type="number" id="cfgHEN" class="w-full p-2 bg-slate-50 dark:bg-slate-700 border rounded-lg font-bold dark:text-white dark:border-slate-600"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
-                    <h3 class="font-black text-slate-400 text-xs uppercase tracking-tighter mb-4">Copia de Seguridad y Datos</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onclick="downloadBackup()" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-all flex items-center justify-center gap-2">📥 Descargar Backup (.json)</button>
-                        <label class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-all flex items-center justify-center gap-2 cursor-pointer">📤 Subir Backup<input type="file" id="importFile" class="hidden" onchange="importBackup(event)"></label>
-                    </div>
-                </div>
-                <div class="mt-8 p-6 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border-2 border-slate-100 dark:border-slate-700">
-                    <h3 class="font-black text-slate-800 dark:text-slate-200 text-sm uppercase mb-4">Días Festivos 2026 Cargados</h3>
-                    <div id="festivosList" class="flex flex-wrap gap-2"></div>
-                </div>
-                <button onclick="saveConfig()" class="w-full mt-8 bg-indigo-600 text-white py-4 rounded-xl font-black shadow-lg hover:shadow-indigo-200 dark:shadow-none transition-all uppercase">Actualizar Todo</button>
-            </div>
-        </div>
+    <!-- KPIs -->
+    <div class="dash-kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-label">Días Registrados</div>
+        <div class="kpi-val accent" id="dashDiasReg">0</div>
+        <div class="kpi-sub" id="dashDiasSub">de 15 esperados</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">⏱</div>
+        <div class="kpi-label">Horas Totales</div>
+        <div class="kpi-val info" id="dashHorasTot">0h</div>
+        <div class="kpi-sub" id="dashHorasSub">promedio por turno</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-label">Promedio por Día</div>
+        <div class="kpi-val success" id="dashPromDia">$0</div>
+        <div class="kpi-sub">ingreso diario bruto</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-label">Mejor Día</div>
+        <div class="kpi-val accent" id="dashMejorDia">$0</div>
+        <div class="kpi-sub" id="dashMejorFecha">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🌙</div>
+        <div class="kpi-label">Horas Nocturnas</div>
+        <div class="kpi-val" id="dashHorasNoc">0h</div>
+        <div class="kpi-sub" id="dashNocPct">del total trabajado</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🏖</div>
+        <div class="kpi-label">Dom / Festivos</div>
+        <div class="kpi-val" id="dashHorasFest">0h</div>
+        <div class="kpi-sub" id="dashFestPct">del total trabajado</div>
+      </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <!-- Progreso de quincena -->
+    <div class="card progress-wrap" style="margin-bottom:1.5rem;">
+      <div class="progress-header">
+        <span class="progress-title">Progreso de la Quincena (días laborados)</span>
+        <span class="progress-pct" id="dashProgPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="dashProgBar" style="width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:.5rem;">
+        <span style="font-size:.65rem;color:var(--muted);font-family:var(--font-mono);">Día 1</span>
+        <span style="font-size:.65rem;color:var(--muted);font-family:var(--font-mono);">Día 15</span>
+      </div>
+    </div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBnfx2s3Tl4sh0fMCfKXwImjY2sDggHORA",
-            authDomain: "calculadora-nominaweb.firebaseapp.com",
-            projectId: "calculadora-nominaweb",
-            storageBucket: "calculadora-nominaweb.firebasestorage.app",
-            messagingSenderId: "527465317262",
-            appId: "1:527465317262:web:c951ff57975903bf535adf"
-        };
+    <div class="dash-row">
+      <!-- Gráfico de barras por día -->
+      <div class="card">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;">Ingreso por Día Registrado</div>
+        <div class="bar-chart-wrap" id="dashBarChart"></div>
+      </div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const fb_db = getFirestore(app);
+      <!-- Proyección detallada -->
+      <div class="card">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Proyección al Cierre</div>
+        <div class="proj-item">
+          <span class="proj-item-label">IBC acumulado</span>
+          <span class="proj-item-val" id="dashProjIBC">$0</span>
+        </div>
+        <div class="proj-item">
+          <span class="proj-item-label">IBC proyectado (15 días)</span>
+          <span class="proj-item-val accent" id="dashProjIBCproy">$0</span>
+        </div>
+        <div class="proj-item">
+          <span class="proj-item-label">Transporte estimado</span>
+          <span class="proj-item-val success" id="dashProjTransp">$0</span>
+        </div>
+        <div class="proj-item">
+          <span class="proj-item-label">Deducciones estimadas</span>
+          <span class="proj-item-val danger" id="dashProjDeduc">-$0</span>
+        </div>
+        <div class="proj-item" style="border-top:2px solid var(--accent);padding-top:1rem;margin-top:.25rem;">
+          <span class="proj-item-label" style="color:var(--text);font-weight:700;">Neto proyectado</span>
+          <span class="proj-item-val accent" style="font-size:1.1rem;" id="dashProjNeto">$0</span>
+        </div>
+      </div>
+    </div>
 
-        window.currentUser = null;
+    <div class="tip-box" id="dashTip">
+      Registra días para ver tu análisis de quincena aquí.
+    </div>
+  </div>
 
-        window.handleAuth = async (type) => {
-            const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPassword').value;
-            const err = document.getElementById('authError');
-            err.classList.add('hidden');
+  <!-- ═══ REGISTRO ═══ -->
+  <div id="registro" class="tab-content">
+    <div class="card">
+      <div style="margin-bottom:1.75rem;">
+        <div style="font-family:var(--font-serif);font-size:1.5rem;font-weight:600;color:var(--text);margin-bottom:.25rem;">Registrar Día</div>
+        <div style="font-size:.8rem;color:var(--muted);">Ingresa los datos del turno o estado del día</div>
+      </div>
 
-            if(!email || !pass) { 
-                err.innerText = "Ingresa correo y contraseña"; 
-                err.classList.remove('hidden'); 
-                return; 
-            }
+      <form id="formTurno">
+        <div class="form-row col2">
+          <div class="form-group">
+            <label class="form-label">Fecha de inicio</label>
+            <input type="date" id="fecha" required class="inp">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado del día</label>
+            <select id="tipoDia" onchange="toggleTipoDia()" class="inp">
+              <option value="NORMAL">Turno Laborado</option>
+              <option value="COMPENSATORIO">Compensatorio Remunerado</option>
+              <option value="INCAPACIDAD">Incapacidad</option>
+              <option value="NO_LABORADO">Día No Citado</option>
+            </select>
+          </div>
+        </div>
 
-            try {
-                if(type === 'login') {
-                    await signInWithEmailAndPassword(auth, email, pass);
-                } else {
-                    
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                    const user = userCredential.user;
+        <div id="secDiagnostico" class="hidden">
+          <div class="diag-block">
+            <label class="form-label" style="color:var(--danger);">Diagnóstico / Motivo</label>
+            <input type="text" id="diagnostico" placeholder="Escribe el diagnóstico o motivo..." class="inp" style="background:transparent;border-color:rgba(224,90,90,0.3);color:var(--text);">
+          </div>
+        </div>
 
-                    
-                    await setDoc(doc(fb_db, "usuarios", user.uid), {
-                        db: [],
-                        historial: [],
-                        cfg: window.cfgDefault 
-                    });
-                    
-                    console.log("Perfil inicial creado para usuario nuevo");
-                }
-            } catch (e) { 
-                err.innerText = "Error: Verifica tus datos o el usuario ya existe."; 
-                err.classList.remove('hidden'); 
-                console.error(e); 
-            }
-        };
+        <div id="secHoras" class="time-block">
+          <div style="font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1.1rem;">Horario del Turno</div>
+          <div class="form-row col4">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Entrada</label>
+              <input type="time" id="hInicio" class="inp">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Descanso inicio</label>
+              <input type="time" id="hBreakOut" class="inp">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Descanso fin</label>
+              <input type="time" id="hBreakIn" class="inp">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Salida</label>
+              <input type="time" id="hFin" class="inp">
+            </div>
+          </div>
+        </div>
 
-        window.handleSignOut = () => signOut(auth);
+        <button type="submit" id="btnGuardar" class="btn btn-primary" style="width:100%;padding:1.1rem;margin-top:.5rem;font-size:.85rem;">
+          Guardar en Quincena
+        </button>
+      </form>
+    </div>
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                window.currentUser = user;
-                document.getElementById('authContainer').classList.add('hidden');
-                await syncFromCloud();
-            } else {
-                window.currentUser = null;
-                document.getElementById('authContainer').classList.remove('hidden');
-            }
-        });
+    <div class="section-title" id="regTitle" style="display:none;">Historial Registrado</div>
+    <div id="listaRegistros" style="display:flex;flex-direction:column;gap:.6rem;"></div>
+  </div>
 
-        async function syncFromCloud() {
-            if(!window.currentUser) return;
-            const docSnap = await getDoc(doc(fb_db, "usuarios", window.currentUser.uid));
-            if(docSnap.exists()){
-                const cloudData = docSnap.data();
-                window.db = cloudData.db || [];
-                window.historialDB = cloudData.historial || [];
-                window.cfg = cloudData.cfg || window.cfgDefault;
-                
-                document.getElementById('cfgHora').value = window.cfg.hora;
-                document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
-                document.getElementById('cfgRN').value = window.cfg.rn;
-                document.getElementById('cfgDOM').value = window.cfg.dom;
-                document.getElementById('cfgHED').value = window.cfg.hed;
-                document.getElementById('cfgHEN').value = window.cfg.hen;
+  <!-- ═══ RESUMEN ═══ -->
+  <div id="resumen" class="tab-content hidden">
+    <div class="stats-grid">
+      <div class="stat-card primary">
+        <div class="stat-label accent">Salarial (IBC)</div>
+        <div class="stat-val" id="resIBC">$0</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label green">Auxilio Transp.</div>
+        <div class="stat-val" id="resTransp" style="color:var(--success);">$0</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label red">Deducciones (8%)</div>
+        <div class="stat-val" id="resDeduc" style="color:var(--danger);">-$0</div>
+      </div>
+      <div class="stat-card featured">
+        <div class="stat-label accent">Neto a Recibir</div>
+        <div class="stat-val" id="resNeto">$0</div>
+      </div>
+    </div>
 
-                renderAll();
-                renderHistorial();
-            }
+    <div class="card">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:1rem;">Distribución de Ingresos por Concepto</div>
+      <div class="chart-wrap">
+        <canvas id="nominaChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;overflow-x:auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th class="center">Horas</th>
+            <th class="right">Valor</th>
+          </tr>
+        </thead>
+        <tbody id="resDetalleTable"></tbody>
+      </table>
+    </div>
+
+    <!-- Desglose de deducciones -->
+    <div class="deductions-card" id="deductionsCard">
+      <div class="deductions-title">
+        <span>📉</span> Desglose de Descuentos
+      </div>
+      <div class="deductions-grid">
+        <div class="deduction-item">
+          <span class="deduction-label">Salud (4%)</span>
+          <span class="deduction-value" id="deduccionSalud">-$0</span>
+        </div>
+        <div class="deduction-item">
+          <span class="deduction-label">Pensión (4%)</span>
+          <span class="deduction-value" id="deduccionPension">-$0</span>
+        </div>
+      </div>
+      <div class="deduction-total">
+        <span class="deduction-label">Total Deducciones</span>
+        <span class="deduction-value" id="deduccionTotal">-$0</span>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button onclick="exportarPDF()" class="btn btn-dark">📄 Exportar PDF</button>
+      <button onclick="exportarExcel()" class="btn btn-success">📊 Exportar Excel</button>
+      <button onclick="clearQuincena()" class="btn btn-danger">Cerrar Quincena</button>
+    </div>
+
+    <!-- Historial -->
+    <div id="secHistorial" class="hidden" style="margin-top:2.5rem;">
+      <div class="section-title">Bitácora de Quincenas</div>
+      
+      <!-- Buscador de historial -->
+      <div class="hist-search">
+        <input type="text" id="histSearchInput" class="inp" placeholder="🔍 Buscar por fecha o período..." oninput="filterHistorial()">
+        <input type="date" id="histDateFrom" class="inp" placeholder="Desde" onchange="filterHistorial()">
+        <input type="date" id="histDateTo" class="inp" placeholder="Hasta" onchange="filterHistorial()">
+        <button onclick="clearHistFilters()" class="btn btn-ghost">Limpiar</button>
+      </div>
+      
+      <div id="listaHistorial"></div>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIG ═══ -->
+  <div id="config" class="tab-content hidden">
+    <div class="card">
+      <div style="font-family:var(--font-serif);font-size:1.5rem;font-weight:600;margin-bottom:2rem;color:var(--text);">Configuración Maestra</div>
+
+      <div class="config-section-title">Valores Base (COP)</div>
+      <div class="config-grid" style="margin-bottom:2rem;">
+        <div class="form-group">
+          <label class="form-label">Valor hora ordinaria</label>
+          <input type="number" id="cfgHora" class="inp">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Auxilio transporte mensual</label>
+          <input type="number" id="cfgTransp" class="inp">
+        </div>
+      </div>
+
+      <div class="config-section-title">Recargos de Ley (%)</div>
+      <div class="config-grid" style="margin-bottom:2rem;">
+        <div class="form-group">
+          <label class="form-label">Recargo Nocturno</label>
+          <input type="number" id="cfgRN" class="inp">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dom / Festivo</label>
+          <input type="number" id="cfgDOM" class="inp">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Extra Diurna</label>
+          <input type="number" id="cfgHED" class="inp">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Extra Nocturna</label>
+          <input type="number" id="cfgHEN" class="inp">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="config-section-title">Copia de Seguridad</div>
+      <div class="backup-grid" style="margin-bottom:2rem;">
+        <button onclick="downloadBackup()" class="btn btn-ghost">📥 Descargar Backup</button>
+        <label class="btn btn-ghost" style="cursor:pointer;">
+          📤 Subir Backup
+          <input type="file" id="importFile" class="hidden" onchange="importBackup(event)">
+        </label>
+      </div>
+
+      <div class="divider"></div>
+      <div class="config-section-title">Días Festivos 2026</div>
+      <div class="festivos-wrap" id="festivosList" style="margin-bottom:2rem;"></div>
+
+      <button onclick="saveConfig()" class="btn btn-primary" style="width:100%;padding:1.1rem;">Guardar Configuración</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase + Logic -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBnfx2s3Tl4sh0fMCfKXwImjY2sDggHORA",
+    authDomain: "calculadora-nominaweb.firebaseapp.com",
+    projectId: "calculadora-nominaweb",
+    storageBucket: "calculadora-nominaweb.firebasestorage.app",
+    messagingSenderId: "527465317262",
+    appId: "1:527465317262:web:c951ff57975903bf535adf"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const fb_db = getFirestore(app);
+
+  window.currentUser = null;
+
+  window.handleAuth = async (type) => {
+    const email = document.getElementById('authEmail').value;
+    const pass = document.getElementById('authPassword').value;
+    const err = document.getElementById('authError');
+    err.style.display = 'none';
+    if (!email || !pass) { err.innerText = "Ingresa correo y contraseña"; err.style.display = 'block'; return; }
+    try {
+      if (type === 'login') {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } else {
+        const uc = await createUserWithEmailAndPassword(auth, email, pass);
+        await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
+      }
+    } catch (e) { err.innerText = "Error: Verifica tus datos o el usuario ya existe."; err.style.display = 'block'; }
+  };
+
+  window.handleSignOut = () => signOut(auth);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      window.currentUser = user;
+      document.getElementById('authContainer').classList.add('hidden');
+      await syncFromCloud();
+    } else {
+      window.currentUser = null;
+      document.getElementById('authContainer').classList.remove('hidden');
+    }
+  });
+
+  async function syncFromCloud() {
+    if (!window.currentUser) return;
+    const docSnap = await getDoc(doc(fb_db, "usuarios", window.currentUser.uid));
+    if (docSnap.exists()) {
+      const d = docSnap.data();
+      window.db = d.db || [];
+      window.historialDB = d.historial || [];
+      window.cfg = d.cfg || window.cfgDefault;
+      document.getElementById('cfgHora').value = window.cfg.hora;
+      document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
+      document.getElementById('cfgRN').value = window.cfg.rn;
+      document.getElementById('cfgDOM').value = window.cfg.dom;
+      document.getElementById('cfgHED').value = window.cfg.hed;
+      document.getElementById('cfgHEN').value = window.cfg.hen;
+      renderAll(); renderHistorial();
+    }
+  }
+
+  window.saveToCloud = async () => {
+    if (!window.currentUser) return;
+    await setDoc(doc(fb_db, "usuarios", window.currentUser.uid), {
+      db: window.db, historial: window.historialDB, cfg: window.cfg
+    });
+  };
+</script>
+
+<script>
+  window.cfgDefault = { hora: 7959, rn: 35, dom: 80, hed: 25, hen: 75, hedd: 105, hend: 155, auxTranspMensual: 250000 };
+  window.cfg = {...window.cfgDefault};
+  window.db = [];
+  window.historialDB = [];
+
+  const format = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+  const festivos = ["2026-01-01","2026-01-12","2026-03-23","2026-04-02","2026-04-03","2026-05-01","2026-05-18","2026-06-08","2026-06-15","2026-06-29","2026-07-20","2026-08-07","2026-08-17","2026-10-12","2026-11-02","2026-11-16","2026-12-08","2026-12-25"];
+
+  let myChart = null;
+  let lightMode = false;
+
+  function toggleDarkMode() {
+    lightMode = !lightMode;
+    const btn = document.getElementById('modeBtn');
+    if (lightMode) {
+      document.documentElement.style.setProperty('--bg', '#f5f4ef');
+      document.documentElement.style.setProperty('--surface', '#ffffff');
+      document.documentElement.style.setProperty('--surface2', '#f0efe8');
+      document.documentElement.style.setProperty('--border', '#e2e0d5');
+      document.documentElement.style.setProperty('--border2', '#ccc9bc');
+      document.documentElement.style.setProperty('--text', '#1a1a1a');
+      document.documentElement.style.setProperty('--muted', '#7a7a6a');
+      btn.innerText = '🌙';
+    } else {
+      document.documentElement.style.setProperty('--bg', '#0e0e10');
+      document.documentElement.style.setProperty('--surface', '#16161a');
+      document.documentElement.style.setProperty('--surface2', '#1e1e24');
+      document.documentElement.style.setProperty('--border', '#2a2a33');
+      document.documentElement.style.setProperty('--border2', '#3a3a46');
+      document.documentElement.style.setProperty('--text', '#f0efe8');
+      document.documentElement.style.setProperty('--muted', '#7a7a8a');
+      btn.innerText = '☀';
+    }
+    if (myChart) renderAll();
+  }
+
+  function showTab(t, btn) {
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.add('hidden'));
+    document.getElementById(t).classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    else document.querySelector(`.nav-btn[onclick*="${t}"]`)?.classList.add('active');
+    if (t === 'resumen') renderAll();
+    if (t === 'dashboard') renderDashboard();
+    if (t === 'config') renderFestivos();
+    if (t === 'asistente') loadApiKey();
+  }
+
+  function saveApiKey(val) {
+    try { localStorage.setItem('nomina_apikey', val); } catch(e) {}
+  }
+
+  function loadApiKey() {
+    try {
+      const saved = localStorage.getItem('nomina_apikey');
+      if (saved) document.getElementById('apiKeyInput').value = saved;
+    } catch(e) {}
+  }
+
+  function toggleApiKeyVisibility() {
+    const inp = document.getElementById('apiKeyInput');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  // ── AI Assistant ──────────────────────────────────────────
+  const chatHistory = [];
+
+  function buildNominaContext() {
+    if (!window.db || window.db.length === 0) {
+      return "El usuario no tiene registros en la quincena actual.";
+    }
+    const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+    const labelsTipo = { NORMAL:'Turno Laborado', INCAPACIDAD:'Incapacidad', COMPENSATORIO:'Compensatorio Remunerado', NO_LABORADO:'Día No Citado' };
+    const labelsH = { ordD:'Horas Ordinarias Diurnas', ordN:'Recargo Nocturno', extD:'Extra Diurna', extN:'Extra Nocturna', domD:'Dominical/Festivo Diurno', domN:'Dominical/Festivo Nocturno', edd:'Extra Dominical Diurno', edn:'Extra Dominical Nocturno', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
+
+    let ibc = 0, diasT = 0, baseDeducible = 0;
+    const lines = window.db.map(r => {
+      ibc += r.pagoSalarial;
+      if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
+      if (r.pagaTransporte) diasT++;
+      let desglose = Object.entries(r.desglose || {}).map(([k,v]) =>
+        `  • ${labelsH[k]||k}: ${parseFloat(v.h).toFixed(2)}h = ${fmt.format(v.v)}`
+      ).join('\n');
+      let horario = (r.tipo==='NORMAL'&&r.rawHoras) ? ` | Horario: ${r.rawHoras.hI}–${r.rawHoras.hF}${r.rawHoras.hBO?` (descanso ${r.rawHoras.hBO}–${r.rawHoras.hBI})`:''}` : '';
+      return `Fecha: ${r.fecha} | Estado: ${labelsTipo[r.tipo]||r.tipo}${r.diag?' ('+r.diag+')':''}${horario}\n  Pago bruto: ${fmt.format(r.pagoSalarial)}\n${desglose}`;
+    });
+
+    const tr = (window.cfg.auxTranspMensual / 30) * diasT;
+    const de = baseDeducible * 0.08;
+    const neto = ibc + tr - de;
+
+    return `QUINCENA ACTUAL — ${window.db.length} registros
+
+CONFIGURACIÓN LABORAL:
+- Valor hora ordinaria: ${fmt.format(window.cfg.hora)}
+- Recargo nocturno: ${window.cfg.rn}%
+- Dominical/Festivo: ${window.cfg.dom}%
+- Extra diurna: ${window.cfg.hed}% | Extra nocturna: ${window.cfg.hen}%
+- Auxilio transporte mensual: ${fmt.format(window.cfg.auxTranspMensual)}
+
+REGISTROS DETALLADOS:
+${lines.join('\n\n')}
+
+TOTALES:
+- IBC (salarial bruto): ${fmt.format(ibc)}
+- Auxilio de transporte: ${fmt.format(tr)} (${diasT} días con transporte)
+- Deducciones salud+pensión (8% sobre ${fmt.format(baseDeducible)}): -${fmt.format(de)}
+- NETO A RECIBIR: ${fmt.format(neto)}`;
+  }
+
+  function buildSystemPrompt() {
+    return `Eres un asistente experto en nómina laboral colombiana, integrado dentro de la app "Mi Nómina" de Andrés Troconis. Tu rol es analizar los datos reales de su quincena y responder preguntas con precisión, claridad y un tono cercano pero profesional.
+
+Tienes acceso completo a todos los registros de la quincena actual: fechas, tipos de día, horas trabajadas por categoría (ordinarias, nocturnas, extras, dominicales), pagos individuales y totales.
+
+REGLAS:
+- Responde siempre en español
+- Sé conciso pero completo — máximo 4 párrafos cortos
+- Usa números exactos del contexto cuando respondas (no inventes cifras)
+- Si el usuario pregunta algo que no está en los datos, díselo claramente
+- Puedes hacer observaciones proactivas útiles: "noto que trabajaste muchos festivos", "tus horas extras representan X% de tu ingreso", etc.
+- Cuando menciones valores en pesos, usa formato colombiano (ej: $1.234.567)
+- Puedes usar emojis con moderación para hacer la respuesta más escaneable
+- NO uses tablas markdown, solo texto y listas con guiones o bullets simples`;
+  }
+
+  async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    // Verificar API key
+    const apiKey = (document.getElementById('apiKeyInput')?.value || '').trim();
+    if (!apiKey) {
+      appendAIMsg('🔑 Para usar el asistente, ingresa tu API Key de Anthropic en el campo de arriba. Puedes obtenerla en <strong>console.anthropic.com</strong>');
+      return;
+    }
+
+    input.value = '';
+    input.style.height = 'auto';
+    appendUserMsg(msg);
+    input.disabled = true;
+    document.getElementById('chatSendBtn').disabled = true;
+    showThinking();
+
+    chatHistory.push({ role: 'user', content: msg });
+
+    const context = buildNominaContext();
+    const messagesWithContext = [
+      { role: 'user', content: `Aquí están los datos actuales de mi nómina:\n\n${context}\n\n---\n\n${chatHistory[0].content}` },
+      ...chatHistory.slice(1)
+    ];
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: buildSystemPrompt(),
+          messages: messagesWithContext
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(`API error ${res.status}: ${errData?.error?.message || res.statusText}`);
+      }
+      const data = await res.json();
+      const reply = data.content?.map(b => b.text || '').join('') || 'No pude obtener una respuesta. Intenta de nuevo.';
+      chatHistory.push({ role: 'assistant', content: reply });
+      removeThinking();
+      appendAIMsg(reply);
+    } catch (err) {
+      console.error('AI error:', err);
+      removeThinking();
+      appendAIMsg(`⚠️ Error al conectar: ${err.message}. Intenta de nuevo.`);
+    }
+    input.disabled = false;
+    document.getElementById('chatSendBtn').disabled = false;
+    input.focus();
+  }
+
+  function sendQuickQuestion(q) {
+    const input = document.getElementById('chatInput');
+    input.value = q;
+    autoResize(input);
+    sendChat();
+  }
+
+  function appendUserMsg(text) {
+    const empty = document.getElementById('chatEmpty');
+    if (empty) empty.remove();
+    const win = document.getElementById('chatWindow');
+    win.innerHTML += `<div class="chat-msg user">
+      <div class="chat-icon user">👤</div>
+      <div class="chat-bubble">${escapeHtml(text)}</div>
+    </div>`;
+    win.scrollTop = win.scrollHeight;
+  }
+
+  function appendAIMsg(text) {
+    const win = document.getElementById('chatWindow');
+    const formatted = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)/gm, '• $1')
+      .replace(/\n/g, '<br>');
+    win.innerHTML += `<div class="chat-msg ai">
+      <div class="chat-icon ai">✦</div>
+      <div class="chat-bubble">${formatted}</div>
+    </div>`;
+    win.scrollTop = win.scrollHeight;
+  }
+
+  function showThinking() {
+    const win = document.getElementById('chatWindow');
+    win.innerHTML += `<div class="chat-msg ai" id="thinkingMsg">
+      <div class="chat-icon ai">✦</div>
+      <div class="ai-thinking"><div class="dot-flashing"><span></span><span></span><span></span></div></div>
+    </div>`;
+    win.scrollTop = win.scrollHeight;
+  }
+
+  function removeThinking() {
+    document.getElementById('thinkingMsg')?.remove();
+  }
+
+  function escapeHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function handleChatKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function renderDashboard() {
+    if (!window.db || window.db.length === 0) {
+      document.getElementById('dashProyNeto').innerText = '$0';
+      document.getElementById('dashProySub').innerText = 'Sin registros en la quincena actual';
+      document.getElementById('dashRitmoBadge').innerHTML = '';
+      document.getElementById('dashDiasReg').innerText = '0';
+      document.getElementById('dashDiasSub').innerText = 'de 15 esperados';
+      document.getElementById('dashHorasTot').innerText = '0h';
+      document.getElementById('dashHorasSub').innerText = '—';
+      document.getElementById('dashPromDia').innerText = '$0';
+      document.getElementById('dashMejorDia').innerText = '$0';
+      document.getElementById('dashMejorFecha').innerText = '—';
+      document.getElementById('dashHorasNoc').innerText = '0h';
+      document.getElementById('dashNocPct').innerText = '—';
+      document.getElementById('dashHorasFest').innerText = '0h';
+      document.getElementById('dashFestPct').innerText = '—';
+      document.getElementById('dashProgPct').innerText = '0%';
+      document.getElementById('dashProgBar').style.width = '0%';
+      document.getElementById('dashProgBar').className = 'progress-fill';
+      document.getElementById('dashBarChart').innerHTML = '<div style="color:var(--muted);font-size:.8rem;width:100%;display:flex;align-items:center;justify-content:center;height:100%;">Sin datos aún</div>';
+      ['dashProjIBC','dashProjIBCproy','dashProjTransp','dashProjNeto'].forEach(id => document.getElementById(id).innerText = '$0');
+      document.getElementById('dashProjDeduc').innerText = '-$0';
+      document.getElementById('dashTip').innerHTML = 'Registra días para ver tu análisis de quincena aquí.';
+      return;
+    }
+
+    const META_DIAS = 15;
+    let ibc = 0, baseDeducible = 0, diasT = 0;
+    let horasTot = 0, horasNoc = 0, horasFest = 0;
+    let mejorVal = 0, mejorFecha = '';
+    let diasRegistrados = 0;
+
+    const barData = [];
+
+    window.db.forEach(r => {
+      diasRegistrados++;
+      ibc += r.pagoSalarial;
+      if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
+      if (r.pagaTransporte) diasT++;
+      if (r.pagoSalarial > mejorVal) { mejorVal = r.pagoSalarial; mejorFecha = r.fecha; }
+
+      let d = r.desglose || {};
+      let hd = (parseFloat(d.ordD?.h||0)+parseFloat(d.extD?.h||0)+parseFloat(d.domD?.h||0)+parseFloat(d.edd?.h||0));
+      let hn = (parseFloat(d.ordN?.h||0)+parseFloat(d.extN?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edn?.h||0));
+      let hf = (parseFloat(d.domD?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edd?.h||0)+parseFloat(d.edn?.h||0));
+      horasTot += hd + hn;
+      horasNoc += hn;
+      horasFest += hf;
+
+      barData.push({ fecha: r.fecha, val: r.pagoSalarial, tipo: r.tipo });
+    });
+
+    const promDia = diasRegistrados > 0 ? ibc / diasRegistrados : 0;
+    const tr = (window.cfg.auxTranspMensual / 30) * diasT;
+    const de = baseDeducible * 0.08;
+    const netoActual = ibc + tr - de;
+
+    // Proyección a 15 días
+    const diasRestantes = Math.max(META_DIAS - diasRegistrados, 0);
+    const ibcProy = ibc + (promDia * diasRestantes);
+    const trProy = (window.cfg.auxTranspMensual / 30) * Math.min(diasT + diasRestantes, META_DIAS);
+    const deProy = (ibcProy * 0.92) * 0.08; // estimando mismo ratio deducible
+    const netoProy = ibcProy + trProy - deProy;
+
+    const progPct = Math.min((diasRegistrados / META_DIAS) * 100, 100);
+    const horasProm = diasRegistrados > 0 ? (horasTot / diasRegistrados) : 0;
+    const nocPct = horasTot > 0 ? ((horasNoc / horasTot) * 100).toFixed(0) : 0;
+    const festPct = horasTot > 0 ? ((horasFest / horasTot) * 100).toFixed(0) : 0;
+
+    // Ritmo
+    let ritmoHtml = '';
+    const diasTranscurridos = diasRegistrados;
+    const metaParcial = (netoProy / META_DIAS) * diasTranscurridos;
+    if (netoActual >= metaParcial * 1.05) {
+      ritmoHtml = '<span class="ritmo-badge ritmo-great">↑ Por encima del ritmo esperado</span>';
+    } else if (netoActual >= metaParcial * 0.9) {
+      ritmoHtml = '<span class="ritmo-badge ritmo-ok">✓ Ritmo normal de quincena</span>';
+    } else {
+      ritmoHtml = '<span class="ritmo-badge ritmo-low">↓ Por debajo del ritmo esperado</span>';
+    }
+
+    // Tip inteligente
+    let tip = '';
+    if (horasNoc > horasTot * 0.5) {
+      tip = `<strong>Alta carga nocturna:</strong> El ${nocPct}% de tus horas son nocturnas. Esto eleva tu salario, pero revisa el impacto en tu descanso.`;
+    } else if (horasFest > 0) {
+      tip = `<strong>Festivos trabajados:</strong> Llevas <strong>${horasFest.toFixed(1)}h</strong> en domingos o festivos, que se pagan con recargo del ${window.cfg.dom}%.`;
+    } else if (diasRegistrados < 5) {
+      tip = `Llevas <strong>${diasRegistrados} días</strong> registrados. Con el promedio actual de <strong>${format.format(promDia)}/día</strong>, tu proyección es <strong>${format.format(netoProy)}</strong> neto.`;
+    } else {
+      tip = `Promedio diario de <strong>${format.format(promDia)}</strong>. Te faltan aproximadamente <strong>${diasRestantes} días</strong> para completar la quincena.`;
+    }
+
+    // Render UI
+    document.getElementById('dashProyNeto').innerText = format.format(netoProy);
+    document.getElementById('dashProySub').innerText = `Proyección basada en ${diasRegistrados} días registrados · promedio ${format.format(promDia)}/día`;
+    document.getElementById('dashRitmoBadge').innerHTML = ritmoHtml;
+
+    document.getElementById('dashDiasReg').innerText = diasRegistrados;
+    document.getElementById('dashDiasSub').innerText = `de ${META_DIAS} esperados · faltan ${diasRestantes}`;
+    document.getElementById('dashHorasTot').innerText = horasTot.toFixed(1) + 'h';
+    document.getElementById('dashHorasSub').innerText = `${horasProm.toFixed(1)}h promedio por turno`;
+    document.getElementById('dashPromDia').innerText = format.format(promDia);
+    document.getElementById('dashMejorDia').innerText = format.format(mejorVal);
+    document.getElementById('dashMejorFecha').innerText = mejorFecha || '—';
+    document.getElementById('dashHorasNoc').innerText = horasNoc.toFixed(1) + 'h';
+    document.getElementById('dashNocPct').innerText = `${nocPct}% del total trabajado`;
+    document.getElementById('dashHorasFest').innerText = horasFest.toFixed(1) + 'h';
+    document.getElementById('dashFestPct').innerText = `${festPct}% del total trabajado`;
+
+    document.getElementById('dashProgPct').innerText = progPct.toFixed(0) + '%';
+    const bar = document.getElementById('dashProgBar');
+    bar.style.width = progPct + '%';
+    bar.className = 'progress-fill' + (progPct >= 100 ? ' over' : progPct < 40 ? ' low' : '');
+
+    // Proyección detallada
+    document.getElementById('dashProjIBC').innerText = format.format(ibc);
+    document.getElementById('dashProjIBCproy').innerText = format.format(ibcProy);
+    document.getElementById('dashProjTransp').innerText = format.format(trProy);
+    document.getElementById('dashProjDeduc').innerText = '-' + format.format(deProy);
+    document.getElementById('dashProjNeto').innerText = format.format(netoProy);
+
+    // Bar chart — usar px reales basados en altura del contenedor
+    const maxVal = Math.max(...barData.map(b => b.val), 1);
+    const chartEl = document.getElementById('dashBarChart');
+    const CHART_H = 148; // altura disponible para barras (180px - 32px label)
+    chartEl.innerHTML = barData.map(b => {
+      const barH = Math.max(Math.round((b.val / maxVal) * CHART_H), 3);
+      const colorClass = b.tipo === 'INCAPACIDAD' ? 'incap' : b.tipo === 'COMPENSATORIO' ? 'comp' : '';
+      const shortDate = b.fecha.slice(5);
+      return `<div class="bar-col">
+        <div class="bar-fill ${colorClass}" style="height:${barH}px;" data-tip="${shortDate}: ${format.format(b.val)}"></div>
+        <div class="bar-label">${shortDate}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('dashTip').innerHTML = tip;
+  }
+
+  function toggleTipoDia() {
+    const tipo = document.getElementById('tipoDia').value;
+    const secH = document.getElementById('secHoras');
+    const secD = document.getElementById('secDiagnostico');
+    secH.classList.toggle('hidden', tipo !== 'NORMAL');
+    secD.classList.toggle('hidden', tipo !== 'INCAPACIDAD' && tipo !== 'COMPENSATORIO');
+  }
+
+  function isNocturno(d) { let h = d.getHours(); return h >= 19 || h < 6; }
+  function isDomFest(d) { return d.getDay() === 0 || festivos.includes(d.toLocaleDateString('en-CA')); }
+
+  document.getElementById('formTurno').onsubmit = async (e) => {
+    e.preventDefault();
+    const tipo = document.getElementById('tipoDia').value;
+    const fecha = document.getElementById('fecha').value;
+    let registro = { fecha, tipo, pagoSalarial: 0, pagaTransporte: false, desglose: {}, diag: "", rawHoras: null };
+
+    if (tipo === 'NORMAL') {
+      registro.pagaTransporte = true;
+      let hI = document.getElementById('hInicio').value;
+      let hF = document.getElementById('hFin').value;
+      let hBO = document.getElementById('hBreakOut').value;
+      let hBI = document.getElementById('hBreakIn').value;
+      if (!hI || !hF) return alert("Ingresa entrada y salida");
+      registro.rawHoras = { hI, hF, hBO, hBI };
+      let start = new Date(`${fecha}T${hI}`);
+      let end = new Date(`${fecha}T${hF}`);
+      if (end <= start) end.setDate(end.getDate() + 1);
+      let breaks = [];
+      if (hBO && hBI) {
+        let dS = new Date(`${fecha}T${hBO}`);
+        let dE = new Date(`${fecha}T${hBI}`);
+        if (dS < start) dS.setDate(dS.getDate() + 1);
+        if (dE <= dS) dE.setDate(dE.getDate() + 1);
+        breaks.push({ s: dS, e: dE });
+      }
+      let mins = 0;
+      let counts = { ordD:0, ordN:0, extD:0, extN:0, domD:0, domN:0, edd:0, edn:0 };
+      let cur = new Date(start);
+      while (cur < end) {
+        let inBreak = breaks.some(b => cur >= b.s && cur < b.e);
+        if (!inBreak) {
+          mins++;
+          let fest = isDomFest(cur), noc = isNocturno(cur), ext = mins > 600;
+          if (!ext && !fest && !noc) counts.ordD++;
+          else if (!ext && !fest && noc) counts.ordN++;
+          else if (ext && !fest && !noc) counts.extD++;
+          else if (ext && !fest && noc) counts.extN++;
+          else if (!ext && fest && !noc) counts.domD++;
+          else if (!ext && fest && noc) counts.domN++;
+          else if (ext && fest && !noc) counts.edd++;
+          else if (ext && fest && noc) counts.edn++;
         }
+        cur.setMinutes(cur.getMinutes() + 1);
+      }
+      const prices = {
+        ordD: window.cfg.hora, ordN: window.cfg.hora*(1+window.cfg.rn/100),
+        extD: window.cfg.hora*(1+window.cfg.hed/100), extN: window.cfg.hora*(1+window.cfg.hen/100),
+        domD: window.cfg.hora*(1+window.cfg.dom/100), domN: window.cfg.hora*(1+window.cfg.dom/100+window.cfg.rn/100),
+        edd: window.cfg.hora*(1+window.cfg.hedd/100), edn: window.cfg.hora*(1+window.cfg.hend/100)
+      };
+      for (let k in counts) {
+        let h = counts[k]/60;
+        if (h > 0) { let v = h*prices[k]; registro.desglose[k] = {h:h.toFixed(2),v}; registro.pagoSalarial += v; }
+      }
+    } else if (tipo === 'INCAPACIDAD') {
+      registro.diag = document.getElementById('diagnostico').value || "Incapacidad General";
+      registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
+      registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial };
+    } else if (tipo === 'COMPENSATORIO') {
+      registro.pagaTransporte = true;
+      registro.diag = document.getElementById('diagnostico').value || "Día compensatorio";
+      const valorComp = 58364;
+      registro.pagoSalarial = valorComp;
+      registro.desglose['COMPENSATORIO'] = { h: 7.55, v: valorComp };
+    }
 
-        window.saveToCloud = async () => {
-            if(!window.currentUser) return;
-            await setDoc(doc(fb_db, "usuarios", window.currentUser.uid), {
-                db: window.db,
-                historial: window.historialDB,
-                cfg: window.cfg
-            });
-        };
-    </script>
+    window.db = window.db.filter(x => x.fecha !== fecha);
+    window.db.push(registro);
+    window.db.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+    if (window.saveToCloud) await window.saveToCloud();
+    const btn = document.getElementById('btnGuardar');
+    btn.innerText = 'Guardar en Quincena';
+    btn.style.background = '';
+    renderAll();
+    e.target.reset();
+    toggleTipoDia();
+    showToast('✅ Guardado correctamente en la nube', 'success');
+  };
 
-    <script>
-        window.cfgDefault = { hora: 7959, rn: 35, dom: 80, hed: 25, hen: 75, hedd: 105, hend: 155, auxTranspMensual: 250000 };
-        window.cfg = {...window.cfgDefault};
-        window.db = [];
-        window.historialDB = [];
-        const format = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-        const festivos = ["2026-01-01", "2026-01-12", "2026-03-23", "2026-04-02", "2026-04-03", "2026-05-01", "2026-05-18", "2026-06-08", "2026-06-15", "2026-06-29", "2026-07-20", "2026-08-07", "2026-08-17", "2026-10-12", "2026-11-02", "2026-11-16", "2026-12-08", "2026-12-25"];
+  function editReg(fecha) {
+    const r = window.db.find(x => x.fecha === fecha);
+    if (!r) return;
+    document.getElementById('fecha').value = r.fecha;
+    document.getElementById('tipoDia').value = r.tipo;
+    toggleTipoDia();
+    if (r.tipo === 'NORMAL' && r.rawHoras) {
+      document.getElementById('hInicio').value = r.rawHoras.hI || '';
+      document.getElementById('hBreakOut').value = r.rawHoras.hBO || '';
+      document.getElementById('hBreakIn').value = r.rawHoras.hBI || '';
+      document.getElementById('hFin').value = r.rawHoras.hF || '';
+    } else {
+      document.getElementById('diagnostico').value = r.diag || '';
+    }
+    const btn = document.getElementById('btnGuardar');
+    btn.innerText = 'Actualizar Día Registrado';
+    btn.style.background = 'var(--success)';
+    showTab('registro');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-        let myChart = null;
+  function renderChart(sumas) {
+    const ctx = document.getElementById('nominaChart').getContext('2d');
+    const labelsMap = { ordD:'H. Ordinaria', ordN:'Rec. Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
+    const colors = { ordD:'#c9a84c', ordN:'#7a5c1e', extD:'#5aad8f', extN:'#2d7a5e', domD:'#6a8fe8', domN:'#3a5fb0', edd:'#e05a5a', edn:'#a03030', INCAP:'#7a7a8a', COMPENSATORIO:'#b084e8' };
+    const dataLabels = [], dataValues = [], bgColors = [];
+    for (let k in sumas) { dataLabels.push(labelsMap[k]||k); dataValues.push(sumas[k].v); bgColors.push(colors[k]||'#555'); }
+    if (myChart) myChart.destroy();
+    const isDark = !lightMode;
+    myChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: dataLabels, datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 12, borderRadius: 4 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position:'bottom', labels: { color: isDark?'#7a7a8a':'#7a7a6a', font:{weight:'600',size:10,family:'DM Sans'}, padding:16, usePointStyle:true, pointStyleWidth:8 }},
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${format.format(ctx.raw)}` }, backgroundColor:'#1e1e24', titleColor:'#c9a84c', bodyColor:'#f0efe8', borderColor:'#3a3a46', borderWidth:1 }
+        },
+        cutout: '72%'
+      }
+    });
+  }
 
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('darkMode', isDark);
-            document.getElementById('darkIcon').innerText = isDark ? '☀️' : '🌙';
-            if(myChart) renderAll();
-        }
+  function renderAll() {
+    const list = document.getElementById('listaRegistros');
+    list.innerHTML = '';
+    const title = document.getElementById('regTitle');
+    let ibc = 0, diasT = 0, baseDeducible = 0;
+    let sumas = {};
+    const labels = { ordD:'H. Ordinaria', ordN:'Recargo Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
 
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.documentElement.classList.add('dark');
-            document.getElementById('darkIcon').innerText = '☀️';
-        }
+    if (window.db.length > 0) {
+      title.style.display = 'flex';
+      setUnsavedData(true);
+    } else {
+      title.style.display = 'none';
+    }
 
-        function showTab(t) {
-            document.querySelectorAll('.tab-content').forEach(x => x.classList.add('hidden'));
-            document.getElementById(t).classList.remove('hidden');
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.className = "tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700";
-            });
-            if(event) event.target.className = "tab-btn flex-1 py-3 px-4 rounded-lg font-bold transition-all bg-indigo-600 text-white shadow-lg";
-            if(t === 'resumen') renderAll();
-            if(t === 'config') renderFestivos();
-        }
+    window.db.forEach(r => {
+      let colorClass = r.tipo === 'NORMAL' ? 'accent' : (r.tipo === 'INCAPACIDAD' ? 'danger' : 'success');
+      let typeLabel = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? '★ Compensatorio' : r.diag || r.tipo);
+      let timeStr = '';
+      if (r.tipo === 'NORMAL' && r.rawHoras) {
+        timeStr = `${r.rawHoras.hI} → ${r.rawHoras.hF}`;
+        if (r.rawHoras.hBO && r.rawHoras.hBI) timeStr += ` · ☕ ${r.rawHoras.hBO}–${r.rawHoras.hBI}`;
+      }
 
-        function toggleTipoDia() {
-            const tipo = document.getElementById('tipoDia').value;
-            document.getElementById('secHoras').classList.toggle('hidden', tipo !== 'NORMAL');
-            document.getElementById('secDiagnostico').classList.toggle('hidden', tipo !== 'INCAPACIDAD' && tipo !== 'COMPENSATORIO');
-        }
+      list.innerHTML += `<div class="reg-item ${colorClass}">
+        <div>
+          <div class="reg-date">${r.fecha}</div>
+          <div class="reg-type">${typeLabel}</div>
+          ${timeStr ? `<div class="reg-time">${timeStr}</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div class="reg-amount">${format.format(r.pagoSalarial)}</div>
+          <div class="reg-actions">
+            <button onclick="openEditModal('${r.fecha}')" class="reg-action-btn edit">Editar</button>
+            <button onclick="deleteReg('${r.fecha}')" class="reg-action-btn del">Borrar</button>
+          </div>
+        </div>
+      </div>`;
 
-        function isNocturno(d) { let h = d.getHours(); return h >= 19 || h < 6; }
-        function isDomFest(d) {
-            let dateStr = d.toLocaleDateString('en-CA');
-            return d.getDay() === 0 || festivos.includes(dateStr);
-        }
+      ibc += r.pagoSalarial;
+      if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
+      if (r.pagaTransporte) diasT++;
+      for (let k in r.desglose) {
+        if (!sumas[k]) sumas[k] = { h: 0, v: 0 };
+        sumas[k].h += parseFloat(r.desglose[k].h);
+        sumas[k].v += r.desglose[k].v;
+      }
+    });
 
-        document.getElementById('formTurno').onsubmit = async (e) => {
-            e.preventDefault();
-            const tipo = document.getElementById('tipoDia').value;
-            const fecha = document.getElementById('fecha').value;
-            let registro = { fecha, tipo, pagoSalarial: 0, pagaTransporte: false, desglose: {}, diag: "", rawHoras: null };
+    renderChart(sumas);
 
-            if (tipo === 'NORMAL') {
-                registro.pagaTransporte = true;
-                let hI = document.getElementById('hInicio').value;
-                let hF = document.getElementById('hFin').value;
-                let hBO = document.getElementById('hBreakOut').value;
-                let hBI = document.getElementById('hBreakIn').value;
-                if(!hI || !hF) return alert("Ingresa entrada y salida");
-                registro.rawHoras = { hI, hF, hBO, hBI };
-                let start = new Date(`${fecha}T${hI}`);
-                let end = new Date(`${fecha}T${hF}`);
-                if (end <= start) end.setDate(end.getDate() + 1);
-                let breaks = [];
-                if(hBO && hBI) {
-                    let dS = new Date(`${fecha}T${hBO}`);
-                    let dE = new Date(`${fecha}T${hBI}`);
-                    if(dS < start) dS.setDate(dS.getDate() + 1);
-                    if(dE <= dS) dE.setDate(dE.getDate() + 1);
-                    breaks.push({s:dS, e:dE});
-                }
-                let mins = 0;
-                let counts = { ordD: 0, ordN: 0, extD: 0, extN: 0, domD: 0, domN: 0, edd: 0, edn: 0 };
-                let cur = new Date(start);
-                while(cur < end) {
-                    let inBreak = breaks.some(b => cur >= b.s && cur < b.e);
-                    if(!inBreak){
-                        mins++;
-                        let fest = isDomFest(cur);
-                        let noc = isNocturno(cur);
-                        let ext = mins > 600; 
-                        if(!ext && !fest && !noc) counts.ordD++;
-                        else if(!ext && !fest && noc) counts.ordN++;
-                        else if(ext && !fest && !noc) counts.extD++;
-                        else if(ext && !fest && noc) counts.extN++;
-                        else if(!ext && fest && !noc) counts.domD++;
-                        else if(!ext && fest && noc) counts.domN++;
-                        else if(ext && fest && !noc) counts.edd++;
-                        else if(ext && fest && noc) counts.edn++;
-                    }
-                    cur.setMinutes(cur.getMinutes() + 1);
-                }
-                const prices = {
-                    ordD: window.cfg.hora, ordN: window.cfg.hora * (1 + window.cfg.rn/100), extD: window.cfg.hora * (1 + window.cfg.hed/100), 
-                    extN: window.cfg.hora * (1 + window.cfg.hen/100), domD: window.cfg.hora * (1 + window.cfg.dom/100), 
-                    domN: window.cfg.hora * (1 + window.cfg.dom/100 + window.cfg.rn/100), edd: window.cfg.hora * (1 + window.cfg.hedd/100), edn: window.cfg.hora * (1 + window.cfg.hend/100)
-                };
-                for(let k in counts) {
-                    let h = counts[k]/60;
-                    if(h > 0) {
-                        let v = h * prices[k];
-                        registro.desglose[k] = { h: h.toFixed(2), v };
-                        registro.pagoSalarial += v;
-                    }
-                }
-            } else if (tipo === 'INCAPACIDAD') {
-
-                registro.diag = document.getElementById('diagnostico').value || "Incapacidad General";
-
-                registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
-
-                registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial };
-
-            }
-
-            else if (tipo === 'COMPENSATORIO') {
-                registro.pagaTransporte = true; 
-                registro.diag = document.getElementById('diagnostico').value || "Día compensatorio";
+    let tr = (window.cfg.auxTranspMensual / 30) * diasT;
+    let de = baseDeducible * 0.08;
+    let salud = baseDeducible * 0.04;
+    let pension = baseDeducible * 0.04;
     
+    document.getElementById('resIBC').innerText = format.format(ibc);
+    document.getElementById('resTransp').innerText = format.format(tr);
+    document.getElementById('resDeduc').innerText = '-' + format.format(de);
+    document.getElementById('resNeto').innerText = format.format(ibc + tr - de);
     
-                const valorCompensatorio = 58364; 
-    
-                registro.pagoSalarial = valorCompensatorio;
-                
-                registro.desglose['COMPENSATORIO'] = { h: 7.55, v: valorCompensatorio };
-             }
+    // Deducciones desglosadas
+    document.getElementById('deduccionSalud').innerText = '-' + format.format(salud);
+    document.getElementById('deduccionPension').innerText = '-' + format.format(pension);
+    document.getElementById('deduccionTotal').innerText = '-' + format.format(salud + pension);
 
-            window.db = window.db.filter(x => x.fecha !== fecha);
+    const table = document.getElementById('resDetalleTable');
+    table.innerHTML = '';
+    for (let k in sumas) {
+      table.innerHTML += `<tr><td style="font-weight:600;">${labels[k]||k}</td><td class="center">${sumas[k].h.toFixed(2)}</td><td class="right">${format.format(sumas[k].v)}</td></tr>`;
+    }
+  }
 
-            window.db.push(registro);
+  function renderFestivos() {
+    document.getElementById('festivosList').innerHTML = festivos.map(f => `<span class="festivo-tag">${f}</span>`).join('');
+  }
 
-            window.db.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
-            
-            if(window.saveToCloud) await window.saveToCloud(); // Guarda en nube
-            
-            document.getElementById('btnGuardar').innerText = "Guardar Día en Quincena";
-            document.getElementById('btnGuardar').classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-            renderAll();
-            e.target.reset();
-            toggleTipoDia();
-            alert("✅ Guardado correctamente en la nube.");
-        };
+  // ═══════════════════════════════════════════════════════════════
+  // TOAST NOTIFICATION SYSTEM
+  // ═══════════════════════════════════════════════════════════════
+  function showToast(message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <div class="toast-icon">${icons[type] || 'ℹ'}</div>
+      <div class="toast-message">${message}</div>
+      <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+    `;
+    container.appendChild(toast);
+    if (duration > 0) {
+      setTimeout(() => {
+        toast.classList.add('toastOut');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+  }
 
-        function editReg(fecha) {
-            const r = window.db.find(x => x.fecha === fecha);
-            if(!r) return;
-            document.getElementById('fecha').value = r.fecha;
-            document.getElementById('tipoDia').value = r.tipo;
-            toggleTipoDia();
-            if(r.tipo === 'NORMAL' && r.rawHoras) {
-                document.getElementById('hInicio').value = r.rawHoras.hI || '';
-                document.getElementById('hBreakOut').value = r.rawHoras.hBO || '';
-                document.getElementById('hBreakIn').value = r.rawHoras.hBI || '';
-                document.getElementById('hFin').value = r.rawHoras.hF || '';
-            } else {
-                document.getElementById('diagnostico').value = r.diag || '';
-            }
-            const btn = document.getElementById('btnGuardar');
-            btn.innerText = "Actualizar Día Registrado";
-            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
-            showTab('registro');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+  // ═══════════════════════════════════════════════════════════════
+  // MODAL EDIT FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════
+  function openEditModal(fecha) {
+    const r = window.db.find(x => x.fecha === fecha);
+    if (!r) return;
+    document.getElementById('editFecha').value = r.fecha;
+    document.getElementById('editFechaDisplay').value = r.fecha;
+    document.getElementById('editTipoDia').value = r.tipo;
+    toggleEditTipoDia();
+    if (r.tipo === 'NORMAL' && r.rawHoras) {
+      document.getElementById('editHInicio').value = r.rawHoras.hI || '';
+      document.getElementById('editHBreakOut').value = r.rawHoras.hBO || '';
+      document.getElementById('editHBreakIn').value = r.rawHoras.hBI || '';
+      document.getElementById('editHFin').value = r.rawHoras.hF || '';
+    } else {
+      document.getElementById('editDiagnostico').value = r.diag || '';
+    }
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    modal.classList.add('open');
+    modal.classList.add('modalOut');
+    setTimeout(() => {
+      modal.classList.remove('open', 'modalOut');
+    }, 250);
+  }
+
+  function toggleEditTipoDia() {
+    const tipo = document.getElementById('editTipoDia').value;
+    const secH = document.getElementById('editSecHoras');
+    const secD = document.getElementById('editSecDiagnostico');
+    secH.classList.toggle('hidden', tipo !== 'NORMAL');
+    secD.classList.toggle('hidden', tipo !== 'INCAPACIDAD' && tipo !== 'COMPENSATORIO');
+  }
+
+  document.getElementById('formEditModal').onsubmit = async (e) => {
+    e.preventDefault();
+    const fecha = document.getElementById('editFecha').value;
+    const tipo = document.getElementById('editTipoDia').value;
+    let registro = { fecha, tipo, pagoSalarial: 0, pagaTransporte: false, desglose: {}, diag: "", rawHoras: null };
+
+    if (tipo === 'NORMAL') {
+      registro.pagaTransporte = true;
+      let hI = document.getElementById('editHInicio').value;
+      let hF = document.getElementById('editHFin').value;
+      let hBO = document.getElementById('editHBreakOut').value;
+      let hBI = document.getElementById('editHBreakIn').value;
+      if (!hI || !hF) { showToast('Ingresa entrada y salida', 'error'); return; }
+      registro.rawHoras = { hI, hF, hBO, hBI };
+      let start = new Date(`${fecha}T${hI}`);
+      let end = new Date(`${fecha}T${hF}`);
+      if (end <= start) end.setDate(end.getDate() + 1);
+      let breaks = [];
+      if (hBO && hBI) {
+        let dS = new Date(`${fecha}T${hBO}`);
+        let dE = new Date(`${fecha}T${hBI}`);
+        if (dS < start) dS.setDate(dS.getDate() + 1);
+        if (dE <= dS) dE.setDate(dE.getDate() + 1);
+        breaks.push({ s: dS, e: dE });
+      }
+      let mins = 0;
+      let counts = { ordD:0, ordN:0, extD:0, extN:0, domD:0, domN:0, edd:0, edn:0 };
+      let cur = new Date(start);
+      while (cur < end) {
+        let inBreak = breaks.some(b => cur >= b.s && cur < b.e);
+        if (!inBreak) {
+          mins++;
+          let fest = isDomFest(cur), noc = isNocturno(cur), ext = mins > 600;
+          if (!ext && !fest && !noc) counts.ordD++;
+          else if (!ext && !fest && noc) counts.ordN++;
+          else if (ext && !fest && !noc) counts.extD++;
+          else if (ext && !fest && noc) counts.extN++;
+          else if (!ext && fest && !noc) counts.domD++;
+          else if (!ext && fest && noc) counts.domN++;
+          else if (ext && fest && !noc) counts.edd++;
+          else if (ext && fest && noc) counts.edn++;
         }
+        cur.setMinutes(cur.getMinutes() + 1);
+      }
+      const prices = {
+        ordD: window.cfg.hora, ordN: window.cfg.hora*(1+window.cfg.rn/100),
+        extD: window.cfg.hora*(1+window.cfg.hed/100), extN: window.cfg.hora*(1+window.cfg.hen/100),
+        domD: window.cfg.hora*(1+window.cfg.dom/100), domN: window.cfg.hora*(1+window.cfg.dom/100+window.cfg.rn/100),
+        edd: window.cfg.hora*(1+window.cfg.hedd/100), edn: window.cfg.hora*(1+window.cfg.hend/100)
+      };
+      for (let k in counts) {
+        let h = counts[k]/60;
+        if (h > 0) { let v = h*prices[k]; registro.desglose[k] = {h:h.toFixed(2),v}; registro.pagoSalarial += v; }
+      }
+    } else if (tipo === 'INCAPACIDAD') {
+      registro.diag = document.getElementById('editDiagnostico').value || "Incapacidad General";
+      registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
+      registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial };
+    } else if (tipo === 'COMPENSATORIO') {
+      registro.pagaTransporte = true;
+      registro.diag = document.getElementById('editDiagnostico').value || "Día compensatorio";
+      const valorComp = 58364;
+      registro.pagoSalarial = valorComp;
+      registro.desglose['COMPENSATORIO'] = { h: 7.55, v: valorComp };
+    }
 
-        function renderChart(sumas) {
-            const ctx = document.getElementById('nominaChart').getContext('2d');
-            const labelsMap = { ordD:'H. Ordinaria', ordN:'Rec. Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
-            const dataLabels = []; const dataValues = [];
-            const colors = { ordD: '#6366f1', ordN: '#4338ca', extD: '#fbbf24', extN: '#d97706', domD: '#10b981', domN: '#047857', edd: '#f43f5e', edn: '#be123c', INCAP: '#94a3b8', COMPENSATORIO: '#8b5cf6' };
-            const backgroundColors = [];
+    window.db = window.db.filter(x => x.fecha !== fecha);
+    window.db.push(registro);
+    window.db.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+    if (window.saveToCloud) await window.saveToCloud();
+    closeEditModal();
+    renderAll();
+    showToast('✅ Registro actualizado correctamente', 'success');
+  };
 
-            for(let k in sumas) {
-                dataLabels.push(labelsMap[k] || k);
-                dataValues.push(sumas[k].v);
-                backgroundColors.push(colors[k] || '#CBD5E1');
-            }
+  // ═══════════════════════════════════════════════════════════════
+  // HISTORY SEARCH & FILTER
+  // ═══════════════════════════════════════════════════════════════
+  function filterHistorial() {
+    const search = document.getElementById('histSearchInput').value.toLowerCase();
+    const dateFrom = document.getElementById('histDateFrom').value;
+    const dateTo = document.getElementById('histDateTo').value;
+    const items = document.querySelectorAll('.hist-item');
+    items.forEach(item => {
+      const text = item.textContent.toLowerCase();
+      const fecha = item.querySelector('.reg-date, div > div:nth-child(2)').textContent;
+      let show = text.includes(search);
+      if (dateFrom && fecha < dateFrom) show = false;
+      if (dateTo && fecha > dateTo) show = false;
+      item.style.display = show ? '' : 'none';
+    });
+  }
 
-            if(myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: dataLabels, datasets: [{ data: dataValues, backgroundColor: backgroundColors, borderWidth: 0, hoverOffset: 15 }] },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b', font: { weight: 'bold', size: 10 }, padding: 15, usePointStyle: true } }, tooltip: { callbacks: { label: function(context) { return ` ${context.label}: ${format.format(context.raw)}`; } } } },
-                    cutout: '70%'
-                }
-            });
-        }
+  function clearHistFilters() {
+    document.getElementById('histSearchInput').value = '';
+    document.getElementById('histDateFrom').value = '';
+    document.getElementById('histDateTo').value = '';
+    filterHistorial();
+  }
 
-        function renderAll() {
-            const list = document.getElementById('listaRegistros');
-            list.innerHTML = "";
-            let ibc = 0, diasT = 0, baseDeducible = 0; let sumas = {};
-            const labels = { ordD:'H. Ordinaria', ordN:'Recargo Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
+  // ═══════════════════════════════════════════════════════════════
+  // UNSAVED DATA WARNING (beforeunload)
+  // ═══════════════════════════════════════════════════════════════
+  let hasUnsavedData = false;
+  function setUnsavedData(flag) {
+    hasUnsavedData = flag;
+  }
 
-            window.db.forEach(r => {
-                let color = r.tipo === 'NORMAL' ? 'border-indigo-100 dark:border-indigo-900/30' : 'border-rose-100 dark:border-rose-900/30 bg-rose-50/30 dark:bg-rose-900/10';
-                let horasHtml = (r.tipo === 'NORMAL' && r.rawHoras) ? `<p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1">⏱️ ${r.rawHoras.hI} a ${r.rawHoras.hF}${(r.rawHoras.hBO && r.rawHoras.hBI) ? ` | ☕ ${r.rawHoras.hBO} - ${r.rawHoras.hBI}` : ''}</p>` : '';
-                list.innerHTML += `<div class="p-4 bg-white dark:bg-slate-800 border-2 ${color} rounded-2xl flex justify-between items-center shadow-sm">
-                    <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">${r.fecha}</p><p class="text-sm font-black text-slate-700 dark:text-slate-200">${r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? '🌟 Compensatorio' : r.diag)}</p>${horasHtml}</div>
-                    <div class="text-right flex flex-col items-end"><p class="text-sm font-black text-indigo-600 dark:text-indigo-400">${format.format(r.pagoSalarial)}</p><div class="flex gap-3 mt-1"><button onclick="editReg('${r.fecha}')" class="text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase transition-colors">Editar</button><button onclick="deleteReg('${r.fecha}')" class="text-[10px] font-black text-rose-400 hover:text-rose-600 uppercase transition-colors">Borrar</button></div></div>
-                </div>`;
-                ibc += r.pagoSalarial;
-                
-                if (r.tipo !== 'INCAPACIDAD') {
-                    baseDeducible += r.pagoSalarial;
-                }
+  window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedData && window.db && window.db.length > 0) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 
-                if(r.pagaTransporte) diasT++;
-                for(let k in r.desglose){
-                    if(!sumas[k]) sumas[k] = {h:0, v:0};
-                    sumas[k].h += parseFloat(r.desglose[k].h);
-                    sumas[k].v += r.desglose[k].v;
-                }
-            });
+  // Track unsaved data when records are added
+  const originalSubmitHandler = document.getElementById('formTurno').onsubmit;
+  document.getElementById('formTurno').onsubmit = async (e) => {
+    setUnsavedData(true);
+    originalSubmitHandler.call(document.getElementById('formTurno'), e);
+  };
 
-            renderChart(sumas);
+  async function deleteReg(f) {
+    if (confirm("¿Eliminar este registro?")) {
+      window.db = window.db.filter(x => x.fecha !== f);
+      if (window.saveToCloud) await window.saveToCloud();
+      renderAll();
+      showToast('🗑️ Registro eliminado', 'info');
+    }
+  }
 
-            let tr = (window.cfg.auxTranspMensual / 30) * diasT;
-            
-            let de = baseDeducible * 0.08;
-            document.getElementById('resIBC').innerText = format.format(ibc);
-            document.getElementById('resTransp').innerText = format.format(tr);
-            document.getElementById('resDeduc').innerText = "-" + format.format(de);
-            document.getElementById('resNeto').innerText = format.format(ibc + tr - de);
+  async function clearQuincena() {
+    if (window.db.length === 0) { showToast('⚠️ No hay registros para cerrar.', 'warning'); return; }
+    if (confirm("⚠️ ¿Deseas cerrar esta quincena? Se guardará el total en el historial y se limpiarán los días.")) {
+      let ibc = 0, baseDeducible = 0, diasT = 0;
+      window.db.forEach(r => {
+        ibc += r.pagoSalarial;
+        if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
+        if (r.pagaTransporte) diasT++;
+      });
+      let neto = ibc + ((window.cfg.auxTranspMensual/30)*diasT) - (baseDeducible*0.08);
+      let desde = window.db[0].fecha, hasta = window.db[window.db.length-1].fecha;
+      const copiaRegistros = JSON.parse(JSON.stringify(window.db));
+      window.historialDB.push({ id: Date.now(), desde, hasta, neto, registros: copiaRegistros });
+      window.db = [];
+      setUnsavedData(false);
+      if (window.saveToCloud) await window.saveToCloud();
+      renderAll(); renderHistorial();
+      showToast('✅ Quincena cerrada y guardada en historial', 'success');
+    }
+  }
 
-            const table = document.getElementById('resDetalleTable');
-            table.innerHTML = "";
-            for(let k in sumas){
-                table.innerHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"><td class="py-4 font-bold text-slate-700 dark:text-slate-300">${labels[k] || k}</td><td class="py-4 text-center font-black text-slate-400">${sumas[k].h.toFixed(2)}</td><td class="py-4 text-right font-black text-slate-800 dark:text-slate-100">${format.format(sumas[k].v)}</td></tr>`;
-            }
-        }
-
-        function renderFestivos() { document.getElementById('festivosList').innerHTML = festivos.map(f => `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 text-[10px] px-2 py-1 rounded-lg font-bold border border-indigo-100 dark:border-indigo-900/30">${f}</span>`).join(""); }
-
-        async function deleteReg(f) { 
-            if(confirm("¿Eliminar este registro?")){ 
-                window.db = window.db.filter(x => x.fecha !== f); 
-                if(window.saveToCloud) await window.saveToCloud();
-                renderAll(); 
-            } 
-        }
-
-        async function clearQuincena() { 
-    if(window.db.length === 0) return alert("⚠️ No hay registros para cerrar.");
-    if(confirm("⚠️ ¿Deseas cerrar esta quincena? Se guardará el total en el historial y se limpiarán los días.")){ 
-        let ibc = 0; let baseDeducible = 0; let diasT = 0;
-        window.db.forEach(r => { 
-            ibc += r.pagoSalarial; 
-            if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial;
-            if(r.pagaTransporte) diasT++; 
-        });
-        
-        let neto = ibc + ((window.cfg.auxTranspMensual / 30) * diasT) - (baseDeducible * 0.08);
-        let desde = window.db[0].fecha;
-        let hasta = window.db[window.db.length-1].fecha;
-
-       
-        const copiaRegistros = JSON.parse(JSON.stringify(window.db));
-
-        window.historialDB.push({ id: Date.now(), desde, hasta, neto, registros: copiaRegistros });
-        window.db = []; 
-        if(window.saveToCloud) await window.saveToCloud();
-        renderAll(); 
-        renderHistorial();
-    } 
-}
-
-        function renderHistorial() {
+  function renderHistorial() {
     const container = document.getElementById('secHistorial');
     const list = document.getElementById('listaHistorial');
-    
-
     if (!window.historialDB || window.historialDB.length === 0) {
-        container.classList.add('hidden');
-        list.innerHTML = '';
-        return;
+      container.classList.add('hidden'); list.innerHTML = ''; return;
     }
-
-    
     container.classList.remove('hidden');
     list.innerHTML = window.historialDB.map(h => `
-        <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-600 shadow-sm transition-all mb-3">
-            <div class="flex justify-between items-center">
-                <div>
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Período cerrado</p>
-                    <p class="text-sm font-black text-slate-700 dark:text-slate-200">${h.desde} al ${h.hasta}</p>
-                </div>
-                <div class="text-right flex flex-col items-end">
-                    <p class="text-sm font-black text-indigo-600 dark:text-indigo-400">${format.format(h.neto)}</p>
-                    <div class="flex gap-3 mt-1">
-                        <button onclick="exportarPDFHistorial(${h.id})" class="text-[10px] font-black text-emerald-500 hover:text-emerald-700 uppercase transition-colors">📄 PDF</button>
-                        <button onclick="exportarExcelHistorial(${h.id})" class="text-[10px] font-black text-emerald-600 hover:text-emerald-800 uppercase transition-colors">📊 Excel</button>
-                        <button onclick="toggleDetalleHistorial(${h.id})" class="text-[10px] font-black text-indigo-500 hover:text-indigo-700 uppercase transition-colors">👁️ Ver Días</button>
-                        <button onclick="borrarHistorial(${h.id})" class="text-[10px] font-black text-rose-400 hover:text-rose-600 uppercase transition-colors">Eliminar</button>
-                    </div>
-                </div>
-            </div>
-            <div id="det-${h.id}" class="hidden mt-4 pt-4 border-t border-slate-200 dark:border-slate-600"></div>
+      <div class="hist-item">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;">Período cerrado</div>
+            <div style="font-weight:600;color:var(--text);">${h.desde} → ${h.hasta}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:var(--font-serif);font-size:1.1rem;font-weight:700;color:var(--accent);">${format.format(h.neto)}</div>
+          </div>
         </div>
-        
-    `).join("");
-}
+        <div class="hist-actions">
+          <button onclick="exportarPDFHistorial(${h.id})" class="hist-action pdf">📄 PDF</button>
+          <button onclick="exportarExcelHistorial(${h.id})" class="hist-action excel">📊 Excel</button>
+          <button onclick="toggleDetalleHistorial(${h.id})" class="hist-action eye">👁 Ver Días</button>
+          <button onclick="borrarHistorial(${h.id})" class="hist-action trash">Eliminar</button>
+        </div>
+        <div id="det-${h.id}" class="hist-detail"></div>
+      </div>
+    `).join('');
+  }
 
-        function toggleDetalleHistorial(id) {
+  function toggleDetalleHistorial(id) {
     const container = document.getElementById(`det-${id}`);
-    
- 
-    if(!container.classList.contains('hidden')) {
-        container.classList.add('hidden');
-        return;
-    }
-    
+    if (container.classList.contains('open')) { container.classList.remove('open'); return; }
     const h = window.historialDB.find(x => x.id === id);
-    
-    if(!h || !h.registros || h.registros.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500 text-center font-bold py-2">⚠️ Esta quincena antigua no tiene detalles guardados porque se cerró antes de la actualización.</p>`;
-        container.classList.remove('hidden');
-        return;
+    if (!h || !h.registros || h.registros.length === 0) {
+      container.innerHTML = `<p style="font-size:.8rem;color:var(--muted);text-align:center;padding:1rem;">Esta quincena no tiene detalles guardados.</p>`;
+      container.classList.add('open'); return;
     }
-
- 
-    let html = `<div class="space-y-2 max-h-64 overflow-y-auto pr-2">`;
+    let html = '<div style="display:flex;flex-direction:column;gap:.5rem;">';
     h.registros.forEach(r => {
-        let color = r.tipo === 'NORMAL' ? 'border-indigo-100 dark:border-indigo-700/50' : 'border-rose-100 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-900/10';
-        let horasHtml = (r.tipo === 'NORMAL' && r.rawHoras) ? `<p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1">⏱️ ${r.rawHoras.hI} a ${r.rawHoras.hF}${(r.rawHoras.hBO && r.rawHoras.hBI) ? ` | ☕ ${r.rawHoras.hBO} - ${r.rawHoras.hBI}` : ''}</p>` : '';
-        
-        html += `
-        <div class="p-3 bg-white dark:bg-slate-800 border ${color} rounded-xl flex justify-between items-center shadow-sm">
-            <div>
-                <p class="text-[9px] font-black text-slate-400 uppercase">${r.fecha}</p>
-                <p class="text-xs font-black text-slate-700 dark:text-slate-200">${r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? '🌟 Compensatorio' : r.diag || r.tipo)}</p>
-                ${horasHtml}
-            </div>
-            <div class="text-right">
-                <p class="text-xs font-black text-indigo-600 dark:text-indigo-400">${format.format(r.pagoSalarial)}</p>
-            </div>
-        </div>`;
+      let typeLabel = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? '★ Compensatorio' : r.diag||r.tipo);
+      let timeStr = '';
+      if (r.tipo === 'NORMAL' && r.rawHoras) timeStr = `<div class="reg-time">${r.rawHoras.hI} → ${r.rawHoras.hF}</div>`;
+      html += `<div class="reg-item" style="padding:.75rem 1rem;">
+        <div><div class="reg-date">${r.fecha}</div><div class="reg-type" style="font-size:.85rem;">${typeLabel}</div>${timeStr}</div>
+        <div class="reg-amount" style="font-size:.9rem;">${format.format(r.pagoSalarial)}</div>
+      </div>`;
     });
-    html += `</div>`;
-    
+    html += '</div>';
     container.innerHTML = html;
-    container.classList.remove('hidden');
-}
+    container.classList.add('open');
+  }
 
-        async function borrarHistorial(id) {
-            if(confirm("¿Estás seguro de eliminar este registro del historial?")) {
-                window.historialDB = window.historialDB.filter(h => h.id !== id);
-                if(window.saveToCloud) await window.saveToCloud();
-                renderHistorial();
-            }
+  async function borrarHistorial(id) {
+    if (confirm("¿Estás seguro de eliminar este registro del historial?")) {
+      window.historialDB = window.historialDB.filter(h => h.id !== id);
+      if (window.saveToCloud) await window.saveToCloud();
+      renderHistorial();
+    }
+  }
+
+  async function saveConfig() {
+    window.cfg.hora = parseFloat(document.getElementById('cfgHora').value);
+    window.cfg.auxTranspMensual = parseFloat(document.getElementById('cfgTransp').value);
+    window.cfg.rn = parseFloat(document.getElementById('cfgRN').value);
+    window.cfg.dom = parseFloat(document.getElementById('cfgDOM').value);
+    window.cfg.hed = parseFloat(document.getElementById('cfgHED').value);
+    window.cfg.hen = parseFloat(document.getElementById('cfgHEN').value);
+    if (window.saveToCloud) await window.saveToCloud();
+    showToast('✅ Configuración guardada en la nube', 'success');
+    renderAll();
+  }
+
+  function downloadBackup() {
+    const data = { registros: window.db, historial: window.historialDB, configuracion: window.cfg };
+    const a = document.createElement('a');
+    a.setAttribute("href","data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(data)));
+    a.setAttribute("download","backup_total_nomina.json");
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast('📥 Backup descargado', 'success');
+  }
+
+  function importBackup(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (imported.registros && imported.historial) {
+          window.db = imported.registros; window.historialDB = imported.historial;
+          if (imported.configuracion) window.cfg = imported.configuracion;
+          showToast('✅ Backup completo restaurado', 'success');
+        } else if (Array.isArray(imported)) {
+          window.db = imported;
+          showToast('✅ Días restaurados (archivo antiguo)', 'success');
         }
+        if (window.saveToCloud) await window.saveToCloud();
+        renderAll(); renderHistorial();
+      } catch { showToast('Error al leer archivo: Formato no válido', 'error'); }
+    };
+    reader.readAsText(file);
+  }
 
-        async function saveConfig() { 
-            window.cfg.hora = parseFloat(document.getElementById('cfgHora').value); 
-            window.cfg.auxTranspMensual = parseFloat(document.getElementById('cfgTransp').value); 
-            window.cfg.rn = parseFloat(document.getElementById('cfgRN').value); 
-            window.cfg.dom = parseFloat(document.getElementById('cfgDOM').value); 
-            window.cfg.hed = parseFloat(document.getElementById('cfgHED').value); 
-            window.cfg.hen = parseFloat(document.getElementById('cfgHEN').value); 
-            if(window.saveToCloud) await window.saveToCloud(); 
-            alert("✅ Configuración guardada en la nube."); 
-            renderAll(); 
-        }
-
-        function downloadBackup() { 
-            const dataFull = { registros: window.db, historial: window.historialDB, configuracion: window.cfg };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataFull)); 
-            const a = document.createElement('a'); 
-            a.setAttribute("href", dataStr); 
-            a.setAttribute("download", "backup_total_nomina.json"); 
-            document.body.appendChild(a); 
-            a.click(); 
-            a.remove(); 
-        }
-
-        function importBackup(e) { 
-            const file = e.target.files[0]; 
-            if (!file) return; 
-            const reader = new FileReader(); 
-            reader.onload = async (e) => { 
-                try { 
-                    const imported = JSON.parse(e.target.result); 
-                    if(imported.registros && imported.historial) {
-                        window.db = imported.registros;
-                        window.historialDB = imported.historial;
-                        if(imported.configuracion) window.cfg = imported.configuracion;
-                        alert("✅ Backup completo restaurado");
-                    } else if(Array.isArray(imported)) {
-                        window.db = imported;
-                        alert("✅ Se restauraron los días (Archivo antiguo)");
-                    }
-                    if(window.saveToCloud) await window.saveToCloud();
-                    renderAll(); 
-                    renderHistorial();
-                } catch (err) { alert("Error al leer archivo: Formato no válido"); } 
-            }; 
-            reader.readAsText(file); 
-        }
-
-        function exportarPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(16);
-            doc.text("REPORTE DE NOMINA ACTUAL", 14, 20);
-            doc.setFontSize(9);
-            doc.setTextColor(100);
-            doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 26);
-
-            let tDiurnas = 0, tNocturnas = 0, tFestivas = 0, tCompensatorio = 0, tTotal = 0;
-
-            const rows = window.db.map(r => {
-                let totalHoras = Object.entries(r.desglose)
-    .reduce((acc, [key, curr]) => {
-        
-        if (key === 'INCAP') return acc;
-        return acc + parseFloat(curr.h || 0);
-    }, 0).toFixed(2);
-                let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
-                
-                let horario = "---";
-                let descanso = "---";
-                
-                if (r.tipo === 'NORMAL' && r.rawHoras) {
-                    horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`;
-                    if (r.rawHoras.hBO && r.rawHoras.hBI) {
-                        descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;
-                    }
-                }
-
-                let d = r.desglose || {};
-                tDiurnas += parseFloat(d.ordD?.h || 0) + parseFloat(d.extD?.h || 0);
-                tNocturnas += parseFloat(d.ordN?.h || 0) + parseFloat(d.extN?.h || 0);
-                tFestivas += parseFloat(d.domD?.h || 0) + parseFloat(d.domN?.h || 0) + parseFloat(d.edd?.h || 0) + parseFloat(d.edn?.h || 0);
-                tCompensatorio += parseFloat(d.COMPENSATORIO?.h || 0);
-                tTotal += parseFloat(totalHoras);
-
-                return [r.fecha, tipoStr, horario, descanso, totalHoras, format.format(r.pagoSalarial)];
-            });
-
-            doc.autoTable({ 
-                startY: 32, 
-                head: [['Fecha', 'Estado/Detalle', 'Entrada - Salida', 'Descanso', 'Hrs', 'Valor']], 
-                body: rows,
-                headStyles: { fillColor: [79, 70, 229], fontSize: 8, halign: 'center' }, 
-                columnStyles: {
-                    0: { cellWidth: 22 },
-                    1: { cellWidth: 35 },
-                    2: { cellWidth: 32, halign: 'center' },
-                    3: { cellWidth: 32, halign: 'center' },
-                    4: { cellWidth: 15, halign: 'center' },
-                    5: { halign: 'right' }
-                },
-                theme: 'striped',
-                styles: { fontSize: 7.5 }
-            });
-
-            let finalY = doc.lastAutoTable.finalY || 40;
-            doc.setFontSize(10);
-            doc.setTextColor(50);
-            doc.text("Resumen de Horas:", 14, finalY + 10);
-            doc.setFontSize(9);
-            doc.text(`Total Horas: ${tTotal.toFixed(2)}`, 14, finalY + 16);
-            doc.text(`Diurnas: ${tDiurnas.toFixed(2)}`, 14, finalY + 22);
-            doc.text(`Nocturnas: ${tNocturnas.toFixed(2)}`, 14, finalY + 28);
-            doc.text(`Festivas: ${tFestivas.toFixed(2)}`, 14, finalY + 34);
-            doc.text(`Compensatorio: ${tCompensatorio.toFixed(2)}`, 14, finalY + 40);
-
-            doc.save(`Nomina_Actual_${new Date().toISOString().split('T')[0]}.pdf`);
-        }
-
-        function exportarExcel() {
-            let tDiurnas = 0, tNocturnas = 0, tFestivas = 0, tCompensatorio = 0, tTotal = 0;
-
-            const reporte = window.db.map(r => {
-                let totalHoras = Object.entries(r.desglose)
-    .reduce((acc, [key, curr]) => {
-       
-        if (key === 'INCAP') return acc;
-        return acc + parseFloat(curr.h || 0);
-    }, 0).toFixed(2);
-                let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
-                
-                let hEntrada = "---", hSalida = "---", bSalida = "---", bEntrada = "---";
-                if (r.tipo === 'NORMAL' && r.rawHoras) {
-                    hEntrada = r.rawHoras.hI || "---";
-                    hSalida = r.rawHoras.hF || "---";
-                    bSalida = r.rawHoras.hBO || "---";
-                    bEntrada = r.rawHoras.hBI || "---";
-                }
-
-                let d = r.desglose || {};
-                tDiurnas += parseFloat(d.ordD?.h || 0) + parseFloat(d.extD?.h || 0);
-                tNocturnas += parseFloat(d.ordN?.h || 0) + parseFloat(d.extN?.h || 0);
-                tFestivas += parseFloat(d.domD?.h || 0) + parseFloat(d.domN?.h || 0) + parseFloat(d.edd?.h || 0) + parseFloat(d.edn?.h || 0);
-                tCompensatorio += parseFloat(d.COMPENSATORIO?.h || 0);
-                tTotal += parseFloat(totalHoras);
-
-                return { 
-                    Fecha: r.fecha, 
-                    Estado: tipoStr, 
-                    Entrada: hEntrada,
-                    Salida: hSalida,
-                    "Inic. Descanso": bSalida,
-                    "Fin Descanso": bEntrada,
-                    Horas: Number(totalHoras), 
-                    Pago: r.pagoSalarial 
-                };
-            });
-
-            reporte.push({});
-            reporte.push({ Fecha: "RESUMEN DE HORAS" });
-            reporte.push({ Estado: "Total Horas", Horas: Number(tTotal.toFixed(2)) });
-            reporte.push({ Estado: "Horas Diurnas", Horas: Number(tDiurnas.toFixed(2)) });
-            reporte.push({ Estado: "Horas Nocturnas", Horas: Number(tNocturnas.toFixed(2)) });
-            reporte.push({ Estado: "Horas Festivas", Horas: Number(tFestivas.toFixed(2)) });
-            reporte.push({ Estado: "Horas Compensatorio", Horas: Number(tCompensatorio.toFixed(2)) });
-
-            const ws = XLSX.utils.json_to_sheet(reporte);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Detalle Quincena");
-            XLSX.writeFile(wb, `Reporte_Nomina_${new Date().toISOString().split('T')[0]}.xlsx`);
-        }
-
-        function exportarPDFHistorial(id) {
-    const h = window.historialDB.find(x => x.id === id);
-    if (!h || !h.registros) return alert("No hay datos detallados para esta quincena.");
-
+  // ─ PDF / Excel exports (with chart in PDF) ─
+  function exportarPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    doc.setFontSize(16);
-    doc.text("REPORTE DETALLADO DE NÓMINA", 14, 20);
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Período: ${h.desde} al ${h.hasta}`, 14, 28);
-    doc.text(`Total Neto Pagado: ${format.format(h.neto)}`, 14, 34);
-
-    let tDiurnas = 0, tNocturnas = 0, tFestivas = 0, tCompensatorio = 0, tTotal = 0;
+    // Title
+    doc.setFontSize(16); doc.text("REPORTE DE NOMINA ACTUAL", 14, 20);
+    doc.setFontSize(9); doc.setTextColor(100); doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 26);
     
-    const rows = h.registros.map(r => {
-        
-        let horasFiltradas = Object.entries(r.desglose || {}).reduce((acc, [key, curr]) => {
-            if (key === 'INCAP') return acc;
-            return acc + parseFloat(curr.h || 0);
-        }, 0);
-
-        let horario = "---";
-        let descanso = "---";
-        
-        if (r.tipo === 'NORMAL' && r.rawHoras) {
-            horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`;
-            if (r.rawHoras.hBO && r.rawHoras.hBI) {
-                descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;
-            }
-        }
-
-        
-        let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : (r.diag || r.tipo));
-
-        
-        let d = r.desglose || {};
-        tDiurnas += parseFloat(d.ordD?.h || 0) + parseFloat(d.extD?.h || 0);
-        tNocturnas += parseFloat(d.ordN?.h || 0) + parseFloat(d.extN?.h || 0);
-        tFestivas += parseFloat(d.domD?.h || 0) + parseFloat(d.domN?.h || 0) + parseFloat(d.edd?.h || 0) + parseFloat(d.edn?.h || 0);
-        tCompensatorio += parseFloat(d.COMPENSATORIO?.h || 0);
-        tTotal += horasFiltradas; 
-
-        return [r.fecha, tipoStr, horario, descanso, horasFiltradas.toFixed(2), format.format(r.pagoSalarial)];
+    // Calculate totals
+    let tD=0,tN=0,tF=0,tC=0,tT=0;
+    const rows = window.db.map(r => {
+      let h = Object.entries(r.desglose).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
+      let t = r.tipo==='NORMAL'?'Turno Laborado':(r.tipo==='COMPENSATORIO'?'Compensatorio':r.diag||r.tipo);
+      let horario='---', descanso='---';
+      if(r.tipo==='NORMAL'&&r.rawHoras){horario=`${r.rawHoras.hI} - ${r.rawHoras.hF}`;if(r.rawHoras.hBO&&r.rawHoras.hBI)descanso=`${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;}
+      let d=r.desglose||{};
+      tD+=parseFloat(d.ordD?.h||0)+parseFloat(d.extD?.h||0);
+      tN+=parseFloat(d.ordN?.h||0)+parseFloat(d.extN?.h||0);
+      tF+=parseFloat(d.domD?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edd?.h||0)+parseFloat(d.edn?.h||0);
+      tC+=parseFloat(d.COMPENSATORIO?.h||0); tT+=h;
+      return [r.fecha,t,horario,descanso,h.toFixed(2),format.format(r.pagoSalarial)];
     });
+    
+    // Table
+    doc.autoTable({startY:32,head:[['Fecha','Estado','Entrada-Salida','Descanso','Hrs','Valor']],body:rows,headStyles:{fillColor:[201,168,76],textColor:[30,20,0],fontSize:8,halign:'center'},columnStyles:{0:{cellWidth:22},1:{cellWidth:35},2:{cellWidth:32,halign:'center'},3:{cellWidth:32,halign:'center'},4:{cellWidth:15,halign:'center'},5:{halign:'right'}},theme:'striped',styles:{fontSize:7.5}});
+    
+    let fy = doc.lastAutoTable.finalY || 40;
+    
+    // Summary
+    doc.setFontSize(10);doc.setTextColor(50);doc.text("Resumen de Horas:",14,fy+10);doc.setFontSize(9);
+    doc.text(`Total: ${tT.toFixed(2)}`,14,fy+16);doc.text(`Diurnas: ${tD.toFixed(2)}`,14,fy+22);doc.text(`Nocturnas: ${tN.toFixed(2)}`,14,fy+28);doc.text(`Festivas: ${tF.toFixed(2)}`,14,fy+34);doc.text(`Compensatorio: ${tC.toFixed(2)}`,14,fy+40);
+    
+    // Add chart image if chart exists
+    const chartCanvas = document.getElementById('nominaChart');
+    if (chartCanvas) {
+      try {
+        const chartImg = chartCanvas.toDataURL('image/png', 1.0);
+        // Get actual chart dimensions for proper aspect ratio
+        const chartWidth = chartCanvas.width;
+        const chartHeight = chartCanvas.height;
+        // Scale to fit nicely in PDF (max width 180mm, maintain aspect ratio)
+        const maxWidth = 180;
+        const scale = maxWidth / chartWidth;
+        const imgWidth = maxWidth;
+        const imgHeight = chartHeight * scale;
+        // Center the chart horizontally
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const xPos = (pageWidth - imgWidth) / 2;
+        // Position chart below summary
+        const chartY = fy + 50;
+        doc.addImage(chartImg, 'PNG', xPos, chartY, imgWidth, imgHeight);
+        
+        // Add legend below chart, centered
+        doc.setFontSize(9); doc.setTextColor(80);
+        doc.text("Distribución por concepto", pageWidth/2, chartY + imgHeight + 8, { align: 'center' });
+      } catch(e) {
+        console.warn('Could not add chart to PDF:', e);
+      }
+    }
+    
+    doc.save(`Nomina_${new Date().toISOString().split('T')[0]}.pdf`);
+    showToast('📄 PDF exportado con gráfica', 'success');
+  }
 
-    doc.autoTable({
-        startY: 40,
-        head: [['Fecha', 'Estado/Detalle', 'Entrada - Salida', 'Descanso', 'Hrs', 'Valor']],
-        body: rows,
-        headStyles: { fillColor: [99, 102, 241], fontSize: 8, halign: 'center' },
-        columnStyles: {
-            0: { cellWidth: 22 }, 
-            1: { cellWidth: 35 }, 
-            2: { cellWidth: 32, halign: 'center' }, 
-            3: { cellWidth: 32, halign: 'center' }, 
-            4: { cellWidth: 15, halign: 'center' }, 
-            5: { halign: 'right' }                  
-        },
-        theme: 'striped',
-        styles: { fontSize: 7.5, cellPadding: 2 }
+  function exportarExcel() {
+    let tD=0,tN=0,tF=0,tC=0,tT=0;
+    const reporte = window.db.map(r => {
+      let h = Object.entries(r.desglose).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0).toFixed(2);
+      let t = r.tipo==='NORMAL'?'Turno Laborado':(r.tipo==='COMPENSATORIO'?'Compensatorio':r.diag||r.tipo);
+      let hI='---',hF='---',bS='---',bE='---';
+      if(r.tipo==='NORMAL'&&r.rawHoras){hI=r.rawHoras.hI||'---';hF=r.rawHoras.hF||'---';bS=r.rawHoras.hBO||'---';bE=r.rawHoras.hBI||'---';}
+      let d=r.desglose||{};
+      tD+=parseFloat(d.ordD?.h||0)+parseFloat(d.extD?.h||0);
+      tN+=parseFloat(d.ordN?.h||0)+parseFloat(d.extN?.h||0);
+      tF+=parseFloat(d.domD?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edd?.h||0)+parseFloat(d.edn?.h||0);
+      tC+=parseFloat(d.COMPENSATORIO?.h||0); tT+=parseFloat(h);
+      return {Fecha:r.fecha,Estado:t,Entrada:hI,Salida:hF,'Inic. Descanso':bS,'Fin Descanso':bE,Horas:Number(h),Pago:r.pagoSalarial};
     });
+    reporte.push({},{Fecha:'RESUMEN'},{Estado:'Total',Horas:Number(tT.toFixed(2))},{Estado:'Diurnas',Horas:Number(tD.toFixed(2))},{Estado:'Nocturnas',Horas:Number(tN.toFixed(2))},{Estado:'Festivas',Horas:Number(tF.toFixed(2))},{Estado:'Compensatorio',Horas:Number(tC.toFixed(2))});
+    const ws=XLSX.utils.json_to_sheet(reporte);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Quincena");XLSX.writeFile(wb,`Nomina_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showToast('📊 Excel exportado', 'success');
+  }
 
-    let finalY = doc.lastAutoTable.finalY || 40;
-    doc.setFontSize(10);
-    doc.setTextColor(50);
-    doc.text("Resumen de Horas:", 14, finalY + 10);
-    doc.setFontSize(9);
-    doc.text(`Total Horas: ${tTotal.toFixed(2)}`, 14, finalY + 16);
-    doc.text(`Diurnas: ${tDiurnas.toFixed(2)}`, 14, finalY + 22);
-    doc.text(`Nocturnas: ${tNocturnas.toFixed(2)}`, 14, finalY + 28);
-    doc.text(`Festivas: ${tFestivas.toFixed(2)}`, 14, finalY + 34);
-    doc.text(`Compensatorio: ${tCompensatorio.toFixed(2)}`, 14, finalY + 40);
+  function exportarPDFHistorial(id) {
+    const h=window.historialDB.find(x=>x.id===id);
+    if(!h||!h.registros) { showToast('No hay datos detallados.', 'warning'); return; }
+    const {jsPDF}=window.jspdf;const doc=new jsPDF();
+    doc.setFontSize(16);doc.text("REPORTE DETALLADO DE NÓMINA",14,20);doc.setFontSize(10);doc.setTextColor(100);
+    doc.text(`Período: ${h.desde} al ${h.hasta}`,14,28);doc.text(`Total Neto: ${format.format(h.neto)}`,14,34);
+    let tD=0,tN=0,tF=0,tC=0,tT=0;
+    const rows=h.registros.map(r=>{
+      let hh=Object.entries(r.desglose||{}).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0);
+      let t=r.tipo==='NORMAL'?'Turno Laborado':(r.tipo==='COMPENSATORIO'?'Compensatorio':r.diag||r.tipo);
+      let horario='---',descanso='---';
+      if(r.tipo==='NORMAL'&&r.rawHoras){horario=`${r.rawHoras.hI} - ${r.rawHoras.hF}`;if(r.rawHoras.hBO&&r.rawHoras.hBI)descanso=`${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;}
+      let d=r.desglose||{};
+      tD+=parseFloat(d.ordD?.h||0)+parseFloat(d.extD?.h||0);tN+=parseFloat(d.ordN?.h||0)+parseFloat(d.extN?.h||0);
+      tF+=parseFloat(d.domD?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edd?.h||0)+parseFloat(d.edn?.h||0);
+      tC+=parseFloat(d.COMPENSATORIO?.h||0);tT+=hh;
+      return [r.fecha,t,horario,descanso,hh.toFixed(2),format.format(r.pagoSalarial)];
+    });
+    doc.autoTable({startY:40,head:[['Fecha','Estado','Entrada-Salida','Descanso','Hrs','Valor']],body:rows,headStyles:{fillColor:[201,168,76],textColor:[30,20,0],fontSize:8,halign:'center'},columnStyles:{0:{cellWidth:22},1:{cellWidth:35},2:{cellWidth:32,halign:'center'},3:{cellWidth:32,halign:'center'},4:{cellWidth:15,halign:'center'},5:{halign:'right'}},theme:'striped',styles:{fontSize:7.5}});
+    let fy=doc.lastAutoTable.finalY||40;
+    doc.setFontSize(10);doc.setTextColor(50);doc.text("Resumen:",14,fy+10);doc.setFontSize(9);
+    doc.text(`Total: ${tT.toFixed(2)}`,14,fy+16);doc.text(`Diurnas: ${tD.toFixed(2)}`,14,fy+22);doc.text(`Nocturnas: ${tN.toFixed(2)}`,14,fy+28);doc.text(`Festivas: ${tF.toFixed(2)}`,14,fy+34);doc.text(`Compensatorio: ${tC.toFixed(2)}`,14,fy+40);
+    doc.save(`Nomina_${h.desde}_${h.hasta}.pdf`);
+    showToast('📄 PDF de historial exportado', 'success');
+  }
 
-    doc.save(`Nomina_Detalle_${h.desde}_${h.hasta}.pdf`);
-}
+  function exportarExcelHistorial(id) {
+    const h=window.historialDB.find(x=>x.id===id);
+    if(!h||!h.registros) { showToast('No hay datos detallados.', 'warning'); return; }
+    let tD=0,tN=0,tF=0,tC=0,tT=0;
+    const reporte=h.registros.map(r=>{
+      let hh=Object.entries(r.desglose).reduce((a,[k,v])=>k==='INCAP'?a:a+parseFloat(v.h||0),0).toFixed(2);
+      let t=r.tipo==='NORMAL'?'Turno Laborado':(r.tipo==='COMPENSATORIO'?'Compensatorio':r.diag||r.tipo);
+      let hI='---',hF='---',bS='---',bE='---';
+      if(r.tipo==='NORMAL'&&r.rawHoras){hI=r.rawHoras.hI||'---';hF=r.rawHoras.hF||'---';bS=r.rawHoras.hBO||'---';bE=r.rawHoras.hBI||'---';}
+      let d=r.desglose||{};
+      tD+=parseFloat(d.ordD?.h||0)+parseFloat(d.extD?.h||0);tN+=parseFloat(d.ordN?.h||0)+parseFloat(d.extN?.h||0);
+      tF+=parseFloat(d.domD?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edd?.h||0)+parseFloat(d.edn?.h||0);
+      tC+=parseFloat(d.COMPENSATORIO?.h||0);tT+=parseFloat(hh);
+      return {Fecha:r.fecha,Estado:t,Entrada:hI,Salida:hF,'Inic. Descanso':bS,'Fin Descanso':bE,Horas:Number(hh),Pago:r.pagoSalarial};
+    });
+    reporte.push({},{Fecha:'RESUMEN'},{Estado:'Total',Horas:Number(tT.toFixed(2))},{Estado:'Diurnas',Horas:Number(tD.toFixed(2))},{Estado:'Nocturnas',Horas:Number(tN.toFixed(2))},{Estado:'Festivas',Horas:Number(tF.toFixed(2))},{Estado:'Compensatorio',Horas:Number(tC.toFixed(2))});
+    const ws=XLSX.utils.json_to_sheet(reporte);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Historial");XLSX.writeFile(wb,`Nomina_Hist_${h.desde}_${h.hasta}.xlsx`);
+    showToast('📊 Excel de historial exportado', 'success');
+  }
+</script>
 
-        function exportarExcelHistorial(id) {
-            const h = window.historialDB.find(x => x.id === id);
-            if (!h || !h.registros) return alert("No hay datos detallados para esta quincena.");
-
-            let tDiurnas = 0, tNocturnas = 0, tFestivas = 0, tCompensatorio = 0, tTotal = 0;
-
-            const reporte = h.registros.map(r => {
-                let totalHoras = Object.entries(r.desglose)
-    .reduce((acc, [key, curr]) => {
-       
-        if (key === 'INCAP') return acc;
-        return acc + parseFloat(curr.h || 0);
-    }, 0).toFixed(2);
-                let tipoStr = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
-                
-                let hEntrada = "---", hSalida = "---", bSalida = "---", bEntrada = "---";
-                if (r.tipo === 'NORMAL' && r.rawHoras) {
-                    hEntrada = r.rawHoras.hI || "---";
-                    hSalida = r.rawHoras.hF || "---";
-                    bSalida = r.rawHoras.hBO || "---";
-                    bEntrada = r.rawHoras.hBI || "---";
-                }
-
-                let d = r.desglose || {};
-                tDiurnas += parseFloat(d.ordD?.h || 0) + parseFloat(d.extD?.h || 0);
-                tNocturnas += parseFloat(d.ordN?.h || 0) + parseFloat(d.extN?.h || 0);
-                tFestivas += parseFloat(d.domD?.h || 0) + parseFloat(d.domN?.h || 0) + parseFloat(d.edd?.h || 0) + parseFloat(d.edn?.h || 0);
-                tCompensatorio += parseFloat(d.COMPENSATORIO?.h || 0);
-                tTotal += parseFloat(totalHoras);
-
-                return { 
-                    Fecha: r.fecha, 
-                    Estado: tipoStr, 
-                    Entrada: hEntrada,
-                    Salida: hSalida,
-                    "Inic. Descanso": bSalida,
-                    "Fin Descanso": bEntrada,
-                    Horas: Number(totalHoras), 
-                    Pago: r.pagoSalarial 
-                };
-            });
-
-            reporte.push({});
-            reporte.push({ Fecha: "RESUMEN DE HORAS" });
-            reporte.push({ Estado: "Total Horas", Horas: Number(tTotal.toFixed(2)) });
-            reporte.push({ Estado: "Horas Diurnas", Horas: Number(tDiurnas.toFixed(2)) });
-            reporte.push({ Estado: "Horas Nocturnas", Horas: Number(tNocturnas.toFixed(2)) });
-            reporte.push({ Estado: "Horas Festivas", Horas: Number(tFestivas.toFixed(2)) });
-            reporte.push({ Estado: "Horas Compensatorio", Horas: Number(tCompensatorio.toFixed(2)) });
-
-            const ws = XLSX.utils.json_to_sheet(reporte);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Historial");
-            XLSX.writeFile(wb, `Nomina_Excel_${h.desde}_${h.hasta}.xlsx`);
-        }
-    </script>
 </body>
 </html>
