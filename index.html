@@ -2038,7 +2038,7 @@
     } catch (e) { err.innerText = "Error: Verifica tus datos o el usuario ya existe."; err.style.display = 'block'; }
   };
 
-  window.handleSignOut = () => signOut(auth);
+  window.handleSignOut = () => { window.syncReady = false; signOut(auth); };
 
   window.switchAuthPanel = (panel) => {
     const login  = document.getElementById('authLogin');
@@ -2099,6 +2099,8 @@
     }
   });
 
+  window.syncReady = false; // Protección: no guardar hasta que la nube haya cargado
+
   async function syncFromCloud() {
     if (!window.currentUser) return;
     const docSnap = await getDoc(doc(fb_db, "usuarios", window.currentUser.uid));
@@ -2107,6 +2109,7 @@
       window.db = d.db || [];
       window.historialDB = d.historial || [];
       window.cfg = d.cfg || window.cfgDefault;
+      window.syncReady = true; // Solo aquí se habilita el guardado
       document.getElementById('cfgHora').value = window.cfg.hora;
       document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
       document.getElementById('cfgRN').value = window.cfg.rn;
@@ -2122,6 +2125,10 @@
 
   window.saveToCloud = async () => {
     if (!window.currentUser) return;
+    if (!window.syncReady) {
+      console.warn('[nomina] saveToCloud bloqueado: sync aún no completado.');
+      return;
+    }
     await setDoc(doc(fb_db, "usuarios", window.currentUser.uid), {
       db: window.db, historial: window.historialDB, cfg: window.cfg
     });
