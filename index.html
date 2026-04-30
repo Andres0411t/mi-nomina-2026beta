@@ -2030,7 +2030,10 @@
         await signInWithEmailAndPassword(auth, email, pass);
       } else {
         const uc = await createUserWithEmailAndPassword(auth, email, pass);
-        await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
+        const existingDoc = await getDoc(doc(fb_db, "usuarios", uc.user.uid));
+        if (!existingDoc.exists()) {
+          await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
+        }
       }
     } catch (e) { err.innerText = "Error: Verifica tus datos o el usuario ya existe."; err.style.display = 'block'; }
   };
@@ -2072,7 +2075,11 @@
     }
     try {
       const uc = await createUserWithEmailAndPassword(auth, email, pass);
-      await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
+      // Solo inicializar datos si el documento NO existe aún (evita borrar datos existentes)
+      const existingDoc = await getDoc(doc(fb_db, "usuarios", uc.user.uid));
+      if (!existingDoc.exists()) {
+        await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
+      }
     } catch (e) {
       err.innerText = e.code === 'auth/email-already-in-use'
         ? 'Ese correo ya está registrado'
@@ -2501,6 +2508,7 @@ REGLAS:
     let horasTot = 0, horasNoc = 0, horasFest = 0;
     let mejorVal = 0, mejorFecha = '';
     let diasRegistrados = 0;
+    let diasConHoras = 0; // días que aportan horas (para promedio correcto)
 
     const barData = [];
 
@@ -2515,9 +2523,12 @@ REGLAS:
       let hd = (parseFloat(d.ordD?.h||0)+parseFloat(d.extD?.h||0)+parseFloat(d.domD?.h||0)+parseFloat(d.edd?.h||0));
       let hn = (parseFloat(d.ordN?.h||0)+parseFloat(d.extN?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edn?.h||0));
       let hf = (parseFloat(d.domD?.h||0)+parseFloat(d.domN?.h||0)+parseFloat(d.edd?.h||0)+parseFloat(d.edn?.h||0));
-      horasTot += hd + hn;
+      let hComp = parseFloat(d.COMPENSATORIO?.h||0); // horas de descanso compensatorio
+      let horasDia = hd + hn + hComp;
+      horasTot += horasDia;
       horasNoc += hn;
       horasFest += hf;
+      if (horasDia > 0) diasConHoras++;
 
       barData.push({ fecha: r.fecha, val: r.pagoSalarial, tipo: r.tipo });
     });
@@ -2535,7 +2546,7 @@ REGLAS:
     const netoProy = ibcProy + trProy - deProy;
 
     const progPct = Math.min((diasRegistrados / META_DIAS) * 100, 100);
-    const horasProm = diasRegistrados > 0 ? (horasTot / diasRegistrados) : 0;
+    const horasProm = diasConHoras > 0 ? (horasTot / diasConHoras) : 0;
     const nocPct = horasTot > 0 ? ((horasNoc / horasTot) * 100).toFixed(0) : 0;
     const festPct = horasTot > 0 ? ((horasFest / horasTot) * 100).toFixed(0) : 0;
 
