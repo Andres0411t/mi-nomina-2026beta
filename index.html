@@ -2174,7 +2174,28 @@
   window.historialDB = [];
 
   const format = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-  const festivos = ["2026-01-01","2026-01-12","2026-03-23","2026-04-02","2026-04-03","2026-05-01","2026-05-18","2026-06-08","2026-06-15","2026-06-29","2026-07-20","2026-08-07","2026-08-17","2026-10-12","2026-11-02","2026-11-16","2026-12-08","2026-12-25"];
+  // Festivos: se cargan dinámicamente desde API pública (date.nager.at/CO).
+  // El array hardcodeado actúa como fallback inmediato mientras llega la respuesta.
+  let festivos = ["2026-01-01","2026-01-12","2026-03-23","2026-04-02","2026-04-03","2026-05-01","2026-05-18","2026-06-08","2026-06-15","2026-06-29","2026-07-20","2026-08-07","2026-08-17","2026-10-12","2026-11-02","2026-11-16","2026-12-08","2026-12-25"];
+
+  async function cargarFestivos() {
+    const currentYear = new Date().getFullYear();
+    const years = [currentYear, currentYear + 1];
+    try {
+      const results = await Promise.all(
+        years.map(y => fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`).then(r => r.ok ? r.json() : []))
+      );
+      const fechas = results.flat().map(h => h.date).filter(Boolean).sort();
+      if (fechas.length > 0) {
+        festivos = fechas;
+        renderFestivos();
+      }
+    } catch (e) {
+      // Falla silenciosamente: el fallback hardcodeado sigue activo
+      console.warn('[nomina] No se pudieron cargar festivos desde API, usando lista local.');
+    }
+  }
+  cargarFestivos();
 
   let myChart = null;
   let lightMode = true;
