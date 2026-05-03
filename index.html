@@ -1510,7 +1510,7 @@
       <div id="authError" class="auth-error"></div>
       <div style="text-align:center;font-size:.8rem;color:var(--muted);margin-top:.25rem;">
         ¿No tienes cuenta?
-        <button onclick="switchAuthPanel('signup')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-weight:700;font-size:.8rem;padding:0;margin-left:.25rem;">Crear cuenta</button>
+        <button onclick="switchAuthPanel('signup')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-weight:700;font-size:.8rem;padding:0;margin-left:.25rem;">Solicitar acceso</button>
       </div>
     </div>
   </div>
@@ -1518,9 +1518,16 @@
   <!-- Panel Registro -->
   <div class="auth-card" id="authSignup" style="display:none;">
     <div class="auth-logo">Mi Nómina</div>
-    <div class="auth-sub">Crear cuenta nueva</div>
+    <div class="auth-sub">Solicitar acceso</div>
     <div class="auth-divider"></div>
+    <div style="background:var(--accent-dim);border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:.75rem 1rem;font-size:.78rem;color:var(--accent);margin-bottom:.5rem;line-height:1.5;">
+      ⏳ Tu cuenta quedará <strong>pendiente de aprobación</strong>. Podrás ingresar una vez que el administrador la active.
+    </div>
     <div style="display:flex;flex-direction:column;gap:.85rem;">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Nombre completo</label>
+        <input type="text" id="signupNombre" placeholder="Tu nombre" class="inp">
+      </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Correo electrónico</label>
         <input type="email" id="signupEmail" placeholder="tu@correo.com" class="inp">
@@ -1534,7 +1541,7 @@
         <input type="password" id="signupPasswordConfirm" placeholder="••••••••" class="inp" onkeydown="if(event.key==='Enter')handleSignup()">
       </div>
       <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem;">
-        <button onclick="handleSignup()" class="btn btn-primary" style="width:100%;padding:1rem;">Crear Cuenta</button>
+        <button onclick="handleSignup()" class="btn btn-primary" style="width:100%;padding:1rem;">Enviar solicitud</button>
       </div>
       <div id="signupError" class="auth-error"></div>
       <div style="text-align:center;font-size:.8rem;color:var(--muted);margin-top:.25rem;">
@@ -1542,6 +1549,19 @@
         <button onclick="switchAuthPanel('login')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-weight:700;font-size:.8rem;padding:0;margin-left:.25rem;">Iniciar sesión</button>
       </div>
     </div>
+  </div>
+
+  <!-- Panel Pendiente de aprobación -->
+  <div class="auth-card" id="authPending" style="display:none;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:1rem;">⏳</div>
+    <div class="auth-logo" style="font-size:1.6rem;margin-bottom:.5rem;">Solicitud enviada</div>
+    <div class="auth-divider"></div>
+    <p style="color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:1.5rem;">
+      Tu cuenta está <strong style="color:var(--accent)">pendiente de aprobación</strong>.<br>
+      El administrador revisará tu solicitud y te dará acceso pronto.<br><br>
+      Una vez aprobado, podrás ingresar con tu correo y contraseña.
+    </p>
+    <button onclick="switchAuthPanel('login')" class="btn btn-ghost" style="width:100%;">Volver al inicio de sesión</button>
   </div>
 
 </div>
@@ -2004,6 +2024,40 @@
   import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+  /*
+  ╔══════════════════════════════════════════════════════════════════════════╗
+  ║  ACCIÓN REQUERIDA — FIRESTORE SECURITY RULES                           ║
+  ║  Copia estas reglas en Firebase Console → Firestore → Rules y publica: ║
+  ║                                                                          ║
+  ║  rules_version = '2';                                                   ║
+  ║  service cloud.firestore {                                              ║
+  ║    match /databases/{database}/documents {                              ║
+  ║                                                                          ║
+  ║      // Perfil de usuario: solo él puede leer/escribir sus datos        ║
+  ║      match /usuarios/{userId} {                                         ║
+  ║        allow read, write: if request.auth != null                       ║
+  ║                           && request.auth.uid == userId                 ║
+  ║                           && get(/databases/$(database)/documents/      ║
+  ║                              usuarios/$(userId)).data.estado            ║
+  ║                              == 'aprobado';                             ║
+  ║      }                                                                   ║
+  ║                                                                          ║
+  ║      // Solicitudes: cualquier auth puede crear la suya, no leer otras ║
+  ║      match /solicitudes/{userId} {                                      ║
+  ║        allow create: if request.auth != null                            ║
+  ║                      && request.auth.uid == userId;                     ║
+  ║        allow read, update, delete: if false;                            ║
+  ║      }                                                                   ║
+  ║                                                                          ║
+  ║      // Todo lo demás: bloqueado                                        ║
+  ║      match /{document=**} {                                             ║
+  ║        allow read, write: if false;                                     ║
+  ║      }                                                                   ║
+  ║    }                                                                     ║
+  ║  }                                                                       ║
+  ╚══════════════════════════════════════════════════════════════════════════╝
+  */
+
   const firebaseConfig = {
     apiKey: "AIzaSyBnfx2s3Tl4sh0fMCfKXwImjY2sDggHORA",
     authDomain: "calculadora-nominaweb.firebaseapp.com",
@@ -2019,23 +2073,20 @@
 
   window.currentUser = null;
 
+  // ── LOGIN ─────────────────────────────────────────────────────────────────
   window.handleAuth = async (type) => {
-    const email = document.getElementById('authEmail').value;
-    const pass = document.getElementById('authPassword').value;
-    const err = document.getElementById('authError');
+    const email = document.getElementById('authEmail').value.trim();
+    const pass  = document.getElementById('authPassword').value;
+    const err   = document.getElementById('authError');
     err.style.display = 'none';
-    if (!email || !pass) { err.innerText = "Ingresa correo y contraseña"; err.style.display = 'block'; return; }
+    if (!email || !pass) { err.innerText = 'Ingresa correo y contraseña'; err.style.display = 'block'; return; }
     try {
-      if (type === 'login') {
-        await signInWithEmailAndPassword(auth, email, pass);
-      } else {
-        const uc = await createUserWithEmailAndPassword(auth, email, pass);
-        const existingDoc = await getDoc(doc(fb_db, "usuarios", uc.user.uid));
-        if (!existingDoc.exists()) {
-          await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
-        }
-      }
-    } catch (e) { err.innerText = "Error: Verifica tus datos o el usuario ya existe."; err.style.display = 'block'; }
+      await signInWithEmailAndPassword(auth, email, pass);
+      // La verificación de estado (aprobado/pendiente) ocurre en onAuthStateChanged
+    } catch (e) {
+      err.innerText = 'Correo o contraseña incorrectos.';
+      err.style.display = 'block';
+    }
   };
 
   window.handleSignOut = () => { window.syncReady = false; signOut(auth); };
@@ -2043,28 +2094,36 @@
   window.switchAuthPanel = (panel) => {
     const login  = document.getElementById('authLogin');
     const signup = document.getElementById('authSignup');
+    const pending = document.getElementById('authPending');
     document.getElementById('authError').innerText = '';
     document.getElementById('signupError').innerText = '';
+    login.style.display   = 'none';
+    signup.style.display  = 'none';
+    pending.style.display = 'none';
     if (panel === 'signup') {
-      login.style.display  = 'none';
       signup.style.display = 'block';
       signup.style.animation = 'slideUp .35s cubic-bezier(0.16,1,0.3,1)';
       document.getElementById('signupEmail').focus();
+    } else if (panel === 'pending') {
+      pending.style.display = 'block';
+      pending.style.animation = 'slideUp .35s cubic-bezier(0.16,1,0.3,1)';
     } else {
-      signup.style.display = 'none';
-      login.style.display  = 'block';
+      login.style.display = 'block';
       login.style.animation = 'slideUp .35s cubic-bezier(0.16,1,0.3,1)';
       document.getElementById('authEmail').focus();
     }
   };
 
+  // ── REGISTRO CON APROBACIÓN ───────────────────────────────────────────────
   window.handleSignup = async () => {
     const email   = document.getElementById('signupEmail').value.trim();
+    const nombre  = document.getElementById('signupNombre').value.trim();
     const pass    = document.getElementById('signupPassword').value;
     const confirm = document.getElementById('signupPasswordConfirm').value;
     const err     = document.getElementById('signupError');
     err.style.display = 'none';
-    if (!email || !pass || !confirm) {
+
+    if (!nombre || !email || !pass || !confirm) {
       err.innerText = 'Completa todos los campos'; err.style.display = 'block'; return;
     }
     if (pass !== confirm) {
@@ -2073,13 +2132,36 @@
     if (pass.length < 6) {
       err.innerText = 'La contraseña debe tener al menos 6 caracteres'; err.style.display = 'block'; return;
     }
+
     try {
+      // 1. Crear cuenta en Firebase Auth
       const uc = await createUserWithEmailAndPassword(auth, email, pass);
-      // Solo inicializar datos si el documento NO existe aún (evita borrar datos existentes)
-      const existingDoc = await getDoc(doc(fb_db, "usuarios", uc.user.uid));
-      if (!existingDoc.exists()) {
-        await setDoc(doc(fb_db, "usuarios", uc.user.uid), { db: [], historial: [], cfg: window.cfgDefault });
-      }
+
+      // 2. Guardar solicitud en colección "solicitudes" con estado "pendiente"
+      //    (el admin la verá en Firestore Console y cambiará estado a "aprobado")
+      await setDoc(doc(fb_db, 'solicitudes', uc.user.uid), {
+        uid: uc.user.uid,
+        email: email,
+        nombre: nombre,
+        estado: 'pendiente',
+        creadoEn: new Date().toISOString()
+      });
+
+      // 3. Crear documento de usuario vacío con estado "pendiente"
+      await setDoc(doc(fb_db, 'usuarios', uc.user.uid), {
+        db: [], historial: [], cfg: window.cfgDefault,
+        estado: 'pendiente',
+        email: email,
+        nombre: nombre,
+        creadoEn: new Date().toISOString()
+      });
+
+      // 4. Cerrar sesión inmediatamente — no puede entrar hasta ser aprobado
+      await signOut(auth);
+
+      // 5. Mostrar pantalla de espera
+      window.switchAuthPanel('pending');
+
     } catch (e) {
       err.innerText = e.code === 'auth/email-already-in-use'
         ? 'Ese correo ya está registrado'
@@ -2088,74 +2170,83 @@
     }
   };
 
+  // ── AUTH STATE ────────────────────────────────────────────────────────────
   onAuthStateChanged(auth, async (user) => {
     if (user) {
+      // Verificar si la cuenta está aprobada
+      const userDoc = await getDoc(doc(fb_db, 'usuarios', user.uid));
+      if (!userDoc.exists() || userDoc.data().estado !== 'aprobado') {
+        // Cuenta pendiente o sin estado: cerrar sesión y mostrar pantalla de espera
+        await signOut(auth);
+        window.currentUser = null;
+        window.switchAuthPanel('pending');
+        document.getElementById('authContainer').classList.add('visible');
+        return;
+      }
       window.currentUser = user;
       document.getElementById('authContainer').classList.remove('visible');
       await syncFromCloud();
     } else {
       window.currentUser = null;
+      // Solo mostrar login si no se está mostrando otra pantalla
+      const pending = document.getElementById('authPending');
+      if (pending && pending.style.display === 'block') return;
+      window.switchAuthPanel('login');
       document.getElementById('authContainer').classList.add('visible');
     }
   });
 
-  window.syncReady = false; // Protección: no guardar hasta que la nube haya cargado
+  // ── SYNC ──────────────────────────────────────────────────────────────────
+  window.syncReady = false;
 
   async function syncFromCloud() {
     if (!window.currentUser) return;
-    const docSnap = await getDoc(doc(fb_db, "usuarios", window.currentUser.uid));
+    const docSnap = await getDoc(doc(fb_db, 'usuarios', window.currentUser.uid));
     if (docSnap.exists()) {
       const d = docSnap.data();
-      window.db = d.db || [];
-      window.historialDB = d.historial || [];
-      window.cfg = d.cfg || window.cfgDefault;
-      window.syncReady = true; // Solo aquí se habilita el guardado
-      document.getElementById('cfgHora').value = window.cfg.hora;
+      window.db          = d.db        || [];
+      window.historialDB = d.historial  || [];
+      window.cfg         = d.cfg        || window.cfgDefault;
+      window.syncReady   = true;
+      document.getElementById('cfgHora').value   = window.cfg.hora;
       document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
-      document.getElementById('cfgRN').value = window.cfg.rn;
-      document.getElementById('cfgDOM').value = window.cfg.dom;
-      document.getElementById('cfgHED').value = window.cfg.hed;
-      document.getElementById('cfgHEN').value = window.cfg.hen;
+      document.getElementById('cfgRN').value     = window.cfg.rn;
+      document.getElementById('cfgDOM').value    = window.cfg.dom;
+      document.getElementById('cfgHED').value    = window.cfg.hed;
+      document.getElementById('cfgHEN').value    = window.cfg.hen;
       renderAll(); renderHistorial();
-      // Si el usuario entra al Dashboard antes de que termine la sincronización,
-      // refrescarlo automáticamente cuando ya llegaron los datos de Firebase.
       if (!document.getElementById('dashboard').classList.contains('hidden')) renderDashboard();
     }
   }
 
   window.saveToCloud = async () => {
-    if (!window.currentUser) return;
-    if (!window.syncReady) {
-      console.warn('[nomina] saveToCloud bloqueado: sync aún no completado.');
-      return;
-    }
-    await setDoc(doc(fb_db, "usuarios", window.currentUser.uid), {
-      db: window.db, historial: window.historialDB, cfg: window.cfg
+    if (!window.currentUser || !window.syncReady) return;
+    await setDoc(doc(fb_db, 'usuarios', window.currentUser.uid), {
+      db: window.db, historial: window.historialDB, cfg: window.cfg,
+      estado: 'aprobado', // preservar el campo de estado al guardar
+      email: window.currentUser.email
     });
   };
 
-  // Despertar servidor y habilitar chat cuando esté listo
+  // ── SERVIDOR IA ───────────────────────────────────────────────────────────
   window.AI_URL = 'https://servidor-1-h0de.onrender.com/ai';
   window.serverReady = false;
 
   const setServerReady = () => {
     if (window.serverReady) return;
     window.serverReady = true;
-    const status = document.getElementById('serverStatus');
+    const status     = document.getElementById('serverStatus');
     const statusText = document.getElementById('serverStatusText');
-    if (status) { status.style.background = 'rgba(90,173,143,0.12)'; status.style.borderColor = 'rgba(90,173,143,0.3)'; status.style.color = 'var(--success)'; }
+    if (status)     { status.style.background = 'rgba(90,173,143,0.12)'; status.style.borderColor = 'rgba(90,173,143,0.3)'; status.style.color = 'var(--success)'; }
     if (statusText) statusText.innerHTML = '✓ Asistente listo';
     setTimeout(() => { if (status) status.style.display = 'none'; }, 2000);
   };
 
   const pingServer = async () => {
     try {
-      // Usar GET para despertar el servidor sin procesar nada
       const res = await fetch('https://servidor-1-h0de.onrender.com/', { method: 'GET' });
       if (res.status !== 500) setServerReady();
-    } catch(e) {
-      // Red caída, intentar igual habilitar tras timeout
-    }
+    } catch(e) {}
   };
 
   pingServer();
@@ -2163,8 +2254,8 @@
     if (window.serverReady) { clearInterval(warmupInterval); return; }
     pingServer();
   }, 6000);
-  // Mantener vivo cada 9 minutos
-  setInterval(() => fetch(window.AI_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:'ping'}]}]}) }).catch(()=>{}), 9 * 60 * 1000);
+  // Keep-alive seguro: solo GET, sin datos
+  setInterval(() => fetch('https://servidor-1-h0de.onrender.com/', { method: 'GET' }).catch(()=>{}), 9 * 60 * 1000);
 </script>
 
 <script>
@@ -2420,9 +2511,16 @@ REGLAS:
     const promptText = `${buildSystemPrompt()}\n\nDAtos de nómina:\n${context}\n\n---\nConversación reciente:\n${historialReciente}\n\nResponde solo al último mensaje del usuario.`;
 
     try {
+      // Obtener token de Firebase para autenticar la petición al servidor
+      const idToken = window.currentUser ? await window.currentUser.getIdToken() : null;
+      if (!idToken) { removeThinking(); appendAIMsg('⚠️ Debes iniciar sesión para usar el asistente.'); input.disabled = false; document.getElementById('chatSendBtn').disabled = false; return; }
+
       const res = await fetch(window.AI_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: promptText }] }],
           generationConfig: { temperature: 0.4, maxOutputTokens: 3000 }
