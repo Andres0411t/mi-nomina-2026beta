@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+}<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -259,7 +259,7 @@
   }
   .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* ── Nav ── */
+  /* ── Nav — DESKTOP (top bar, original style) ── */
   .nav {
     display: flex;
     gap: .5rem;
@@ -275,6 +275,11 @@
   .nav::-webkit-scrollbar { display: none; }
   .nav-btn {
     flex-shrink: 0;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
     padding: .75rem 1.25rem;
     border-radius: var(--radius-sm);
     font-family: var(--font-sans);
@@ -289,23 +294,78 @@
     transition: all .25s;
     white-space: nowrap;
   }
-  @media(max-width: 600px) {
-    .nav {
-      gap: .25rem;
-      padding: .3rem;
-      margin-bottom: 1.25rem;
-    }
-    .nav-btn {
-      padding: .65rem .9rem;
-      font-size: .72rem;
-      letter-spacing: .05em;
-    }
-  }
+  .nav-btn .tab-icon { display: none; }
   .nav-btn:hover { color: var(--text); background: var(--surface2); }
   .nav-btn.active {
     background: var(--accent);
     color: #1a1400;
     box-shadow: 0 2px 12px var(--accent-glow);
+  }
+
+  /* ── Nav — MOBILE (floating pill bottom tab bar) ── */
+  @media (max-width: 768px) {
+    .nav {
+      position: fixed;
+      bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 2rem);
+      max-width: 420px;
+      z-index: 200;
+      background: rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 9999px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 0;
+      padding: .3rem .4rem;
+      margin-bottom: 0;
+      overflow: visible;
+    }
+    .nav-btn {
+      flex: 1;
+      flex-shrink: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .18rem;
+      padding: .45rem .2rem;
+      border-radius: 9999px;
+      font-size: .52rem;
+      letter-spacing: .03em;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(60, 50, 10, 0.6);
+      background: transparent;
+      transition: all .22s cubic-bezier(0.16,1,0.3,1);
+      white-space: nowrap;
+      min-width: 0;
+      line-height: 1.1;
+    }
+    .nav-btn .tab-icon {
+      display: block;
+      font-size: 1.2rem;
+      line-height: 1;
+      transition: transform .2s;
+    }
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.3);
+      color: rgba(30,24,0,0.8);
+    }
+    .nav-btn.active {
+      background: var(--accent);
+      color: #1a1000;
+      box-shadow: 0 2px 12px var(--accent-glow);
+    }
+    .nav-btn.active .tab-icon {
+      transform: scale(1.12);
+    }
+    .wrapper {
+      padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
   }
 
   /* ── Cards ── */
@@ -1643,11 +1703,11 @@
 
   <!-- Nav -->
   <nav class="nav">
-    <button class="nav-btn active" onclick="showTab('registro', this)">Registros</button>
-    <button class="nav-btn" onclick="showTab('dashboard', this)">Dashboard</button>
-    <button class="nav-btn" onclick="showTab('asistente', this)">✦ Asistente IA</button>
-    <button class="nav-btn" onclick="showTab('resumen', this)">Nómina</button>
-    <button class="nav-btn" onclick="showTab('config', this)">Ajustes</button>
+    <button class="nav-btn active" onclick="showTab('registro', this)"><span class="tab-icon"></span>Registros</button>
+    <button class="nav-btn" onclick="showTab('dashboard', this)"><span class="tab-icon"></span>Dashboard</button>
+    <button class="nav-btn" onclick="showTab('asistente', this)"><span class="tab-icon">✦</span>Asistente</button>
+    <button class="nav-btn" onclick="showTab('resumen', this)"><span class="tab-icon"></span>Nómina</button>
+    <button class="nav-btn" onclick="showTab('config', this)"><span class="tab-icon"></span>Ajustes</button>
   </nav>
 
   <!-- ═══ ASISTENTE IA ═══ -->
