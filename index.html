@@ -333,7 +333,7 @@
       -webkit-backdrop-filter: blur(48px) saturate(180%);
       border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
       border-radius: 9999px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 16px 32px -16px rgba(0, 0, 0, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
       position: sticky;
       top: 1rem;
       z-index: 100;
@@ -408,14 +408,16 @@
       display: flex;
       gap: .35rem;
       margin-bottom: 2rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background-color: color-mix(in srgb, var(--surface) 35%, transparent);
+      backdrop-filter: blur(48px) saturate(180%);
+      -webkit-backdrop-filter: blur(48px) saturate(180%);
+      border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
       border-radius: var(--radius);
       padding: .35rem;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.06);
     }
 
     .nav::-webkit-scrollbar {
@@ -469,8 +471,10 @@
         width: calc(100% - 2rem);
         max-width: 420px;
         z-index: 200;
-        background: var(--surface);
-        border: 1px solid var(--border);
+        background-color: color-mix(in srgb, var(--surface) 35%, transparent);
+        backdrop-filter: blur(48px) saturate(180%);
+        -webkit-backdrop-filter: blur(48px) saturate(180%);
+        border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
         border-radius: 9999px;
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
         display: flex;
@@ -528,10 +532,10 @@
 
     /* ── Cards ── */
     .card {
-      background: color-mix(in srgb, var(--surface) 65%, transparent);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      background: color-mix(in srgb, var(--surface) 30%, transparent);
+      backdrop-filter: blur(40px) saturate(140%);
+      -webkit-backdrop-filter: blur(40px) saturate(140%);
+      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
       border-radius: var(--radius);
       padding: 1.75rem;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
@@ -737,8 +741,10 @@
 
     /* ── Registry Items ── */
     .reg-item {
-      background: var(--surface2);
-      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface2) 15%, transparent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
       border-radius: var(--radius-sm);
       padding: 1rem 1.25rem;
       display: flex;
@@ -934,10 +940,10 @@
     }
 
     .stat-card {
-      background: color-mix(in srgb, var(--surface) 65%, transparent);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      background: color-mix(in srgb, var(--surface) 30%, transparent);
+      backdrop-filter: blur(40px) saturate(140%);
+      -webkit-backdrop-filter: blur(40px) saturate(140%);
+      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
       border-radius: var(--radius);
       padding: 1.5rem;
       position: relative;
@@ -1375,10 +1381,10 @@
 
     /* ── Dashboard ── */
     .dash-hero {
-      background: color-mix(in srgb, var(--surface) 65%, transparent);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      background: color-mix(in srgb, var(--surface) 30%, transparent);
+      backdrop-filter: blur(40px) saturate(140%);
+      -webkit-backdrop-filter: blur(40px) saturate(140%);
+      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
       border-radius: var(--radius);
       padding: 2rem 1.75rem;
       margin-bottom: 1rem;
@@ -1421,10 +1427,10 @@
     }
 
     .kpi-card {
-      background: color-mix(in srgb, var(--surface) 65%, transparent);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      background: color-mix(in srgb, var(--surface) 30%, transparent);
+      backdrop-filter: blur(40px) saturate(140%);
+      -webkit-backdrop-filter: blur(40px) saturate(140%);
+      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
       border-radius: var(--radius);
       padding: 1.25rem;
       transition: border-color .2s, box-shadow .2s, transform .2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1737,8 +1743,10 @@
     .ai-avatar-pulse {}
 
     .chat-window {
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg) 15%, transparent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
       border-radius: var(--radius);
       min-height: 320px;
       max-height: 480px;
@@ -2119,8 +2127,10 @@
     }
 
     .modal-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 30%, transparent);
+      backdrop-filter: blur(40px) saturate(140%);
+      -webkit-backdrop-filter: blur(40px) saturate(140%);
+      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
       border-radius: var(--radius);
       padding: 1.75rem;
       width: 100%;
@@ -2227,8 +2237,10 @@
 
     /* ── Deductions Card ── */
     .deductions-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface2) 15%, transparent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
       border-radius: var(--radius);
       padding: 1.5rem;
       margin-top: 1rem;
