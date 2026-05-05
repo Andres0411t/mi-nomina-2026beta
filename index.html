@@ -16,13 +16,13 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #f0ede6;
-      --surface: #faf9f6;
-      --surface2: #f0ede6;
-      --border: #e4e0d6;
-      --border2: #d4cfc2;
-      --text: #1c1917;
-      --muted: #8a8478;
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --surface2: #f4f4f4;
+      --border: #eaeaea;
+      --border2: #d5d5d5;
+      --text: #1a1a1a;
+      --muted: #7a7a7a;
       --accent: #b8965a;
       --accent2: #d4ae74;
       --accent-dim: rgba(184, 150, 90, 0.10);
@@ -530,12 +530,17 @@
       }
     }
 
+    .glass-panel {
+      background: color-mix(in srgb, var(--surface) 30%, transparent) !important;
+      backdrop-filter: blur(40px) saturate(140%) !important;
+      -webkit-backdrop-filter: blur(40px) saturate(140%) !important;
+      border-color: color-mix(in srgb, var(--border) 40%, transparent) !important;
+    }
+
     /* ── Cards ── */
     .card {
-      background: color-mix(in srgb, var(--surface) 30%, transparent);
-      backdrop-filter: blur(40px) saturate(140%);
-      -webkit-backdrop-filter: blur(40px) saturate(140%);
-      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.75rem;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
@@ -741,10 +746,8 @@
 
     /* ── Registry Items ── */
     .reg-item {
-      background: color-mix(in srgb, var(--surface2) 15%, transparent);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 1rem 1.25rem;
       display: flex;
@@ -940,10 +943,8 @@
     }
 
     .stat-card {
-      background: color-mix(in srgb, var(--surface) 30%, transparent);
-      backdrop-filter: blur(40px) saturate(140%);
-      -webkit-backdrop-filter: blur(40px) saturate(140%);
-      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.5rem;
       position: relative;
@@ -1381,10 +1382,8 @@
 
     /* ── Dashboard ── */
     .dash-hero {
-      background: color-mix(in srgb, var(--surface) 30%, transparent);
-      backdrop-filter: blur(40px) saturate(140%);
-      -webkit-backdrop-filter: blur(40px) saturate(140%);
-      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 2rem 1.75rem;
       margin-bottom: 1rem;
@@ -1427,10 +1426,8 @@
     }
 
     .kpi-card {
-      background: color-mix(in srgb, var(--surface) 30%, transparent);
-      backdrop-filter: blur(40px) saturate(140%);
-      -webkit-backdrop-filter: blur(40px) saturate(140%);
-      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.25rem;
       transition: border-color .2s, box-shadow .2s, transform .2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -2237,10 +2234,8 @@
 
     /* ── Deductions Card ── */
     .deductions-card {
-      background: color-mix(in srgb, var(--surface2) 15%, transparent);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.5rem;
       margin-top: 1rem;
@@ -2777,7 +2772,7 @@
         </div>
 
         <!-- Proyección detallada -->
-        <div class="card">
+        <div class="card glass-panel">
           <div
             style="font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">
             Proyección al Cierre</div>
@@ -2900,7 +2895,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card glass-panel">
         <div
           style="font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:1rem;">
           Distribución de Ingresos por Concepto</div>
@@ -3302,16 +3297,16 @@
     function applyTheme(isLight) {
       const btn = document.getElementById('modeBtn');
       if (isLight) {
-        document.documentElement.style.setProperty('--bg', '#f5f4ef');
+        document.documentElement.style.setProperty('--bg', '#fafafa');
         document.documentElement.style.setProperty('--surface', '#ffffff');
-        document.documentElement.style.setProperty('--surface2', '#f0efe8');
-        document.documentElement.style.setProperty('--border', '#e2e0d5');
-        document.documentElement.style.setProperty('--border2', '#ccc9bc');
+        document.documentElement.style.setProperty('--surface2', '#f4f4f4');
+        document.documentElement.style.setProperty('--border', '#eaeaea');
+        document.documentElement.style.setProperty('--border2', '#d5d5d5');
         document.documentElement.style.setProperty('--text', '#1a1a1a');
-        document.documentElement.style.setProperty('--muted', '#7a7a6a');
-        document.documentElement.style.setProperty('--s-op-1', '0.11');
-        document.documentElement.style.setProperty('--s-op-2', '0.09');
-        document.documentElement.style.setProperty('--s-op-3', '0.07');
+        document.documentElement.style.setProperty('--muted', '#7a7a7a');
+        document.documentElement.style.setProperty('--s-op-1', '0.03');
+        document.documentElement.style.setProperty('--s-op-2', '0.02');
+        document.documentElement.style.setProperty('--s-op-3', '0.015');
         if (btn) btn.innerText = '🌙';
       } else {
         document.documentElement.style.setProperty('--bg', '#0e0e10');
@@ -3321,9 +3316,9 @@
         document.documentElement.style.setProperty('--border2', '#3a3a46');
         document.documentElement.style.setProperty('--text', '#f0efe8');
         document.documentElement.style.setProperty('--muted', '#7a7a8a');
-        document.documentElement.style.setProperty('--s-op-1', '0.03');
-        document.documentElement.style.setProperty('--s-op-2', '0.02');
-        document.documentElement.style.setProperty('--s-op-3', '0.015');
+        document.documentElement.style.setProperty('--s-op-1', '0.015');
+        document.documentElement.style.setProperty('--s-op-2', '0.01');
+        document.documentElement.style.setProperty('--s-op-3', '0.005');
         if (btn) btn.innerText = '☀';
       }
     }
