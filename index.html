@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mi Nómina · Andrés Troconis</title>
+  <title>Mi Nómina</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -108,14 +108,30 @@
     }
 
     @keyframes float {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(5%, 10%) scale(1.1); }
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      100% {
+        transform: translate(5%, 10%) scale(1.1);
+      }
     }
 
     @media (max-width: 600px) {
-      .shape-1 { width: 120vw; height: 120vw; }
-      .shape-2 { width: 130vw; height: 130vw; }
-      .shape-3 { width: 100vw; height: 100vw; }
+      .shape-1 {
+        width: 120vw;
+        height: 120vw;
+      }
+
+      .shape-2 {
+        width: 130vw;
+        height: 130vw;
+      }
+
+      .shape-3 {
+        width: 100vw;
+        height: 100vw;
+      }
     }
 
     /* ── Auth ── */
@@ -1296,41 +1312,86 @@
 
     /* ── Animations ── */
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes slideUpFade {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
     .tab-content {
       animation: fadeIn .4s ease;
     }
 
-    .tab-content > * {
+    .tab-content>* {
       animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
-    
-    .tab-content > *:nth-child(1) { animation-delay: 0.05s; }
-    .tab-content > *:nth-child(2) { animation-delay: 0.1s; }
-    .tab-content > *:nth-child(3) { animation-delay: 0.15s; }
-    .tab-content > *:nth-child(4) { animation-delay: 0.2s; }
-    .tab-content > *:nth-child(5) { animation-delay: 0.25s; }
 
-    .stats-grid > .stat-card {
+    .tab-content>*:nth-child(1) {
+      animation-delay: 0.05s;
+    }
+
+    .tab-content>*:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .tab-content>*:nth-child(3) {
+      animation-delay: 0.15s;
+    }
+
+    .tab-content>*:nth-child(4) {
+      animation-delay: 0.2s;
+    }
+
+    .tab-content>*:nth-child(5) {
+      animation-delay: 0.25s;
+    }
+
+    .stats-grid>.stat-card {
       animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
-    .stats-grid > .stat-card:nth-child(1) { animation-delay: 0.1s; }
-    .stats-grid > .stat-card:nth-child(2) { animation-delay: 0.15s; }
-    .stats-grid > .stat-card:nth-child(3) { animation-delay: 0.2s; }
-    .stats-grid > .stat-card:nth-child(4) { animation-delay: 0.25s; }
+
+    .stats-grid>.stat-card:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    .stats-grid>.stat-card:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .stats-grid>.stat-card:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+
+    .stats-grid>.stat-card:nth-child(4) {
+      animation-delay: 0.25s;
+    }
 
     /* ── Divider ── */
     .divider {
@@ -2626,10 +2687,12 @@
             style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.55rem;background:var(--success-dim);color:var(--success);padding:0.25rem 0.6rem;border-radius:9999px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;"><span
               style="width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s infinite;"></span></span>
         </div>
-        <div class="header-sub">Control Quincenal · Andrés Troconis</div>
+        <div class="header-sub" id="headerSubText">Control Quincenal</div>
       </div>
       <div class="header-actions">
-        <div id="liveClock" style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; color: var(--muted); padding-right: 0.2rem; letter-spacing: 0.05em;"></div>
+        <div id="liveClock"
+          style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; color: var(--muted); padding-right: 0.2rem; letter-spacing: 0.05em;">
+        </div>
         <div class="icon-btn" onclick="toggleDarkMode()" title="Modo claro" id="modeBtn" style="cursor:pointer;">☀</div>
         <button onclick="handleSignOut()" class="btn btn-danger"
           style="padding:.55rem 1rem;font-size:.72rem;">Salir</button>
@@ -2639,11 +2702,16 @@
     <!-- Nav -->
     <nav class="nav" id="mainNav">
       <div class="nav-indicator" id="navIndicator"></div>
-      <button class="nav-btn active" onclick="showTab('registro', this)"><span class="tab-icon"><i data-lucide="clipboard-list" style="width:18px;height:18px;"></i></span>Registros</button>
-      <button class="nav-btn" onclick="showTab('dashboard', this)"><span class="tab-icon"><i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i></span>Resumen</button>
-      <button class="nav-btn" onclick="showTab('asistente', this)"><span class="tab-icon"><i data-lucide="sparkles" style="width:18px;height:18px;"></i></span>Asistente</button>
-      <button class="nav-btn" onclick="showTab('resumen', this)"><span class="tab-icon"><i data-lucide="banknote" style="width:18px;height:18px;"></i></span>Nómina</button>
-      <button class="nav-btn" onclick="showTab('config', this)"><span class="tab-icon"><i data-lucide="settings" style="width:18px;height:18px;"></i></span>Ajustes</button>
+      <button class="nav-btn active" onclick="showTab('registro', this)"><span class="tab-icon"><i
+            data-lucide="clipboard-list" style="width:18px;height:18px;"></i></span>Registros</button>
+      <button class="nav-btn" onclick="showTab('dashboard', this)"><span class="tab-icon"><i
+            data-lucide="layout-dashboard" style="width:18px;height:18px;"></i></span>Resumen</button>
+      <button class="nav-btn" onclick="showTab('asistente', this)"><span class="tab-icon"><i data-lucide="sparkles"
+            style="width:18px;height:18px;"></i></span>Asistente</button>
+      <button class="nav-btn" onclick="showTab('resumen', this)"><span class="tab-icon"><i data-lucide="banknote"
+            style="width:18px;height:18px;"></i></span>Nómina</button>
+      <button class="nav-btn" onclick="showTab('config', this)"><span class="tab-icon"><i data-lucide="settings"
+            style="width:18px;height:18px;"></i></span>Ajustes</button>
     </nav>
 
     <!-- ═══ ASISTENTE IA ═══ -->
@@ -2712,7 +2780,8 @@
           <textarea id="chatInput" class="chat-input"
             placeholder="Pregunta algo sobre tu nómina... ej: ¿cuánto gané en horas nocturnas?" rows="1"
             onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
-          <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
+          <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar"><i data-lucide="send"
+              style="width:18px;height:18px;"></i></button>
         </div>
         <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:.6rem;letter-spacing:.04em;">
           El asistente conoce tus registros, horas, recargos y configuración actual
@@ -3206,6 +3275,17 @@
           return;
         }
         window.currentUser = user;
+        let fallbackName = 'Usuario';
+        if (user.email) {
+          fallbackName = user.email.split('@')[0]
+            .replace(/[._-]/g, ' ')
+            .replace(/\b\w/g, char => char.toUpperCase());
+        }
+        const nombreUsuario = userDoc.data().nombre || fallbackName;
+        window.currentUserName = nombreUsuario;
+        const headerSub = document.getElementById('headerSubText');
+        if (headerSub) headerSub.innerText = `Control Quincenal · ${nombreUsuario}`;
+        document.title = `Mi Nómina · ${nombreUsuario}`;
         document.getElementById('authContainer').classList.remove('visible');
         await syncFromCloud();
       } else {
@@ -3393,7 +3473,7 @@
         if (btn && !btn.classList.contains('active')) {
           btn.click();
           // Prevent scroll
-          if(e.cancelable) e.preventDefault();
+          if (e.cancelable) e.preventDefault();
         }
       }, { passive: false });
     }
@@ -3511,7 +3591,7 @@ PROYECCIÓN A 15 DÍAS (basada en promedio ${fmt.format(promDia)}/día):
       }
 
       return `════════════════════════════════════
-DATOS COMPLETOS DE MI NÓMINA — App de Andrés Troconis
+DATOS COMPLETOS DE MI NÓMINA — App de ${window.currentUserName || 'el usuario'}
 ════════════════════════════════════
 
 ${cfgSection}
@@ -3525,7 +3605,7 @@ ${histSection}
     }
 
     function buildSystemPrompt() {
-      return `Eres un asistente experto en nómina laboral colombiana, integrado dentro de la app "Mi Nómina" de Andrés Troconis. Tienes acceso COMPLETO a todos sus datos: configuración salarial, cada registro de la quincena actual con su desglose hora por hora, proyecciones, y el historial completo de todas las quincenas cerradas.
+      return `Eres un asistente experto en nómina laboral colombiana, integrado dentro de la app "Mi Nómina" de ${window.currentUserName || 'el usuario'}. Tienes acceso COMPLETO a todos sus datos: configuración salarial, cada registro de la quincena actual con su desglose hora por hora, proyecciones, y el historial completo de todas las quincenas cerradas.
 
 CAPACIDADES:
 - Puedes responder sobre cualquier dato de la app: horas trabajadas, pagos por tipo, deducciones, transporte, proyecciones, comparaciones entre quincenas, tendencias históricas, días festivos, etc.
@@ -4503,7 +4583,7 @@ REGLAS:
     setInterval(updateClock, 1000);
     updateClock();
     if (window.lucide) lucide.createIcons();
-    
+
     // Initial indicator setup after layout
     setTimeout(() => {
       updateIndicator(document.querySelector('.nav-btn.active'));
