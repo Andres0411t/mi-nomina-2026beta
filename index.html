@@ -614,11 +614,11 @@
   .stat-card.green::after { background: var(--success); }
   .stat-card.red::after { background: var(--danger); }
   .stat-card.featured {
-    background: linear-gradient(135deg, #1c1700 0%, #fffdf1 100%);
-    border-color: var(--surface);
-    box-shadow: 0 4px 30px var(--accent-glow);
+    background: #000000;
+    border-color: #000000;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
   }
-  .stat-card.featured::after { background: var(--accent); height: 3px; }
+  .stat-card.featured::after { background: #ffffff; height: 3px; }
 
   .stat-label {
     font-size: .65rem;
@@ -639,7 +639,8 @@
     color: var(--text);
     line-height: 1;
   }
-  .stat-card.featured .stat-val { font-size: 2rem; color: var(--accent2); }
+  .stat-card.featured .stat-label { color: #ffffff; }
+  .stat-card.featured .stat-val { font-size: 2rem; color: #ffffff; }
 
   /* ── Table ── */
   .table { width: 100%; border-collapse: collapse; }
@@ -730,12 +731,12 @@
     padding: 0;
     transition: color .15s;
   }
-  .hist-action.pdf { color: var(--success); }
-  .hist-action.pdf:hover { color: #7dd9b5; }
-  .hist-action.excel { color: var(--info); }
-  .hist-action.excel:hover { color: #9ab5ff; }
-  .hist-action.eye { color: var(--accent); }
-  .hist-action.eye:hover { color: var(--accent2); }
+  .hist-action.pdf { color: var(--muted); }
+  .hist-action.pdf:hover { color: var(--text); }
+  .hist-action.excel { color: var(--muted); }
+  .hist-action.excel:hover { color: var(--text); }
+  .hist-action.eye { color: var(--muted); }
+  .hist-action.eye:hover { color: var(--text); }
   .hist-action.trash { color: var(--danger); }
   .hist-action.trash:hover { color: #ff8a8a; }
 
@@ -880,8 +881,7 @@
     font-size: .7rem; color: var(--muted); margin-top: .4rem;
   }
   .kpi-icon {
-    position: absolute; top: 1rem; right: 1rem;
-    font-size: 1.2rem; opacity: .12;
+    display: none;
   }
 
   /* Progress bar */
@@ -1309,7 +1309,7 @@
     font-weight: 600;
     letter-spacing: .1em;
     text-transform: uppercase;
-    color: var(--danger);
+    color: var(--muted);
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -1724,37 +1724,31 @@
     <!-- KPIs -->
     <div class="dash-kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-icon">📅</div>
         <div class="kpi-label">Días Registrados</div>
         <div class="kpi-val accent" id="dashDiasReg">0</div>
         <div class="kpi-sub" id="dashDiasSub">de 15 esperados</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">⏱</div>
         <div class="kpi-label">Horas Totales</div>
         <div class="kpi-val info" id="dashHorasTot">0h</div>
         <div class="kpi-sub" id="dashHorasSub">promedio por turno</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">💰</div>
         <div class="kpi-label">Promedio por Día</div>
         <div class="kpi-val success" id="dashPromDia">$0</div>
         <div class="kpi-sub">ingreso diario bruto</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">📈</div>
         <div class="kpi-label">Mejor Día</div>
         <div class="kpi-val accent" id="dashMejorDia">$0</div>
         <div class="kpi-sub" id="dashMejorFecha">—</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">🌙</div>
         <div class="kpi-label">Horas Nocturnas</div>
         <div class="kpi-val" id="dashHorasNoc">0h</div>
         <div class="kpi-sub" id="dashNocPct">del total trabajado</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon">🏖</div>
         <div class="kpi-label">Dom / Festivos</div>
         <div class="kpi-val" id="dashHorasFest">0h</div>
         <div class="kpi-sub" id="dashFestPct">del total trabajado</div>
@@ -1922,7 +1916,7 @@
     <!-- Desglose de deducciones -->
     <div class="deductions-card" id="deductionsCard">
       <div class="deductions-title">
-        <span>📉</span> Desglose de Descuentos
+        Desglose de Descuentos
       </div>
       <div class="deductions-grid">
         <div class="deduction-item">
@@ -1941,8 +1935,8 @@
     </div>
 
     <div class="export-row">
-      <button onclick="exportarPDF()" class="btn btn-dark">📄 Exportar PDF</button>
-      <button onclick="exportarExcel()" class="btn btn-success">📊 Exportar Excel</button>
+      <button onclick="exportarPDF()" class="btn btn-dark">Exportar PDF</button>
+      <button onclick="exportarExcel()" class="btn btn-success">Exportar Excel</button>
       <button onclick="clearQuincena()" class="btn btn-danger">Cerrar Quincena</button>
     </div>
 
@@ -1952,7 +1946,7 @@
       
       <!-- Buscador de historial -->
       <div class="hist-search">
-        <input type="text" id="histSearchInput" class="inp" placeholder="🔍 Buscar por fecha o período..." oninput="filterHistorial()">
+        <input type="text" id="histSearchInput" class="inp" placeholder="Buscar por fecha o período..." oninput="filterHistorial()">
         <input type="date" id="histDateFrom" class="inp" placeholder="Desde" onchange="filterHistorial()">
         <input type="date" id="histDateTo" class="inp" placeholder="Hasta" onchange="filterHistorial()">
         <button onclick="clearHistFilters()" class="btn btn-ghost">Limpiar</button>
@@ -2002,9 +1996,9 @@
       <div class="divider"></div>
       <div class="config-section-title">Copia de Seguridad</div>
       <div class="backup-grid" style="margin-bottom:2rem;">
-        <button onclick="downloadBackup()" class="btn btn-ghost">📥 Descargar Backup</button>
+        <button onclick="downloadBackup()" class="btn btn-ghost">Descargar Backup</button>
         <label class="btn btn-ghost" style="cursor:pointer;">
-          📤 Subir Backup
+          Subir Backup
           <input type="file" id="importFile" class="hidden" onchange="importBackup(event)">
         </label>
       </div>
@@ -2558,7 +2552,7 @@ REGLAS:
     if (empty) empty.remove();
     const win = document.getElementById('chatWindow');
     win.innerHTML += `<div class="chat-msg user">
-      <div class="chat-icon user">👤</div>
+      <div class="chat-icon user"></div>
       <div class="chat-bubble">${escapeHtml(text)}</div>
     </div>`;
     win.scrollTop = win.scrollHeight;
@@ -2861,7 +2855,7 @@ REGLAS:
   function renderChart(sumas) {
     const ctx = document.getElementById('nominaChart').getContext('2d');
     const labelsMap = { ordD:'H. Ordinaria', ordN:'Rec. Noct.', extD:'Ex. Diurna', extN:'Ex. Nocturna', domD:'Dom/Fest Diur.', domN:'Dom/Fest Noc.', edd:'Ex. Dom. Diur.', edn:'Ex. Dom. Noc.', INCAP:'Incapacidad', COMPENSATORIO:'Compensatorio' };
-    const colors = { ordD:'#c9a84c', ordN:'#7a5c1e', extD:'#5aad8f', extN:'#2d7a5e', domD:'#6a8fe8', domN:'#3a5fb0', edd:'#e05a5a', edn:'#a03030', INCAP:'#7a7a8a', COMPENSATORIO:'#b084e8' };
+    const colors = { ordD:'#c4a06a', ordN:'#a67f45', extD:'#5ebc8a', extN:'#3a8b63', domD:'#5a8fd4', domN:'#2d5fa3', edd:'#c87060', edn:'#9a4a3a', INCAP:'#8a8a7a', COMPENSATORIO:'#a894b8' };
     const dataLabels = [], dataValues = [], bgColors = [];
     for (let k in sumas) { dataLabels.push(labelsMap[k]||k); dataValues.push(sumas[k].v); bgColors.push(colors[k]||'#555'); }
     if (myChart) myChart.destroy();
@@ -3219,9 +3213,9 @@ REGLAS:
           </div>
         </div>
         <div class="hist-actions">
-          <button onclick="exportarPDFHistorial(${h.id})" class="hist-action pdf">📄 PDF</button>
-          <button onclick="exportarExcelHistorial(${h.id})" class="hist-action excel">📊 Excel</button>
-          <button onclick="toggleDetalleHistorial(${h.id})" class="hist-action eye">👁 Ver Días</button>
+          <button onclick="exportarPDFHistorial(${h.id})" class="hist-action pdf">PDF</button>
+          <button onclick="exportarExcelHistorial(${h.id})" class="hist-action excel">Excel</button>
+          <button onclick="toggleDetalleHistorial(${h.id})" class="hist-action eye">Ver Días</button>
           <button onclick="borrarHistorial(${h.id})" class="hist-action trash">Eliminar</button>
         </div>
         <div id="det-${h.id}" class="hist-detail"></div>
@@ -3278,7 +3272,7 @@ REGLAS:
     a.setAttribute("href","data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(data)));
     a.setAttribute("download","backup_total_nomina.json");
     document.body.appendChild(a); a.click(); a.remove();
-    showToast('📥 Backup descargado', 'success');
+    showToast('Backup descargado', 'success');
   }
 
   function importBackup(e) {
@@ -3364,7 +3358,7 @@ REGLAS:
     }
     
     doc.save(`Nomina_${new Date().toISOString().split('T')[0]}.pdf`);
-    showToast('📄 PDF exportado con gráfica', 'success');
+    showToast('PDF exportado con gráfica', 'success');
   }
 
   function exportarExcel() {
@@ -3383,7 +3377,7 @@ REGLAS:
     });
     reporte.push({},{Fecha:'RESUMEN'},{Estado:'Total',Horas:Number(tT.toFixed(2))},{Estado:'Diurnas',Horas:Number(tD.toFixed(2))},{Estado:'Nocturnas',Horas:Number(tN.toFixed(2))},{Estado:'Festivas',Horas:Number(tF.toFixed(2))},{Estado:'Compensatorio',Horas:Number(tC.toFixed(2))});
     const ws=XLSX.utils.json_to_sheet(reporte);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Quincena");XLSX.writeFile(wb,`Nomina_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showToast('📊 Excel exportado', 'success');
+    showToast('Excel exportado', 'success');
   }
 
   function exportarPDFHistorial(id) {
@@ -3409,7 +3403,7 @@ REGLAS:
     doc.setFontSize(10);doc.setTextColor(50);doc.text("Resumen:",14,fy+10);doc.setFontSize(9);
     doc.text(`Total: ${tT.toFixed(2)}`,14,fy+16);doc.text(`Diurnas: ${tD.toFixed(2)}`,14,fy+22);doc.text(`Nocturnas: ${tN.toFixed(2)}`,14,fy+28);doc.text(`Festivas: ${tF.toFixed(2)}`,14,fy+34);doc.text(`Compensatorio: ${tC.toFixed(2)}`,14,fy+40);
     doc.save(`Nomina_${h.desde}_${h.hasta}.pdf`);
-    showToast('📄 PDF de historial exportado', 'success');
+    showToast('PDF de historial exportado', 'success');
   }
 
   function exportarExcelHistorial(id) {
@@ -3429,7 +3423,7 @@ REGLAS:
     });
     reporte.push({},{Fecha:'RESUMEN'},{Estado:'Total',Horas:Number(tT.toFixed(2))},{Estado:'Diurnas',Horas:Number(tD.toFixed(2))},{Estado:'Nocturnas',Horas:Number(tN.toFixed(2))},{Estado:'Festivas',Horas:Number(tF.toFixed(2))},{Estado:'Compensatorio',Horas:Number(tC.toFixed(2))});
     const ws=XLSX.utils.json_to_sheet(reporte);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Historial");XLSX.writeFile(wb,`Nomina_Hist_${h.desde}_${h.hasta}.xlsx`);
-    showToast('📊 Excel de historial exportado', 'success');
+    showToast('Excel de historial exportado', 'success');
   }
 </script>
 
