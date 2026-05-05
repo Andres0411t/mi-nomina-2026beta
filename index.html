@@ -60,6 +60,57 @@
 
 
 
+    /* ── Background Shapes ── */
+    .bg-shapes {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      z-index: 0;
+      animation: float 20s infinite ease-in-out alternate;
+    }
+
+    .shape-1 {
+      top: -10%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: var(--accent);
+      opacity: 0.15;
+    }
+
+    .shape-2 {
+      bottom: -10%;
+      right: -10%;
+      width: 60vw;
+      height: 60vw;
+      background: var(--accent2);
+      opacity: 0.12;
+      animation-delay: -5s;
+    }
+
+    .shape-3 {
+      top: 30%;
+      left: 60%;
+      width: 40vw;
+      height: 40vw;
+      background: var(--accent);
+      opacity: 0.1;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(5%, 10%) scale(1.1); }
+    }
+
     /* ── Auth ── */
     #authContainer {
       position: fixed;
@@ -68,7 +119,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg);
+      background: color-mix(in srgb, var(--bg) 80%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       padding: 1rem;
       opacity: 0;
       pointer-events: none;
@@ -2342,6 +2395,13 @@
 
 <body>
 
+  <!-- ── Background Shapes ── -->
+  <div class="bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
   <!-- ── AUTH ── -->
   <div id="authContainer">
 
@@ -2510,6 +2570,7 @@
         <div class="header-sub">Control Quincenal · Andrés Troconis</div>
       </div>
       <div class="header-actions">
+        <div id="liveClock" style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; color: var(--muted); padding-right: 0.2rem; letter-spacing: 0.05em;"></div>
         <div class="icon-btn" onclick="toggleDarkMode()" title="Modo claro" id="modeBtn" style="cursor:pointer;">☀</div>
         <button onclick="handleSignOut()" class="btn btn-danger"
           style="padding:.55rem 1rem;font-size:.72rem;">Salir</button>
@@ -4332,6 +4393,19 @@ REGLAS:
       const ws = XLSX.utils.json_to_sheet(reporte); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Historial"); XLSX.writeFile(wb, `Nomina_Hist_${h.desde}_${h.hasta}.xlsx`);
       showToast('Excel de historial exportado', 'success');
     }
+
+    // Reloj en vivo
+    function updateClock() {
+      const clockEl = document.getElementById('liveClock');
+      if (clockEl) {
+        const now = new Date();
+        const hrs = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        clockEl.innerText = `${hrs}:${mins}`;
+      }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
   </script>
 
 </body>
