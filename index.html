@@ -14,6 +14,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     :root {
       --bg: #fafafa;
@@ -27,10 +28,10 @@
       --accent2: #d4ae74;
       --accent-dim: rgba(184, 150, 90, 0.10);
       --accent-glow: rgba(184, 150, 90, 0.18);
-      --danger: #c0564a;
-      --danger-dim: rgba(192, 86, 74, 0.08);
-      --success: #4a9b7a;
-      --success-dim: rgba(74, 155, 122, 0.08);
+      --danger: #d96c60;
+      --danger-dim: rgba(217, 108, 96, 0.08);
+      --success: #57a787;
+      --success-dim: rgba(87, 167, 135, 0.08);
       --info: #5878c0;
       --radius: 24px;
       --radius-sm: 16px;
@@ -141,12 +142,12 @@
 
     .auth-card {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
-      padding: 2.75rem 2.25rem;
+      padding: 3rem 2.5rem;
       max-width: 400px;
       width: 100%;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
       animation: slideUp .4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -179,21 +180,21 @@
     /* ── Inputs ── */
     .inp {
       width: 100%;
-      padding: .8rem 1rem;
+      padding: .85rem 1rem;
       background: var(--surface2);
-      border: 1.5px solid var(--border);
+      border: 1.5px solid transparent;
       border-radius: var(--radius-sm);
       color: var(--text);
       font-family: var(--font-sans);
       font-size: .9rem;
       font-weight: 400;
       outline: none;
-      transition: border-color .25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .25s ease, background-color .2s ease;
+      transition: all .3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .inp:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-dim), 0 1px 3px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 0 0 4px var(--accent-dim), 0 2px 8px rgba(0, 0, 0, 0.02);
       background: var(--surface);
     }
 
@@ -234,14 +235,15 @@
       text-transform: uppercase;
       cursor: pointer;
       border: none;
-      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all .4s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     }
 
     .btn:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+      transform: translateY(-2px);
     }
 
     .btn:active {
@@ -534,23 +536,22 @@
       background: color-mix(in srgb, var(--surface) 30%, transparent) !important;
       backdrop-filter: blur(40px) saturate(140%) !important;
       -webkit-backdrop-filter: blur(40px) saturate(140%) !important;
-      border-color: color-mix(in srgb, var(--border) 40%, transparent) !important;
+      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent) !important;
     }
 
     /* ── Cards ── */
     .card {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
-      padding: 1.75rem;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
-      transition: box-shadow .3s ease, border-color .3s ease, transform .3s ease;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+      transition: all .4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .card:hover {
-      border-color: var(--border2);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
-      transform: translateY(-2px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.05);
+      transform: translateY(-3px);
     }
 
     .card+.card,
@@ -747,22 +748,22 @@
     /* ── Registry Items ── */
     .reg-item {
       background: var(--surface2);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius-sm);
-      padding: 1rem 1.25rem;
+      padding: 1.15rem 1.25rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
-      transition: border-color .2s, transform .2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .2s ease;
+      transition: all .4s cubic-bezier(0.16, 1, 0.3, 1);
       animation: slideUp .3s ease both;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     }
 
     .reg-item:hover {
-      border-color: var(--border2);
-      transform: translateX(3px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      transform: translateY(-2px) translateX(2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      background: var(--surface);
     }
 
     .reg-item.danger {
@@ -944,19 +945,18 @@
 
     .stat-card {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
-      padding: 1.5rem;
+      padding: 1.75rem;
       position: relative;
       overflow: hidden;
-      transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+      transition: all .4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
     }
 
     .stat-card:hover {
       transform: translateY(-4px);
-      border-color: var(--border2);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.05);
     }
 
     .stat-card::after {
@@ -1383,10 +1383,11 @@
     /* ── Dashboard ── */
     .dash-hero {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
-      padding: 2rem 1.75rem;
-      margin-bottom: 1rem;
+      padding: 2.5rem 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
     }
 
     .dash-hero-label {
@@ -1427,19 +1428,18 @@
 
     .kpi-card {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
-      padding: 1.25rem;
-      transition: border-color .2s, box-shadow .2s, transform .2s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 1.5rem;
+      transition: all .4s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
     }
 
     .kpi-card:hover {
-      border-color: var(--border2);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-      transform: translateY(-2px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.05);
+      transform: translateY(-3px);
     }
 
     .kpi-label {
@@ -2124,15 +2124,13 @@
     }
 
     .modal-card {
-      background: color-mix(in srgb, var(--surface) 30%, transparent);
-      backdrop-filter: blur(40px) saturate(140%);
-      -webkit-backdrop-filter: blur(40px) saturate(140%);
-      border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+      background: var(--surface);
+      border: none;
       border-radius: var(--radius);
-      padding: 1.75rem;
+      padding: 2rem;
       width: 100%;
       max-width: 480px;
-      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 16px 64px rgba(0, 0, 0, 0.15);
       animation: modalIn .3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -2235,10 +2233,11 @@
     /* ── Deductions Card ── */
     .deductions-card {
       background: var(--surface2);
-      border: 1px solid var(--border);
+      border: none;
       border-radius: var(--radius);
-      padding: 1.5rem;
+      padding: 2rem;
       margin-top: 1rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.02);
     }
 
     .deductions-title {
@@ -2619,12 +2618,11 @@
 
     <!-- Nav -->
     <nav class="nav">
-      <button class="nav-btn active" onclick="showTab('registro', this)"><span
-          class="tab-icon"></span>Registros</button>
-      <button class="nav-btn" onclick="showTab('dashboard', this)"><span class="tab-icon"></span>Resumen</button>
-      <button class="nav-btn" onclick="showTab('asistente', this)"><span class="tab-icon">✦</span>Asistente</button>
-      <button class="nav-btn" onclick="showTab('resumen', this)"><span class="tab-icon"></span>Nómina</button>
-      <button class="nav-btn" onclick="showTab('config', this)"><span class="tab-icon"></span>Ajustes</button>
+      <button class="nav-btn active" onclick="showTab('registro', this)"><span class="tab-icon"><i data-lucide="clipboard-list" style="width:18px;height:18px;"></i></span>Registros</button>
+      <button class="nav-btn" onclick="showTab('dashboard', this)"><span class="tab-icon"><i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i></span>Resumen</button>
+      <button class="nav-btn" onclick="showTab('asistente', this)"><span class="tab-icon"><i data-lucide="sparkles" style="width:18px;height:18px;"></i></span>Asistente</button>
+      <button class="nav-btn" onclick="showTab('resumen', this)"><span class="tab-icon"><i data-lucide="banknote" style="width:18px;height:18px;"></i></span>Nómina</button>
+      <button class="nav-btn" onclick="showTab('config', this)"><span class="tab-icon"><i data-lucide="settings" style="width:18px;height:18px;"></i></span>Ajustes</button>
     </nav>
 
     <!-- ═══ ASISTENTE IA ═══ -->
@@ -2632,7 +2630,7 @@
       <div class="card">
 
         <div class="ai-header">
-          <div class="ai-avatar ai-avatar-pulse">✦</div>
+          <div class="ai-avatar ai-avatar-pulse"><i data-lucide="sparkles"></i></div>
           <div>
             <div
               style="font-family:var(--font-sans);font-size:1.3rem;font-weight:600;color:var(--text);line-height:1.2;">
@@ -2693,7 +2691,7 @@
           <textarea id="chatInput" class="chat-input"
             placeholder="Pregunta algo sobre tu nómina... ej: ¿cuánto gané en horas nocturnas?" rows="1"
             onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
-          <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar">➤</button>
+          <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()" title="Enviar"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
         </div>
         <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:.6rem;letter-spacing:.04em;">
           El asistente conoce tus registros, horas, recargos y configuración actual
@@ -3307,7 +3305,7 @@
         document.documentElement.style.setProperty('--s-op-1', '0.03');
         document.documentElement.style.setProperty('--s-op-2', '0.02');
         document.documentElement.style.setProperty('--s-op-3', '0.015');
-        if (btn) btn.innerText = '🌙';
+        if (btn) btn.innerHTML = '<i data-lucide="moon"></i>';
       } else {
         document.documentElement.style.setProperty('--bg', '#0e0e10');
         document.documentElement.style.setProperty('--surface', '#16161a');
@@ -3319,8 +3317,9 @@
         document.documentElement.style.setProperty('--s-op-1', '0.015');
         document.documentElement.style.setProperty('--s-op-2', '0.01');
         document.documentElement.style.setProperty('--s-op-3', '0.005');
-        if (btn) btn.innerText = '☀';
+        if (btn) btn.innerHTML = '<i data-lucide="sun"></i>';
       }
+      if (window.lucide) lucide.createIcons();
     }
 
     // Restore saved theme on load. Claro es el tema principal por defecto.
@@ -3580,19 +3579,21 @@ REGLAS:
         .replace(/^- (.+)/gm, '• $1')
         .replace(/\n/g, '<br>');
       win.innerHTML += `<div class="chat-msg ai">
-      <div class="chat-icon ai">✦</div>
+      <div class="chat-icon ai"><i data-lucide="sparkles" style="width:14px;height:14px;"></i></div>
       <div class="chat-bubble">${formatted}</div>
     </div>`;
       win.scrollTop = win.scrollHeight;
+      if (window.lucide) lucide.createIcons();
     }
 
     function showThinking() {
       const win = document.getElementById('chatWindow');
       win.innerHTML += `<div class="chat-msg ai" id="thinkingMsg">
-      <div class="chat-icon ai">✦</div>
+      <div class="chat-icon ai"><i data-lucide="sparkles" style="width:14px;height:14px;"></i></div>
       <div class="ai-thinking"><div class="dot-flashing"><span></span><span></span><span></span></div></div>
     </div>`;
       win.scrollTop = win.scrollHeight;
+      if (window.lucide) lucide.createIcons();
     }
 
     function removeThinking() {
@@ -4453,6 +4454,7 @@ REGLAS:
     }
     setInterval(updateClock, 1000);
     updateClock();
+    if (window.lucide) lucide.createIcons();
   </script>
 
 </body>
