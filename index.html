@@ -2897,7 +2897,7 @@ REGLAS:
 
     window.db.forEach(r => {
       let colorClass = r.tipo === 'NORMAL' ? 'accent' : (r.tipo === 'INCAPACIDAD' ? 'danger' : 'success');
-      let typeLabel = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? '★ Compensatorio' : r.diag || r.tipo);
+      let typeLabel = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
       let timeStr = '';
       if (r.tipo === 'NORMAL' && r.rawHoras) {
         timeStr = `${r.rawHoras.hI} → ${r.rawHoras.hF}`;
