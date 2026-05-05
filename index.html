@@ -83,7 +83,7 @@
       width: 50vw;
       height: 50vw;
       background: var(--accent);
-      opacity: 0.15;
+      opacity: var(--s-op-1, 0.08);
     }
 
     .shape-2 {
@@ -92,7 +92,7 @@
       width: 60vw;
       height: 60vw;
       background: var(--accent2);
-      opacity: 0.12;
+      opacity: var(--s-op-2, 0.06);
       animation-delay: -5s;
     }
 
@@ -102,13 +102,19 @@
       width: 40vw;
       height: 40vw;
       background: var(--accent);
-      opacity: 0.1;
+      opacity: var(--s-op-3, 0.04);
       animation-delay: -10s;
     }
 
     @keyframes float {
       0% { transform: translate(0, 0) scale(1); }
       100% { transform: translate(5%, 10%) scale(1.1); }
+    }
+
+    @media (max-width: 600px) {
+      .shape-1 { width: 120vw; height: 120vw; }
+      .shape-2 { width: 130vw; height: 130vw; }
+      .shape-3 { width: 100vw; height: 100vw; }
     }
 
     /* ── Auth ── */
@@ -1581,25 +1587,33 @@
 
     .bar-fill {
       width: 100%;
-      border-radius: 4px 4px 0 0;
-      background: var(--border2);
-      transition: height .7s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 40%, transparent) 0%, transparent 100%);
+      transition: height .7s cubic-bezier(0.16, 1, 0.3, 1), transform .3s ease, background .3s;
       position: relative;
       cursor: pointer;
-      min-height: 3px;
+      min-height: 4px;
       flex-shrink: 0;
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      border-bottom: none;
     }
 
     .bar-fill.incap {
-      background: rgba(192, 86, 74, 0.3);
+      background: linear-gradient(180deg, color-mix(in srgb, #e08b8b 60%, transparent) 0%, transparent 100%);
+      border-color: color-mix(in srgb, #e08b8b 40%, transparent);
     }
 
     .bar-fill.comp {
-      background: rgba(88, 120, 192, 0.3);
+      background: linear-gradient(180deg, color-mix(in srgb, #8ba8e0 60%, transparent) 0%, transparent 100%);
+      border-color: color-mix(in srgb, #8ba8e0 40%, transparent);
     }
 
     .bar-fill:hover {
-      background: var(--accent);
+      background: linear-gradient(180deg, var(--accent) 0%, transparent 100%);
+      border-color: var(--accent);
+      box-shadow: 0 -4px 16px var(--accent-glow);
+      transform: scaleY(1.02);
+      transform-origin: bottom;
     }
 
     .bar-fill:hover::after {
@@ -3283,6 +3297,9 @@
         document.documentElement.style.setProperty('--border2', '#ccc9bc');
         document.documentElement.style.setProperty('--text', '#1a1a1a');
         document.documentElement.style.setProperty('--muted', '#7a7a6a');
+        document.documentElement.style.setProperty('--s-op-1', '0.08');
+        document.documentElement.style.setProperty('--s-op-2', '0.06');
+        document.documentElement.style.setProperty('--s-op-3', '0.04');
         if (btn) btn.innerText = '🌙';
       } else {
         document.documentElement.style.setProperty('--bg', '#0e0e10');
@@ -3292,6 +3309,9 @@
         document.documentElement.style.setProperty('--border2', '#3a3a46');
         document.documentElement.style.setProperty('--text', '#f0efe8');
         document.documentElement.style.setProperty('--muted', '#7a7a8a');
+        document.documentElement.style.setProperty('--s-op-1', '0.03');
+        document.documentElement.style.setProperty('--s-op-2', '0.02');
+        document.documentElement.style.setProperty('--s-op-3', '0.015');
         if (btn) btn.innerText = '☀';
       }
     }
@@ -3852,9 +3872,10 @@ REGLAS:
         data: { labels: dataLabels, datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0, hoverOffset: 12, borderRadius: 4 }] },
         options: {
           responsive: true, maintainAspectRatio: false,
+          animation: { animateScale: true, animateRotate: true, duration: 1200, easing: 'easeOutQuart' },
           plugins: {
-            legend: { position: 'bottom', labels: { color: isDark ? '#7a7a8a' : '#7a7a6a', font: { weight: '600', size: 10, family: 'DM Sans' }, padding: 16, usePointStyle: true, pointStyleWidth: 8 } },
-            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${format.format(ctx.raw)}` }, backgroundColor: '#1e1e24', titleColor: '#c9a84c', bodyColor: '#f0efe8', borderColor: '#3a3a46', borderWidth: 1 }
+            legend: { position: 'bottom', labels: { color: isDark ? '#7a7a8a' : '#7a7a6a', font: { weight: '600', size: 11, family: 'DM Sans' }, padding: 16, usePointStyle: true, boxWidth: 8, boxHeight: 8 } },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${format.format(ctx.raw)}` }, backgroundColor: 'rgba(20, 20, 24, 0.9)', titleColor: '#d4ae74', bodyColor: '#ffffff', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, padding: 12, cornerRadius: 12 }
           },
           cutout: '72%'
         }
