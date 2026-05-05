@@ -205,6 +205,8 @@
   @media(max-width: 600px) {
     .wrapper {
       padding: .85rem .75rem;
+      overflow-x: hidden;
+      max-width: 100vw;
     }
   }
 
@@ -215,10 +217,32 @@
     align-items: center;
     margin-bottom: 2.5rem;
     padding: 1.5rem 2rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    /* Liquid glass header */
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(48px) saturate(2.5) brightness(1.15) contrast(0.88);
+    -webkit-backdrop-filter: blur(48px) saturate(2.5) brightness(1.15) contrast(0.88);
+    border: 1px solid transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.60);
+    border-left: 1px solid rgba(255, 255, 255, 0.28);
+    border-right: 1px solid rgba(255, 255, 255, 0.16);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius);
-    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    box-shadow:
+      0 1.5px 0 rgba(255,255,255,0.45) inset,
+      0 20px 50px rgba(0,0,0,0.10),
+      0 4px 16px rgba(0,0,0,0.06),
+      0 0 0 0.5px rgba(0,0,0,0.04);
+    position: relative;
+  }
+  /* Specular highlight line on header */
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.9) 30%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.9) 70%, transparent 100%);
+    border-radius: var(--radius);
+    pointer-events: none;
   }
   @media(max-width: 600px) {
     .header {
@@ -302,6 +326,216 @@
     box-shadow: 0 2px 12px var(--accent-glow);
   }
 
+  /* ── Nav — MOBILE (Liquid Glass iOS 26) ── */
+  @media (max-width: 768px) {
+    .nav {
+      position: fixed;
+      bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 1.5rem);
+      max-width: 460px;
+      z-index: 200;
+
+      /* ── Cristal puro: casi invisible como la imagen WWDC25 ── */
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(72px) saturate(3.5) brightness(1.22) contrast(0.78);
+      -webkit-backdrop-filter: blur(72px) saturate(3.5) brightness(1.22) contrast(0.78);
+
+      /* Bordes: solo reflejos de luz, no color sólido */
+      border: none;
+      outline: none;
+      /* Capa de borde con gradiente usando box-shadow en lugar de border */
+      border-radius: 9999px;
+
+      box-shadow:
+        /* Highlight superior — la luz toca el borde del cristal */
+        0 0 0 1px rgba(255,255,255,0.18),
+        /* Specular interno superior */
+        0 1.5px 0 0 rgba(255,255,255,0.42) inset,
+        /* Brillo lateral sutil */
+        1px 0 0 0 rgba(255,255,255,0.15) inset,
+        /* Sombra exterior muy suave — el cristal flota */
+        0 24px 64px rgba(0,0,0,0.10),
+        0 8px 24px rgba(0,0,0,0.06);
+
+      display: flex;
+      gap: 0;
+      padding: .45rem .45rem;
+      margin-bottom: 0;
+      overflow: visible;
+
+      animation: navAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes navAppear {
+      from { opacity: 0; transform: translateX(-50%) translateY(28px) scale(0.94); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0)     scale(1);    }
+    }
+
+    /* Specular highlight — la firma del liquid glass */
+    .nav::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 5%; right: 5%;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,0.0) 8%,
+        rgba(255,255,255,0.95) 28%,
+        rgba(255,255,255,1.0) 50%,
+        rgba(255,255,255,0.95) 72%,
+        rgba(255,255,255,0.0) 92%,
+        transparent 100%
+      );
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Reflejo inferior curvo */
+    .nav::after {
+      content: '';
+      position: absolute;
+      bottom: 2px; left: 22%; right: 22%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.40) 50%, transparent);
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Píldora deslizante — el indicador que se mueve entre tabs */
+    .nav-indicator {
+      position: absolute;
+      top: .45rem; bottom: .45rem;
+      border-radius: 9999px;
+      background: linear-gradient(
+        165deg,
+        rgba(232, 210, 120, 0.92) 0%,
+        rgba(201, 168,  76, 0.88) 60%,
+        rgba(180, 145,  55, 0.80) 100%
+      );
+      box-shadow:
+        0 1.5px 0 rgba(255,255,255,0.65) inset,
+        1px 0 0 rgba(255,255,255,0.25) inset,
+        0 4px 18px rgba(201,168,76,0.50),
+        0 2px 8px rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-top-color: rgba(255,255,255,0.72);
+      /* Transición fluida tipo líquido */
+      transition: left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  width 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      z-index: 0;
+      will-change: left, width;
+    }
+
+    /* Efecto "stretch" al presionar — el cristal se estira como líquido */
+    .nav.is-dragging .nav-indicator {
+      transition: left 0.18s cubic-bezier(0.25, 0.1, 0.25, 1),
+                  width 0.18s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    .nav-btn {
+      flex: 1;
+      flex-shrink: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .22rem;
+      padding: .58rem .2rem;
+      border-radius: 9999px;
+      font-size: .58rem;
+      letter-spacing: .04em;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--nav-text, rgba(40,32,4,0.50));
+      background: transparent;
+      transition: color .22s ease, transform .18s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap;
+      min-width: 0;
+      line-height: 1.1;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Dark mode nav text */
+    @media (prefers-color-scheme: dark) {
+      .nav-btn { color: rgba(255,255,255,0.50); }
+    }
+
+    .nav-btn .tab-icon {
+      display: block;
+      font-size: 1.3rem;
+      line-height: 1;
+      transition: transform .28s cubic-bezier(0.34,1.56,0.64,1),
+                  filter .22s ease;
+    }
+
+    .nav-btn.active {
+      color: #1a1000;
+      background: transparent; /* la píldora es el indicador, no el btn */
+    }
+
+    .nav-btn.active .tab-icon {
+      transform: scale(1.16) translateY(-1px);
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+    }
+
+    /* Tap feedback */
+    .nav-btn:active { transform: scale(0.92); }
+
+    .wrapper {
+      padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
+
+/* ── Nav — DESKTOP (top bar, original style) ── */
+  .nav {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 2.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .4rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    padding: .75rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: .8rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all .25s;
+    white-space: nowrap;
+  }
+  .nav-btn .tab-icon { display: none; }
+  .nav-btn:hover { color: var(--text); background: var(--surface2); }
+  .nav-btn.active {
+    background: var(--accent);
+    color: #1a1400;
+    box-shadow: 0 2px 12px var(--accent-glow);
+  }
+
   /* ── Nav — MOBILE (floating pill bottom tab bar — Liquid Glass iOS) ── */
   @media (max-width: 768px) {
     .nav {
@@ -312,35 +546,93 @@
       width: calc(100% - 1.5rem);
       max-width: 460px;
       z-index: 200;
-      /* Liquid Glass effect */
-      background: rgba(255, 255, 255, 0.18);
-      backdrop-filter: blur(40px) saturate(2.2) brightness(1.08);
-      -webkit-backdrop-filter: blur(40px) saturate(2.2) brightness(1.08);
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      border-bottom-color: rgba(255,255,255,0.25);
+
+      /* ── Liquid Glass iOS 26 — cristal real ── */
+      /* Fondo casi invisible: el vidrio no tiene color propio */
+      background: rgba(255, 255, 255, 0.04);
+
+      /* El corazón del efecto: blur fuerte + saturación alta = colores del fondo "sangran" */
+      backdrop-filter: blur(60px) saturate(3) brightness(1.18) contrast(0.82);
+      -webkit-backdrop-filter: blur(60px) saturate(3) brightness(1.18) contrast(0.82);
+
+      /* Borde: solo luz, no color. El borde superior captura la luz como un prisma */
+      border: 1px solid transparent;
+      border-top: 1px solid rgba(255, 255, 255, 0.72);
+      border-left: 1px solid rgba(255, 255, 255, 0.38);
+      border-right: 1px solid rgba(255, 255, 255, 0.22);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
       border-radius: 9999px;
+
       box-shadow:
-        0 2px 0 0 rgba(255,255,255,0.6) inset,
-        0 -1px 0 0 rgba(0,0,0,0.06) inset,
-        0 12px 40px rgba(0,0,0,0.22),
-        0 4px 12px rgba(0,0,0,0.12),
-        0 0 0 0.5px rgba(0,0,0,0.08);
+        /* Brillo interno superior — curvatura del cristal */
+        0 2px 0 0 rgba(255, 255, 255, 0.50) inset,
+        /* Brillo lateral izquierdo */
+        1px 0 0 0 rgba(255, 255, 255, 0.22) inset,
+        /* Sombra interna base — profundidad del vidrio */
+        0 1px 12px 0 rgba(255, 255, 255, 0.06) inset,
+        /* Sombra exterior suave — el vidrio flota sobre el contenido */
+        0 20px 60px rgba(0, 0, 0, 0.14),
+        0 8px 20px rgba(0, 0, 0, 0.08),
+        /* Contorno exterior casi invisible */
+        0 0 0 0.5px rgba(0, 0, 0, 0.05);
+
       display: flex;
       gap: 0;
       padding: .5rem .5rem;
       margin-bottom: 0;
       overflow: visible;
-      /* Specular highlight at top */
-      position: fixed;
+
+      /* Animación de entrada */
+      animation: navAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
+
+    @keyframes navAppear {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.96); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0)     scale(1);    }
+    }
+
+    /* Raya de luz especular superior — el highlight más importante del glass */
     .nav::before {
       content: '';
       position: absolute;
-      top: 0; left: 10%; right: 10%;
+      top: 0;
+      left: 6%;
+      right: 6%;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+      background: linear-gradient(
+        90deg,
+        transparent         0%,
+        rgba(255,255,255,0) 5%,
+        rgba(255,255,255,1) 30%,
+        rgba(255,255,255,1) 50%,
+        rgba(255,255,255,1) 70%,
+        rgba(255,255,255,0) 95%,
+        transparent         100%
+      );
       border-radius: 9999px;
       pointer-events: none;
+      z-index: 2;
+      opacity: 0.9;
+    }
+
+    /* Reflejo curvo inferior — la segunda cara del cristal */
+    .nav::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 25%;
+      right: 25%;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,0.45) 50%,
+        transparent 100%
+      );
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: 2;
     }
     .nav-btn {
       flex: 1;
@@ -356,7 +648,7 @@
       letter-spacing: .04em;
       font-weight: 700;
       text-transform: uppercase;
-      color: rgba(50, 40, 5, 0.65);
+      color: rgba(40, 32, 4, 0.55);
       background: transparent;
       transition: all .28s cubic-bezier(0.16,1,0.3,1);
       white-space: nowrap;
@@ -374,15 +666,28 @@
       color: rgba(30,24,0,0.85);
     }
     .nav-btn.active {
-      background: linear-gradient(145deg, rgba(201,168,76,0.95), rgba(232,201,106,0.9));
+      /* Cápsula glass dorada — como en Apple Music */
+      background: linear-gradient(
+        165deg,
+        rgba(232, 210, 120, 0.92) 0%,
+        rgba(201, 168,  76, 0.88) 60%,
+        rgba(180, 145,  55, 0.82) 100%
+      );
       color: #1a1000;
       box-shadow:
-        0 1px 0 rgba(255,255,255,0.6) inset,
-        0 4px 16px rgba(201,168,76,0.45),
-        0 2px 6px rgba(0,0,0,0.15);
+        /* Brillo interno superior de la cápsula */
+        0 1.5px 0 rgba(255,255,255,0.65) inset,
+        /* Micro-sombra interna lateral */
+        1px 0 0 rgba(255,255,255,0.25) inset,
+        /* Glow dorado exterior */
+        0 4px 18px rgba(201,168,76,0.55),
+        0 2px 8px rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-top-color: rgba(255,255,255,0.7);
     }
     .nav-btn.active .tab-icon {
       transform: scale(1.18) translateY(-1px);
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
     }
     .wrapper {
       padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px)) !important;
@@ -635,7 +940,7 @@
     transition: color .15s;
   }
   .reg-action-btn.edit { color: var(--info); }
-  .reg-action-btn.edit:hover { color: #9ab5ff; }
+  .reg-action-btn.edit:hover { color: #a8c4ff; }
   .reg-action-btn.del { color: var(--danger); }
   .reg-action-btn.del:hover { color: #ff8a8a; }
 
@@ -911,8 +1216,15 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin-bottom: 1.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
   }
-  @media(max-width:600px) { .dash-kpi-grid { grid-template-columns: 1fr 1fr; } }
+  @media(max-width:600px) { 
+    .dash-kpi-grid { 
+      grid-template-columns: 1fr 1fr; 
+      gap: .75rem;
+    } 
+  }
 
   .kpi-card {
     background: var(--surface);
@@ -983,14 +1295,13 @@
   .ritmo-low { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(224,90,90,0.25); }
   .ritmo-great { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(201,168,76,0.25); }
 
-  /* Bar chart */
-  .bar-chart-wrap {
-    height: 180px;
-    display: flex; align-items: flex-end; gap: 5px;
-    padding: .5rem 0 0 0;
-    overflow-x: auto;
-  }
+  /* Projection card */
   .bar-col {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-end;
+    gap: 4px; flex: 1; min-width: 24px; max-width: 48px;
+    height: 100%;
+  }
     display: flex; flex-direction: column; align-items: center;
     justify-content: flex-end;
     gap: 4px; flex: 1; min-width: 24px; max-width: 48px;
@@ -1022,9 +1333,31 @@
 
   /* Dash rows */
   .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-  @media(max-width:640px) { .dash-row { grid-template-columns: 1fr; } }
+  @media(max-width:640px) { 
+    .dash-row { 
+      grid-template-columns: 1fr; 
+      gap: 1rem;
+    } 
+  }
 
-  /* Projection card */
+  /* Fix dashboard overflow on mobile - contain all dashboard children */
+  #dashboard {
+    width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+  #dashboard > * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .bar-chart-wrap {
+    height: 180px;
+    display: flex; align-items: flex-end; gap: 5px;
+    padding: .5rem 0 0 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    max-width: 100%;
+  }
   .proj-item {
     display: flex; justify-content: space-between; align-items: center;
     padding: .75rem 0;
@@ -1564,6 +1897,41 @@
   opacity: .75;
 }
 
+/* ── Dark mode glass adjustments ── */
+/* The specular line on header adapts to dark background */
+body.dark-mode .header {
+  background: rgba(14,14,16,0.15);
+  border-top-color: rgba(255,255,255,0.18);
+  border-left-color: rgba(255,255,255,0.08);
+  border-right-color: rgba(255,255,255,0.05);
+  border-bottom-color: rgba(255,255,255,0.03);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.14) inset,
+    0 20px 50px rgba(0,0,0,0.40),
+    0 4px 16px rgba(0,0,0,0.25);
+}
+body.dark-mode .header::before {
+  opacity: 0.25;
+}
+
+@media (max-width: 768px) {
+  body.dark-mode .nav {
+    background: rgba(14,14,16,0.18);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.10),
+      0 1.5px 0 0 rgba(255,255,255,0.22) inset,
+      1px 0 0 0 rgba(255,255,255,0.08) inset,
+      0 24px 64px rgba(0,0,0,0.35),
+      0 8px 24px rgba(0,0,0,0.20);
+  }
+  body.dark-mode .nav::before {
+    opacity: 0.28; /* Specular line much more subtle in dark mode */
+  }
+  body.dark-mode .nav::after {
+    opacity: 0.20;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1723,7 +2091,8 @@
   </header>
 
   <!-- Nav -->
-  <nav class="nav">
+  <nav class="nav" id="mainNav">
+    <div class="nav-indicator" id="navIndicator"></div>
     <button class="nav-btn active" onclick="showTab('registro', this)"><span class="tab-icon"></span>Registros</button>
     <button class="nav-btn" onclick="showTab('dashboard', this)"><span class="tab-icon"></span>Dashboard</button>
     <button class="nav-btn" onclick="showTab('asistente', this)"><span class="tab-icon">✦</span>Asistente</button>
@@ -2374,25 +2743,41 @@
 
   function applyTheme(isLight) {
     const btn = document.getElementById('modeBtn');
+    const nav = document.querySelector('.nav');
+    const header = document.querySelector('.header');
     if (isLight) {
       document.documentElement.style.setProperty('--bg', '#f5f4ef');
       document.documentElement.style.setProperty('--surface', '#ffffff');
+      document.documentElement.style.setProperty('--nav-text', 'rgba(40,32,4,0.52)');
       document.documentElement.style.setProperty('--surface2', '#f0efe8');
       document.documentElement.style.setProperty('--border', '#e2e0d5');
       document.documentElement.style.setProperty('--border2', '#ccc9bc');
       document.documentElement.style.setProperty('--text', '#1a1a1a');
       document.documentElement.style.setProperty('--muted', '#7a7a6a');
       if (btn) btn.innerText = '🌙';
+      // Light mode: CSS var handles nav text
+      if (nav) {
+        nav.style.background = 'rgba(255,255,255,0.03)';
+        nav.style.boxShadow = '0 0 0 1px rgba(255,255,255,0.18), 0 1.5px 0 0 rgba(255,255,255,0.42) inset, 1px 0 0 0 rgba(255,255,255,0.15) inset, 0 24px 64px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.06)';
+      }
     } else {
       document.documentElement.style.setProperty('--bg', '#0e0e10');
       document.documentElement.style.setProperty('--surface', '#16161a');
+      document.documentElement.style.setProperty('--nav-text', 'rgba(240,239,232,0.52)');
       document.documentElement.style.setProperty('--surface2', '#1e1e24');
       document.documentElement.style.setProperty('--border', '#2a2a33');
       document.documentElement.style.setProperty('--border2', '#3a3a46');
       document.documentElement.style.setProperty('--text', '#f0efe8');
       document.documentElement.style.setProperty('--muted', '#7a7a8a');
       if (btn) btn.innerText = '☀';
+      // Dark mode: CSS var handles nav text
+      if (nav) {
+        nav.style.background = 'rgba(14,14,16,0.18)';
+        nav.style.boxShadow = '0 0 0 1px rgba(255,255,255,0.10), 0 1.5px 0 0 rgba(255,255,255,0.22) inset, 1px 0 0 0 rgba(255,255,255,0.08) inset, 0 24px 64px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.20)';
+      }
     }
+    // Sync active btn color — always dark text on gold pill
+    document.querySelectorAll('.nav-btn.active').forEach(b => b.style.color = '#1a1000');
   }
 
   // Restore saved theme on load. Claro es el tema principal por defecto.
@@ -2403,20 +2788,105 @@
     lightMode = true;
   }
   applyTheme(lightMode);
+  if (!lightMode) document.body.classList.add('dark-mode');
 
   function toggleDarkMode() {
     lightMode = !lightMode;
     applyTheme(lightMode);
+    document.body.classList.toggle('dark-mode', !lightMode);
     try { localStorage.setItem('nomina_theme', lightMode ? 'light' : 'dark'); } catch(e) {}
     if (myChart) renderAll();
   }
 
+  // ── Liquid Glass Nav Indicator ──
+  function moveNavIndicator(btn) {
+    const indicator = document.getElementById('navIndicator');
+    const nav = document.getElementById('mainNav');
+    if (!indicator || !nav || window.innerWidth > 768) return;
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const left = btnRect.left - navRect.left;
+    const width = btnRect.width;
+    indicator.style.left = left + 'px';
+    indicator.style.width = width + 'px';
+  }
+
+  // Init indicator on load
+  function initNavIndicator() {
+    const active = document.querySelector('.nav-btn.active');
+    if (active) {
+      const indicator = document.getElementById('navIndicator');
+      if (indicator) {
+        // Set instantly without transition on first load
+        indicator.style.transition = 'none';
+        setTimeout(() => {
+          moveNavIndicator(active);
+          setTimeout(() => {
+            indicator.style.transition = '';
+          }, 50);
+        }, 100);
+      }
+    }
+  }
+  window.addEventListener('load', initNavIndicator);
+  window.addEventListener('resize', initNavIndicator);
+
+  // ── Touch drag between tabs ──
+  (function() {
+    let startX = 0, isDragging = false;
+    const SWIPE_THRESHOLD = 50;
+    const tabOrder = ['registro', 'dashboard', 'asistente', 'resumen', 'config'];
+
+    function getCurrentTabIndex() {
+      const active = document.querySelector('.tab-content:not(.hidden)');
+      if (!active) return 0;
+      return tabOrder.indexOf(active.id);
+    }
+
+    document.addEventListener('touchstart', (e) => {
+      const nav = document.getElementById('mainNav');
+      if (nav && nav.contains(e.target)) return; // don't drag from nav itself
+      startX = e.touches[0].clientX;
+      isDragging = false;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (Math.abs(e.touches[0].clientX - startX) > 10) isDragging = true;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      if (!isDragging) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+
+      const nav = document.getElementById('mainNav');
+      if (nav) nav.classList.add('is-dragging');
+      setTimeout(() => { if (nav) nav.classList.remove('is-dragging'); }, 300);
+
+      const cur = getCurrentTabIndex();
+      let next = dx < 0 ? cur + 1 : cur - 1; // swipe left = next, swipe right = prev
+      next = Math.max(0, Math.min(tabOrder.length - 1, next));
+      if (next === cur) return;
+
+      const targetBtn = document.querySelector(`.nav-btn[onclick*="${tabOrder[next]}"]`);
+      showTab(tabOrder[next], targetBtn);
+    }, { passive: true });
+  })();
+
   function showTab(t, btn) {
     document.querySelectorAll('.tab-content').forEach(x => x.classList.add('hidden'));
     document.getElementById(t).classList.remove('hidden');
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-    else document.querySelector(`.nav-btn[onclick*="${t}"]`)?.classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.remove('active');
+      b.style.color = ''; // Let CSS var handle it
+    });
+    const activeBtn = btn || document.querySelector(`.nav-btn[onclick*="${t}"]`);
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+      activeBtn.style.color = '#1a1000'; // always dark on gold pill
+      // Move the sliding indicator
+      setTimeout(() => moveNavIndicator(activeBtn), 0);
+    }
     if (t === 'resumen') renderAll();
     if (t === 'dashboard') renderDashboard();
     if (t === 'config') renderFestivos();
