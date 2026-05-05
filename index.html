@@ -407,6 +407,7 @@
 
     /* ── Nav — DESKTOP (top bar) ── */
     .nav {
+      position: relative;
       display: flex;
       gap: .35rem;
       margin-bottom: 2rem;
@@ -422,11 +423,28 @@
       box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.06);
     }
 
+    .nav-indicator {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 9999px;
+      background: color-mix(in srgb, var(--text) 12%, transparent);
+      backdrop-filter: blur(24px) saturate(150%);
+      -webkit-backdrop-filter: blur(24px) saturate(150%);
+      border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+      z-index: 0;
+      transition: transform 0.5s cubic-bezier(0.34, 1.15, 0.64, 1), width 0.5s cubic-bezier(0.34, 1.15, 0.64, 1);
+      pointer-events: none;
+      opacity: 0;
+    }
+
     .nav::-webkit-scrollbar {
       display: none;
     }
 
     .nav-btn {
+      position: relative;
+      z-index: 1;
       flex-shrink: 0;
       display: inline-flex;
       flex-direction: row;
@@ -454,13 +472,14 @@
 
     .nav-btn:hover {
       color: var(--text);
-      background: var(--surface2);
+      background: transparent;
       transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .nav-btn.active {
-      background: var(--text);
-      color: var(--surface);
+      background: transparent;
+      color: var(--text);
+      font-weight: 700;
     }
 
     /* ── Nav — MOBILE (floating pill bottom tab bar) ── */
@@ -2617,7 +2636,8 @@
     </header>
 
     <!-- Nav -->
-    <nav class="nav">
+    <nav class="nav" id="mainNav">
+      <div class="nav-indicator" id="navIndicator"></div>
       <button class="nav-btn active" onclick="showTab('registro', this)"><span class="tab-icon"><i data-lucide="clipboard-list" style="width:18px;height:18px;"></i></span>Registros</button>
       <button class="nav-btn" onclick="showTab('dashboard', this)"><span class="tab-icon"><i data-lucide="layout-dashboard" style="width:18px;height:18px;"></i></span>Resumen</button>
       <button class="nav-btn" onclick="showTab('asistente', this)"><span class="tab-icon"><i data-lucide="sparkles" style="width:18px;height:18px;"></i></span>Asistente</button>
@@ -3342,12 +3362,39 @@
       document.querySelectorAll('.tab-content').forEach(x => x.classList.add('hidden'));
       document.getElementById(t).classList.remove('hidden');
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      else document.querySelector(`.nav-btn[onclick*="${t}"]`)?.classList.add('active');
+      const targetBtn = btn || document.querySelector(`.nav-btn[onclick*="${t}"]`);
+      if (targetBtn) {
+        targetBtn.classList.add('active');
+        updateIndicator(targetBtn);
+      }
       if (t === 'resumen') renderAll();
       if (t === 'dashboard') renderDashboard();
       if (t === 'config') renderFestivos();
       if (t === 'asistente') loadApiKey();
+    }
+
+    function updateIndicator(btn) {
+      const ind = document.getElementById('navIndicator');
+      if (!ind || !btn) return;
+      ind.style.opacity = '1';
+      ind.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
+      ind.style.width = `${btn.offsetWidth}px`;
+      ind.style.height = `${btn.offsetHeight}px`;
+    }
+
+    // Swipe interactions on the nav bar
+    const navBar = document.getElementById('mainNav');
+    if (navBar) {
+      navBar.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const btn = element?.closest('.nav-btn');
+        if (btn && !btn.classList.contains('active')) {
+          btn.click();
+          // Prevent scroll
+          if(e.cancelable) e.preventDefault();
+        }
+      }, { passive: false });
     }
 
     function loadApiKey() { /* sin uso */ }
@@ -4455,6 +4502,11 @@ REGLAS:
     setInterval(updateClock, 1000);
     updateClock();
     if (window.lucide) lucide.createIcons();
+    
+    // Initial indicator setup after layout
+    setTimeout(() => {
+      updateIndicator(document.querySelector('.nav-btn.active'));
+    }, 100);
   </script>
 
 </body>
