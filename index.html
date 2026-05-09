@@ -3884,32 +3884,40 @@ REGLAS:
      */
     function calcularAcumuladoSemanal(fechaStr) {
       const db = window.db || [];
-      // Ordenamos por fecha
       const sorted = [...db].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       if (sorted.length === 0) return 0;
 
+      // El primer dia del ciclo (cualquier tipo) define el inicio de la Semana 1.
+      // Cada 7 dias desde ese primer dia arranca una semana nueva con contador en 0.
+      // Ejemplo: ciclo inicia el 05-mayo → Sem1: 05-11, Sem2: 12-18, etc.
+      // Solo los dias NORMAL suman horas al contador semanal.
+      const primerDia   = new Date(sorted[0].fecha + 'T00:00:00');
       const fechaActual = new Date(fechaStr + 'T00:00:00');
-      // Ventana: últimos 7 días antes del día actual (excluye el día actual)
-      const ventanaInicio = new Date(fechaActual);
-      ventanaInicio.setDate(ventanaInicio.getDate() - 6); // 7 días incluyendo el actual → 6 días atrás
+
+      // Cuantos dias han pasado desde el inicio del ciclo hasta el dia actual
+      const diasDesdeInicio = Math.floor((fechaActual - primerDia) / (1000 * 60 * 60 * 24));
+
+      // En que semana del ciclo estamos (0 = primera semana, 1 = segunda, etc.)
+      const semanaActual = Math.floor(diasDesdeInicio / 7);
+
+      // Rango de la semana actual
+      const inicioSemana = new Date(primerDia);
+      inicioSemana.setDate(inicioSemana.getDate() + semanaActual * 7);
+      const finSemana = new Date(inicioSemana);
+      finSemana.setDate(finSemana.getDate() + 7);
 
       let acumulado = 0;
       sorted.forEach(r => {
-        if (r.fecha >= fechaStr) return; // sólo días anteriores
+        if (r.fecha >= fechaStr) return;          // solo dias anteriores al actual
         const rf = new Date(r.fecha + 'T00:00:00');
-        if (rf < ventanaInicio) return; // fuera de ventana de 7 días
-        if (r.tipo === 'COMPENSATORIO') return; // compensatorio no cuenta
-        if (r.tipo === 'NORMAL') {
-          // Sumamos las horas ordinarias + extras YA CALCULADAS del día
-          // (horas reales laboradas = todas excepto INCAP y COMPENSATORIO)
-          const d = r.desglose || {};
-          const hDia = Object.entries(d).reduce((acc, [k, v]) => {
-            if (k === 'INCAP' || k === 'COMPENSATORIO') return acc;
-            return acc + parseFloat(v.h || 0);
-          }, 0);
-          acumulado += hDia;
-        }
-        // INCAPACIDAD no cuenta como tiempo laborado físico
+        if (rf < inicioSemana) return;            // fuera de la semana actual
+        if (rf >= finSemana) return;              // no deberia pasar, pero por seguridad
+        if (r.tipo !== 'NORMAL') return;          // solo turnos laborados suman
+        const d = r.desglose || {};
+        acumulado += Object.entries(d).reduce((acc, [k, v]) => {
+          if (k === 'INCAP' || k === 'COMPENSATORIO') return acc;
+          return acc + parseFloat(v.h || 0);
+        }, 0);
       });
       return acumulado;
     }
