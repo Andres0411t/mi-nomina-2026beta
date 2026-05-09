@@ -3090,12 +3090,17 @@
 
         <div class="divider"></div>
         <div class="config-section-title">Copia de Seguridad</div>
-        <div class="backup-grid" style="margin-bottom:2rem;">
+        <div class="backup-grid" style="margin-bottom:1rem;">
           <button onclick="downloadBackup()" class="btn btn-ghost">Descargar Backup</button>
           <label class="btn btn-ghost" style="cursor:pointer;">
             Subir Backup
             <input type="file" id="importFile" class="hidden" onchange="importBackup(event)">
           </label>
+        </div>
+        <div style="background:var(--accent-dim);border:1.5px solid rgba(184,150,90,0.25);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:2rem;">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;">⚙ Corrección de Cálculo</div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:.85rem;line-height:1.5;">Si tienes registros guardados con una versión anterior de la app, usa este botón para recalcularlos con el motor corregido (descanso, límites diarios y contador semanal de 44h). Los datos se actualizan en orden cronológico y se guardan automáticamente.</div>
+          <button onclick="recalcularQuincena()" class="btn btn-primary" style="width:100%;">🔄 Recalcular quincena actual</button>
         </div>
 
         <div class="divider"></div>
@@ -3862,6 +3867,157 @@ REGLAS:
     function isNocturno(d) { let h = d.getHours(); return h >= 19 || h < 6; }
     function isDomFest(d) { return d.getDay() === 0 || festivos.includes(d.toLocaleDateString('en-CA')); }
 
+    // ═══════════════════════════════════════════════════════════════
+    // MOTOR DE CÁLCULO — Normativa Colombiana (Mayo 2026)
+    // Reglas:
+    //   1. Descanso 1h no remunerado se deduce del tiempo total antes de evaluar umbrales.
+    //   2. Umbral diario de extras: 10h laboradas (Lun–Sáb no festivos) ó 8h (Dom/Festivo).
+    //   3. Contador semanal dinámico de 44h (desde el primer día del ciclo, no reinicia lunes).
+    //   4. Compensatorio (7.5h) excluido del contador semanal.
+    //   5. Cuando la hora extra ocurre, se clasifica según momento real (nocturno, dom/fest, etc).
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Calcula el acumulado semanal de horas laboradas reales para los 7 días
+     * anteriores a `fechaStr` (sin incluir el día actual), excluyendo compensatorios.
+     * El ciclo arranca desde el primer día registrado en window.db.
+     */
+    function calcularAcumuladoSemanal(fechaStr) {
+      const db = window.db || [];
+      // Ordenamos por fecha
+      const sorted = [...db].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      if (sorted.length === 0) return 0;
+
+      const fechaActual = new Date(fechaStr + 'T00:00:00');
+      // Ventana: últimos 7 días antes del día actual (excluye el día actual)
+      const ventanaInicio = new Date(fechaActual);
+      ventanaInicio.setDate(ventanaInicio.getDate() - 6); // 7 días incluyendo el actual → 6 días atrás
+
+      let acumulado = 0;
+      sorted.forEach(r => {
+        if (r.fecha >= fechaStr) return; // sólo días anteriores
+        const rf = new Date(r.fecha + 'T00:00:00');
+        if (rf < ventanaInicio) return; // fuera de ventana de 7 días
+        if (r.tipo === 'COMPENSATORIO') return; // compensatorio no cuenta
+        if (r.tipo === 'NORMAL') {
+          // Sumamos las horas ordinarias + extras YA CALCULADAS del día
+          // (horas reales laboradas = todas excepto INCAP y COMPENSATORIO)
+          const d = r.desglose || {};
+          const hDia = Object.entries(d).reduce((acc, [k, v]) => {
+            if (k === 'INCAP' || k === 'COMPENSATORIO') return acc;
+            return acc + parseFloat(v.h || 0);
+          }, 0);
+          acumulado += hDia;
+        }
+        // INCAPACIDAD no cuenta como tiempo laborado físico
+      });
+      return acumulado;
+    }
+
+    /**
+     * Función principal de cálculo de un turno laboral.
+     * Recibe los datos crudos del turno y retorna { desglose, pagoSalarial }.
+     *
+     * @param {string} fecha    - "YYYY-MM-DD"
+     * @param {Date}   start    - Datetime de inicio de turno
+     * @param {Date}   end      - Datetime de fin de turno
+     * @param {Array}  breaks   - Array de { s: Date, e: Date } pausas no remuneradas
+     */
+    function calcularTurno(fecha, start, end, breaks) {
+      // ── 1. Determinar si el día base es Dom/Festivo ──────────────
+      const fechaDate = new Date(fecha + 'T12:00:00'); // mediodía para evitar DST
+      const esDomFestDia = isDomFest(fechaDate);
+
+      // ── 2. Límite de horas ordinarias diarias (antes de extras) ──
+      //    Dom/Fest → 8h | Lun-Sáb no festivo → 10h
+      //    Restamos 1h de descanso (almuerzo no remunerado), por eso los umbrales
+      //    se expresan en minutos de PERMANENCIA (estancia total incluyendo el descanso):
+      //    Lun-Sáb: 11h estancia → 10h laboradas | Dom/Fest: 9h estancia → 8h laboradas
+      const BREAK_FIJO_MIN = 60; // 1 hora de almuerzo no remunerado
+
+      // ── 3. Acumulado semanal ya trabajado (días anteriores, sin compensatorio) ──
+      const acumSemanAnterior = calcularAcumuladoSemanal(fecha); // en horas
+      const LIMITE_SEMANAL_MIN = 44 * 60; // 44 horas en minutos
+
+      // ── 4. Recorrido minuto a minuto ─────────────────────────────
+      let counts = { ordD: 0, ordN: 0, extD: 0, extN: 0, domD: 0, domN: 0, edd: 0, edn: 0 };
+
+      let minsLaborados = 0;          // minutos realmente trabajados (sin breaks)
+      let minsAcumSemanal = Math.round(acumSemanAnterior * 60); // minutos acumulados esta semana (días anteriores)
+
+      let cur = new Date(start);
+
+      // Calculamos el tiempo total de permanencia (para detectar el momento en que
+      // se supera el umbral diario contando descanso como parte del turno)
+      // Estrategia: el descanso (break) descuenta del almuerzo fijo; el minuto se
+      // clasifica como "laborado" o "descanso". Las horas extras diarias se activan
+      // cuando los minutos LABORADOS superan el límite del día.
+
+      // Límite diario en minutos laborados (descanso ya descontado)
+      const LIMITE_DIARIO_MIN = esDomFestDia ? 8 * 60 : 10 * 60;
+
+      while (cur < end) {
+        const inBreak = breaks.some(b => cur >= b.s && cur < b.e);
+
+        if (!inBreak) {
+          minsLaborados++;
+          minsAcumSemanal++;
+
+          // Hora exacta del minuto para clasificar nocturno/dom-fest
+          const noc = isNocturno(cur);
+          const fest = isDomFest(cur);
+
+          // ── ¿Es extra diaria? ──────────────────────────────────
+          const extDiaria = minsLaborados > LIMITE_DIARIO_MIN;
+
+          // ── ¿Es extra semanal? (sin contar extras diarias ya detectadas) ──
+          // Si ya es extra diaria, no aplica doble conteo semanal para ese minuto.
+          // Si no es extra diaria, verificamos si el acumulado semanal supera 44h.
+          const extSemanal = !extDiaria && (minsAcumSemanal > LIMITE_SEMANAL_MIN);
+
+          const esExtra = extDiaria || extSemanal;
+
+          // ── Clasificación ──────────────────────────────────────
+          if (!esExtra && !fest && !noc)   counts.ordD++;
+          else if (!esExtra && !fest && noc)  counts.ordN++;
+          else if (esExtra && !fest && !noc)  counts.extD++;
+          else if (esExtra && !fest && noc)   counts.extN++;
+          else if (!esExtra && fest && !noc)  counts.domD++;
+          else if (!esExtra && fest && noc)   counts.domN++;
+          else if (esExtra && fest && !noc)   counts.edd++;
+          else if (esExtra && fest && noc)    counts.edn++;
+        }
+
+        cur.setMinutes(cur.getMinutes() + 1);
+      }
+
+      // ── 5. Precios por tipo de hora ──────────────────────────────
+      const cfg = window.cfg;
+      const prices = {
+        ordD: cfg.hora,
+        ordN: cfg.hora * (1 + cfg.rn / 100),
+        extD: cfg.hora * (1 + cfg.hed / 100),
+        extN: cfg.hora * (1 + cfg.hen / 100),
+        domD: cfg.hora * (1 + cfg.dom / 100),
+        domN: cfg.hora * (1 + cfg.dom / 100 + cfg.rn / 100),
+        edd:  cfg.hora * (1 + cfg.hedd / 100),
+        edn:  cfg.hora * (1 + cfg.hend / 100)
+      };
+
+      let desglose = {};
+      let pagoSalarial = 0;
+      for (let k in counts) {
+        const h = counts[k] / 60;
+        if (h > 0) {
+          const v = h * prices[k];
+          desglose[k] = { h: h.toFixed(2), v };
+          pagoSalarial += v;
+        }
+      }
+
+      return { desglose, pagoSalarial };
+    }
+
     document.getElementById('formTurno').onsubmit = async (e) => {
       e.preventDefault();
       const tipo = document.getElementById('tipoDia').value;
@@ -3887,35 +4043,13 @@ REGLAS:
           if (dE <= dS) dE.setDate(dE.getDate() + 1);
           breaks.push({ s: dS, e: dE });
         }
-        let mins = 0;
-        let counts = { ordD: 0, ordN: 0, extD: 0, extN: 0, domD: 0, domN: 0, edd: 0, edn: 0 };
-        let cur = new Date(start);
-        while (cur < end) {
-          let inBreak = breaks.some(b => cur >= b.s && cur < b.e);
-          if (!inBreak) {
-            mins++;
-            let fest = isDomFest(cur), noc = isNocturno(cur), ext = mins > 600;
-            if (!ext && !fest && !noc) counts.ordD++;
-            else if (!ext && !fest && noc) counts.ordN++;
-            else if (ext && !fest && !noc) counts.extD++;
-            else if (ext && !fest && noc) counts.extN++;
-            else if (!ext && fest && !noc) counts.domD++;
-            else if (!ext && fest && noc) counts.domN++;
-            else if (ext && fest && !noc) counts.edd++;
-            else if (ext && fest && noc) counts.edn++;
-          }
-          cur.setMinutes(cur.getMinutes() + 1);
-        }
-        const prices = {
-          ordD: window.cfg.hora, ordN: window.cfg.hora * (1 + window.cfg.rn / 100),
-          extD: window.cfg.hora * (1 + window.cfg.hed / 100), extN: window.cfg.hora * (1 + window.cfg.hen / 100),
-          domD: window.cfg.hora * (1 + window.cfg.dom / 100), domN: window.cfg.hora * (1 + window.cfg.dom / 100 + window.cfg.rn / 100),
-          edd: window.cfg.hora * (1 + window.cfg.hedd / 100), edn: window.cfg.hora * (1 + window.cfg.hend / 100)
-        };
-        for (let k in counts) {
-          let h = counts[k] / 60;
-          if (h > 0) { let v = h * prices[k]; registro.desglose[k] = { h: h.toFixed(2), v }; registro.pagoSalarial += v; }
-        }
+        // ── Motor de cálculo corregido (normativa colombiana) ──
+        // Primero eliminamos el registro actual del db para que el acumulado
+        // semanal no cuente el día que estamos guardando/editando.
+        window.db = window.db.filter(x => x.fecha !== fecha);
+        const { desglose, pagoSalarial } = calcularTurno(fecha, start, end, breaks);
+        registro.desglose = desglose;
+        registro.pagoSalarial = pagoSalarial;
       } else if (tipo === 'INCAPACIDAD') {
         registro.diag = document.getElementById('diagnostico').value || "Incapacidad General";
         registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
@@ -3928,7 +4062,9 @@ REGLAS:
         registro.desglose['COMPENSATORIO'] = { h: 7.55, v: valorComp };
       }
 
-      window.db = window.db.filter(x => x.fecha !== fecha);
+      // Nota: para NORMAL ya se hizo el filter arriba dentro del bloque.
+      // Para otros tipos lo hacemos aquí para no duplicar.
+      if (tipo !== 'NORMAL') window.db = window.db.filter(x => x.fecha !== fecha);
       window.db.push(registro);
       window.db.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       if (window.saveToCloud) await window.saveToCloud();
@@ -4094,6 +4230,53 @@ REGLAS:
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // RECALCULO EN LOTE — Corrige registros guardados con motor antiguo
+    // ═══════════════════════════════════════════════════════════════
+    async function recalcularQuincena() {
+      const normales = (window.db || []).filter(r => r.tipo === 'NORMAL');
+      if (normales.length === 0) {
+        showToast('No hay turnos laborados que recalcular.', 'info');
+        return;
+      }
+
+      const confirmar = confirm(
+        normales.length + ' turno(s) laborado(s) se van a recalcular en orden cronologico con el motor corregido.\n\nLos compensatorios e incapacidades no se tocan.\n\nContinuar?'
+      );
+      if (!confirmar) return;
+
+      window.db.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      let recalculados = 0;
+
+      for (let i = 0; i < window.db.length; i++) {
+        const r = window.db[i];
+        if (r.tipo !== 'NORMAL' || !r.rawHoras) continue;
+        const { hI, hF, hBO, hBI } = r.rawHoras;
+        let start = new Date(r.fecha + 'T' + hI);
+        let end   = new Date(r.fecha + 'T' + hF);
+        if (end <= start) end.setDate(end.getDate() + 1);
+        let breaks = [];
+        if (hBO && hBI) {
+          let dS = new Date(r.fecha + 'T' + hBO);
+          let dE = new Date(r.fecha + 'T' + hBI);
+          if (dS < start) dS.setDate(dS.getDate() + 1);
+          if (dE <= dS)   dE.setDate(dE.getDate() + 1);
+          breaks.push({ s: dS, e: dE });
+        }
+        const fechaActual = r.fecha;
+        const snapshot = Object.assign({}, r);
+        window.db = window.db.filter(x => x.fecha !== fechaActual);
+        const resultado = calcularTurno(fechaActual, start, end, breaks);
+        window.db.push(Object.assign(snapshot, { desglose: resultado.desglose, pagoSalarial: resultado.pagoSalarial }));
+        window.db.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        recalculados++;
+      }
+
+      if (window.saveToCloud) await window.saveToCloud();
+      renderAll();
+      showToast('Recalculo completo: ' + recalculados + ' turno(s) corregidos y guardados.', 'success', 6000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // TOAST NOTIFICATION SYSTEM
     // ═══════════════════════════════════════════════════════════════
     function showToast(message, type = 'info', duration = 4000) {
@@ -4178,35 +4361,12 @@ REGLAS:
           if (dE <= dS) dE.setDate(dE.getDate() + 1);
           breaks.push({ s: dS, e: dE });
         }
-        let mins = 0;
-        let counts = { ordD: 0, ordN: 0, extD: 0, extN: 0, domD: 0, domN: 0, edd: 0, edn: 0 };
-        let cur = new Date(start);
-        while (cur < end) {
-          let inBreak = breaks.some(b => cur >= b.s && cur < b.e);
-          if (!inBreak) {
-            mins++;
-            let fest = isDomFest(cur), noc = isNocturno(cur), ext = mins > 600;
-            if (!ext && !fest && !noc) counts.ordD++;
-            else if (!ext && !fest && noc) counts.ordN++;
-            else if (ext && !fest && !noc) counts.extD++;
-            else if (ext && !fest && noc) counts.extN++;
-            else if (!ext && fest && !noc) counts.domD++;
-            else if (!ext && fest && noc) counts.domN++;
-            else if (ext && fest && !noc) counts.edd++;
-            else if (ext && fest && noc) counts.edn++;
-          }
-          cur.setMinutes(cur.getMinutes() + 1);
-        }
-        const prices = {
-          ordD: window.cfg.hora, ordN: window.cfg.hora * (1 + window.cfg.rn / 100),
-          extD: window.cfg.hora * (1 + window.cfg.hed / 100), extN: window.cfg.hora * (1 + window.cfg.hen / 100),
-          domD: window.cfg.hora * (1 + window.cfg.dom / 100), domN: window.cfg.hora * (1 + window.cfg.dom / 100 + window.cfg.rn / 100),
-          edd: window.cfg.hora * (1 + window.cfg.hedd / 100), edn: window.cfg.hora * (1 + window.cfg.hend / 100)
-        };
-        for (let k in counts) {
-          let h = counts[k] / 60;
-          if (h > 0) { let v = h * prices[k]; registro.desglose[k] = { h: h.toFixed(2), v }; registro.pagoSalarial += v; }
-        }
+        // ── Motor de cálculo corregido (normativa colombiana) ──
+        // Eliminamos el registro del día actual antes de calcular el acumulado semanal
+        window.db = window.db.filter(x => x.fecha !== fecha);
+        const { desglose: desgEdit, pagoSalarial: pagoEdit } = calcularTurno(fecha, start, end, breaks);
+        registro.desglose = desgEdit;
+        registro.pagoSalarial = pagoEdit;
       } else if (tipo === 'INCAPACIDAD') {
         registro.diag = document.getElementById('editDiagnostico').value || "Incapacidad General";
         registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
@@ -4219,7 +4379,7 @@ REGLAS:
         registro.desglose['COMPENSATORIO'] = { h: 7.55, v: valorComp };
       }
 
-      window.db = window.db.filter(x => x.fecha !== fecha);
+      if (tipo !== 'NORMAL') window.db = window.db.filter(x => x.fecha !== fecha);
       window.db.push(registro);
       window.db.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       if (window.saveToCloud) await window.saveToCloud();
