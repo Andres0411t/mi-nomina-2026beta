@@ -3872,9 +3872,10 @@ REGLAS:
     // Reglas:
     //   1. Descanso no remunerado se deduce minuto a minuto (inBreak).
     //   2. Umbral diario de extras: 10h laboradas (Lun–Sáb no festivos) ó 8h (Dom/Festivo).
-    //   3. Contador semanal dinámico de 44h SOLO con horas ordinarias (ordD + ordN).
-    //      Las horas extras diarias, festivas o dominicales NO cuentan para el límite de 44h.
-    //   4. Compensatorio (7.5h) excluido del contador semanal.
+    //   3. Contador semanal de 44h con horas ORDINARIAS físicamente trabajadas:
+    //      ordD + ordN (días hábiles) + domD + domN (dom/festivos, hasta sus 8h).
+    //      NO suman al contador: extras (extD, extN, edd, edn), compensatorio, incapacidad.
+    //   4. Compensatorio e incapacidad excluidos del contador semanal (tiempo no laborado).
     //   5. Cuando la hora extra ocurre, se clasifica según momento real (nocturno, dom/fest, etc).
     // ═══════════════════════════════════════════════════════════════
 
@@ -3915,10 +3916,14 @@ REGLAS:
         if (rf >= finSemana) return;              // no deberia pasar, pero por seguridad
         if (r.tipo !== 'NORMAL') return;          // solo turnos laborados suman
         const d = r.desglose || {};
-        // IMPORTANTE: solo se cuentan horas ORDINARIAS (ordD + ordN) para el límite de 44h.
-        // Las horas extras (extD, extN, domD, domN, edd, edn) ya rebasaron el límite en
-        // su día; incluirlas aquí inflaria el contador y generaría extras donde no corresponde.
-        acumulado += parseFloat(d.ordD?.h || 0) + parseFloat(d.ordN?.h || 0);
+        // Suman al contador de 44h: horas ORDINARIAS físicamente trabajadas,
+        // tanto en días hábiles (ordD + ordN) como en domingos/festivos (domD + domN).
+        // NO suman: extras (extD, extN, edd, edn) — ya rebasaron el límite en su momento.
+        // NO suman: COMPENSATORIO e INCAP — son pagos por tiempo no laborado.
+        acumulado += parseFloat(d.ordD?.h || 0)
+                   + parseFloat(d.ordN?.h || 0)
+                   + parseFloat(d.domD?.h || 0)
+                   + parseFloat(d.domN?.h || 0);
       });
       return acumulado;
     }
@@ -3985,10 +3990,10 @@ REGLAS:
 
           const esExtra = extDiaria || extSemanal;
 
-          // El contador semanal solo acumula minutos ordinarios (no extras diarias ni festivas).
-          // Esto es coherente con calcularAcumuladoSemanal que solo suma ordD + ordN.
-          // Las horas festivas (dom/fest) tampoco cuentan para el límite de 44h ordinarias.
-          if (!extDiaria && !fest) {
+          // El contador semanal acumula solo minutos ORDINARIOS físicamente trabajados
+          // (ordD, ordN, domD, domN). Las horas extras (extDiaria) no suman porque ya
+          // rebasaron el límite; compensatorio/incapacidad no entran al loop.
+          if (!extDiaria) {
             minsAcumSemanal++;
           }
 
