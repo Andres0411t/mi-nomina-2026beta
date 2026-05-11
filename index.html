@@ -3279,8 +3279,27 @@
         const d = docSnap.data();
         window.db = d.db || [];
         window.historialDB = d.historial || [];
-        window.cfg = d.cfg || window.cfgDefault;
+        let cfgCargada = d.cfg || window.cfgDefault;
+
+        // ── Migración automática de valores legales ──────────────────
+        // Si la cfg guardada tiene valores desactualizados (de períodos anteriores),
+        // se actualizan silenciosamente para que reflejen la ley vigente.
+        // Solo se migran los campos controlados por ley; los personalizados (hora, rn, hed, hen) se respetan.
+        const hoy = new Date();
+        let huboCambioLegal = false;
+        if (hoy >= window.CORTE_DOM90) {
+          if (cfgCargada.dom < 90)   { cfgCargada.dom  = 90;  huboCambioLegal = true; }
+          if (cfgCargada.hedd < 115) { cfgCargada.hedd = 115; huboCambioLegal = true; }
+          if (cfgCargada.hend < 165) { cfgCargada.hend = 165; huboCambioLegal = true; }
+        }
+        if (hoy >= window.CORTE_42H) {
+          if (cfgCargada.hora <= 7959)              { cfgCargada.hora = 8337;            huboCambioLegal = true; }
+          if (cfgCargada.auxTranspMensual < 249095) { cfgCargada.auxTranspMensual = 249095; huboCambioLegal = true; }
+        }
+        window.cfg = cfgCargada;
         window.syncReady = true;
+        // Si hubo migración legal, persistir inmediatamente en Firebase
+        if (huboCambioLegal && window.saveToCloud) await window.saveToCloud();
         document.getElementById('cfgHora').value = window.cfg.hora;
         document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
         document.getElementById('cfgRN').value = window.cfg.rn;
@@ -3333,7 +3352,20 @@
   </script>
 
   <script>
-    window.cfgDefault = { hora: 7959, rn: 35, dom: 80, hed: 25, hen: 75, hedd: 105, hend: 155, auxTranspMensual: 250000 };
+    // Período 1: 01 ene – 30 jun 2026  → jornada 44h/sem, hora $7.959, dom 80%
+    // Período 2: 01 jul – 14 jul 2026  → jornada 44h/sem, hora $7.959, dom 90%
+    // Período 3: 15 jul 2026 en adelante → jornada 42h/sem, hora $8.337, dom 90%
+    // Los valores se seleccionan automáticamente en calcularTurno() según la fecha del registro.
+    window.cfgDefault = { hora: 7959, rn: 35, dom: 80, hed: 25, hen: 75, hedd: 105, hend: 155, auxTranspMensual: 249095 };
+
+    // Corte 1: 1-jul-2026 — sube recargo dominical/festivo al 90% (Reforma Laboral 2466/2025 art. 14)
+    window.CORTE_DOM90  = new Date('2026-07-01T00:00:00');
+    // Corte 2: 15-jul-2026 — jornada pasa a 42h/sem y sube el valor hora (Ley 2101/2021)
+    window.CORTE_42H    = new Date('2026-07-15T00:00:00');
+    // Con dom 90%: edd = hed(25) + dom(90) = 115% | edn = hen(75) + dom(90) = 165%
+    // (el rn 35% ya va incorporado en domN ordinaria, no se suma doble en extras)
+    window.CFG_DOM90    = { dom: 90, hedd: 115, hend: 165 };   // solo cambia dom y sus extras
+    window.CFG_42H      = { hora: 8337 };                       // solo cambia el valor hora
     window.cfg = { ...window.cfgDefault };
     window.db = [];
     window.historialDB = [];
@@ -3868,15 +3900,19 @@ REGLAS:
     function isDomFest(d) { return d.getDay() === 0 || festivos.includes(d.toLocaleDateString('en-CA')); }
 
     // ═══════════════════════════════════════════════════════════════
-    // MOTOR DE CÁLCULO — Normativa Colombiana (Mayo 2026)
-    // Reglas:
+    // MOTOR DE CÁLCULO — Normativa Colombiana (con cambios julio 2026)
+    // Períodos legales:
+    //   P1: antes 01-jul → dom 80%, 44h/sem, hora $7.959
+    //   P2: 01-jul al 14-jul → dom 90%, 44h/sem, hora $7.959
+    //   P3: desde 15-jul → dom 90%, 42h/sem, hora $8.337
+    // Reglas del motor:
     //   1. Descanso no remunerado se deduce minuto a minuto (inBreak).
-    //   2. Umbral diario de extras: 10h laboradas (Lun–Sáb no festivos) ó 8h (Dom/Festivo).
-    //   3. Contador semanal de 44h con horas ORDINARIAS físicamente trabajadas:
-    //      ordD + ordN (días hábiles) + domD + domN (dom/festivos, hasta sus 8h).
-    //      NO suman al contador: extras (extD, extN, edd, edn), compensatorio, incapacidad.
-    //   4. Compensatorio e incapacidad excluidos del contador semanal (tiempo no laborado).
-    //   5. Cuando la hora extra ocurre, se clasifica según momento real (nocturno, dom/fest, etc).
+    //   2. Umbral diario: 10h laboradas (Lun–Sáb no festivos) ó 8h (Dom/Festivo).
+    //   3. Contador semanal con horas ORDINARIAS físicamente trabajadas:
+    //      ordD + ordN (días hábiles) + domD + domN (dom/festivos hasta sus 8h).
+    //      NO suman: extras (extD, extN, edd, edn), COMPENSATORIO, INCAP.
+    //   4. El ciclo de semanas arranca desde el primer día del corte de nómina.
+    //   5. La hora extra se clasifica según el momento real (nocturno, dom/fest, etc).
     // ═══════════════════════════════════════════════════════════════
 
     /**
@@ -3916,7 +3952,7 @@ REGLAS:
         if (rf >= finSemana) return;              // no deberia pasar, pero por seguridad
         if (r.tipo !== 'NORMAL') return;          // solo turnos laborados suman
         const d = r.desglose || {};
-        // Suman al contador de 44h: horas ORDINARIAS físicamente trabajadas,
+        // Suman al contador de 44h/42h: horas ORDINARIAS físicamente trabajadas,
         // tanto en días hábiles (ordD + ordN) como en domingos/festivos (domD + domN).
         // NO suman: extras (extD, extN, edd, edn) — ya rebasaron el límite en su momento.
         // NO suman: COMPENSATORIO e INCAP — son pagos por tiempo no laborado.
@@ -3951,7 +3987,19 @@ REGLAS:
 
       // ── 3. Acumulado semanal ya trabajado (días anteriores, sin compensatorio) ──
       const acumSemanAnterior = calcularAcumuladoSemanal(fecha); // en horas
-      const LIMITE_SEMANAL_MIN = 44 * 60; // 44 horas en minutos
+
+      // ── Período legal vigente según fecha del turno ──────────────
+      // P1: antes del 01-jul → dom 80%, 44h/sem, hora $7.959
+      // P2: 01-jul al 14-jul → dom 90%, 44h/sem, hora $7.959
+      // P3: desde 15-jul     → dom 90%, 42h/sem, hora $8.337
+      const esDom90 = fechaDate >= window.CORTE_DOM90;
+      const es42h   = fechaDate >= window.CORTE_42H;
+      const cfgP = {
+        ...window.cfg,
+        ...(esDom90 ? window.CFG_DOM90 : {}),
+        ...(es42h   ? window.CFG_42H   : {})
+      };
+      const LIMITE_SEMANAL_MIN = (es42h ? 42 : 44) * 60;
 
       // ── 4. Recorrido minuto a minuto ─────────────────────────────
       let counts = { ordD: 0, ordN: 0, extD: 0, extN: 0, domD: 0, domN: 0, edd: 0, edn: 0 };
@@ -3985,13 +4033,13 @@ REGLAS:
 
           // ── ¿Es extra semanal? (sin contar extras diarias ya detectadas) ──
           // Si ya es extra diaria, no aplica doble conteo semanal para ese minuto.
-          // Si no es extra diaria, verificamos si el acumulado semanal supera 44h.
+          // Si no es extra diaria, verificamos si el acumulado semanal supera el límite.
           const extSemanal = !extDiaria && (minsAcumSemanal > LIMITE_SEMANAL_MIN);
 
           const esExtra = extDiaria || extSemanal;
 
-          // El contador semanal acumula solo minutos ORDINARIOS físicamente trabajados
-          // (ordD, ordN, domD, domN). Las horas extras (extDiaria) no suman porque ya
+          // El contador semanal solo acumula minutos ORDINARIOS físicamente trabajados
+          // (ordD, ordN, domD, domN). Las extras (extDiaria) no suman porque ya
           // rebasaron el límite; compensatorio/incapacidad no entran al loop.
           if (!extDiaria) {
             minsAcumSemanal++;
@@ -4011,17 +4059,16 @@ REGLAS:
         cur.setMinutes(cur.getMinutes() + 1);
       }
 
-      // ── 5. Precios por tipo de hora ──────────────────────────────
-      const cfg = window.cfg;
+      // ── 5. Precios por tipo de hora (usando el período legal correcto) ──
       const prices = {
-        ordD: cfg.hora,
-        ordN: cfg.hora * (1 + cfg.rn / 100),
-        extD: cfg.hora * (1 + cfg.hed / 100),
-        extN: cfg.hora * (1 + cfg.hen / 100),
-        domD: cfg.hora * (1 + cfg.dom / 100),
-        domN: cfg.hora * (1 + cfg.dom / 100 + cfg.rn / 100),
-        edd:  cfg.hora * (1 + cfg.hedd / 100),
-        edn:  cfg.hora * (1 + cfg.hend / 100)
+        ordD: cfgP.hora,
+        ordN: cfgP.hora * (1 + cfgP.rn / 100),
+        extD: cfgP.hora * (1 + cfgP.hed / 100),
+        extN: cfgP.hora * (1 + cfgP.hen / 100),
+        domD: cfgP.hora * (1 + cfgP.dom / 100),
+        domN: cfgP.hora * (1 + cfgP.dom / 100 + cfgP.rn / 100),
+        edd:  cfgP.hora * (1 + cfgP.hedd / 100),
+        edn:  cfgP.hora * (1 + cfgP.hend / 100)
       };
 
       let desglose = {};
@@ -4730,6 +4777,50 @@ REGLAS:
     setInterval(updateClock, 1000);
     updateClock();
     if (window.lucide) lucide.createIcons();
+
+    // ── Banner automático cambio de jornada jul-2026 ──────────────
+    (function checkJulio2026Banner() {
+      const hoy = new Date();
+      const esDom90 = hoy >= window.CORTE_DOM90;
+      const es42h   = hoy >= window.CORTE_42H;
+      if (!esDom90) return; // aún en período 1, sin aviso
+
+      const KEY = es42h ? 'nomina_banner_42h_dismissed' : 'nomina_banner_dom90_dismissed';
+      try { if (localStorage.getItem(KEY)) return; } catch(e){}
+
+      let msg = '';
+      if (es42h) {
+        msg = `<strong>Jornada 42h activa</strong><br>
+          Desde el 15-jul: hora ordinaria <strong>$8.337</strong>,
+          dominical/festivo <strong>90%</strong>, límite semanal <strong>42 h</strong>.
+          Los turnos nuevos se calculan con estos valores automáticamente.`;
+      } else {
+        msg = `<strong>Recargo dominical al 90%</strong><br>
+          Desde el 1-jul: el recargo por domingo/festivo sube a <strong>90%</strong>.
+          El 15-jul también sube el valor hora a <strong>$8.337</strong> (jornada 42h).`;
+      }
+
+      const banner = document.createElement('div');
+      banner.id = 'bannerJulio2026';
+      banner.style.cssText = [
+        'position:fixed','bottom:5.5rem','left:50%','transform:translateX(-50%)',
+        'z-index:9000','max-width:420px','width:calc(100% - 2rem)',
+        'background:#b8965a','color:#fff','border-radius:16px',
+        'padding:.85rem 1.1rem','font-size:.78rem','font-weight:600',
+        'box-shadow:0 8px 24px rgba(184,150,90,.35)',
+        'display:flex','align-items:center','gap:.75rem','line-height:1.4'
+      ].join(';');
+      banner.innerHTML = `
+        <span style="font-size:1.3rem">⚖️</span>
+        <span style="flex:1">${msg}</span>
+        <button onclick="
+          try{localStorage.setItem('${KEY}','1')}catch(e){}
+          document.getElementById('bannerJulio2026').remove()
+        " style="background:rgba(255,255,255,.25);border:none;border-radius:9999px;
+          padding:.3rem .7rem;color:#fff;font-weight:700;cursor:pointer;font-size:.85rem;
+          white-space:nowrap">✕ OK</button>`;
+      document.body.appendChild(banner);
+    })();
 
     // Initial indicator setup after layout
     setTimeout(() => {
