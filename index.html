@@ -2646,12 +2646,18 @@
 
     .theme-swatch.active .swatch-name { color: var(--accent); }
 
-    /* ── Fecha input: tamaño fijo aunque esté vacío ── */
+    /* ── Fecha input: mismo tamaño y forma que el select Estado ── */
     .reg-date-inp {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      height: auto !important;
       min-height: 42px !important;
-      height: 42px !important;
-      display: flex !important;
-      align-items: center !important;
+      display: block !important;
+      appearance: none !important;
+      -webkit-appearance: none !important;
+      /* Hereda border-radius:14px, padding, font-size de .reg-inp */
     }
 
     /* ── Custom dropdown Estado ── */
@@ -2811,6 +2817,9 @@
       background: var(--surface2) !important;
       border: 1.5px solid transparent !important;
       transition: border-color .2s, box-shadow .2s !important;
+      min-height: 42px !important;
+      height: auto !important;
+      box-sizing: border-box !important;
     }
 
     .reg-inp:focus {
@@ -2908,30 +2917,37 @@
       .reg-time-row { grid-template-columns: repeat(2, 1fr) !important; gap: .4rem !important; }
     }
 
-    /* ── Fix landscape móvil: fecha no se desborda sobre estado ── */
+    /* ── Fix landscape móvil: fecha igual que estado ── */
     @media (max-height: 500px) and (orientation: landscape) {
       .reg-pill-row {
-        grid-template-columns: 1fr 1fr;
-        gap: .5rem;
-        align-items: start;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: .5rem !important;
+        align-items: stretch !important;
       }
 
       .reg-field-wrap {
-        min-width: 0;
-        overflow: hidden;
+        min-width: 0 !important;
+        width: 100% !important;
       }
 
-      .reg-date-inp {
+      /* Fecha: idéntica al select Estado */
+      .reg-date-inp,
+      input[type="date"].reg-date-inp {
         width: 100% !important;
+        max-width: 100% !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
-        font-size: .78rem !important;
-        padding: .5rem .6rem !important;
-      }
-
-      /* Forzar que el input date no expanda más de su celda */
-      input[type="date"].reg-date-inp {
-        max-width: 100%;
+        height: auto !important;
+        min-height: 42px !important;
+        padding: .65rem .85rem !important;
+        border-radius: 14px !important;
+        font-size: .82rem !important;
+        background: var(--surface2) !important;
+        border: 1.5px solid transparent !important;
+        display: block !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
       }
     }
   </style>
@@ -3337,7 +3353,7 @@
             <div class="reg-field-wrap">
               <label class="reg-label">Estado</label>
               <!-- Select nativo del sistema para una experiencia más estable -->
-              <select id="tipoDia" onchange="toggleTipoDia()" class="inp reg-inp" style="width:100%;min-height:42px;">
+              <select id="tipoDia" onchange="toggleTipoDia()" class="inp reg-inp" style="width:100%;">
                 <option value="NORMAL">Turno Laborado</option>
                 <option value="COMPENSATORIO">Compensatorio</option>
                 <option value="INCAPACIDAD">Incapacidad</option>
