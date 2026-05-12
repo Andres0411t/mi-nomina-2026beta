@@ -761,15 +761,25 @@
         gap: .4rem;
       }
 
-      .time-input-group .time-label {
-        font-size: .52rem;
-        letter-spacing: .05em;
+      #secHoras .time-input-group .time-label {
+        font-size: .58rem;
+        letter-spacing: .08em;
+        white-space: normal;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
       }
 
-      .time-input-group input[type="time"] {
-        font-size: 12px;
-        height: 34px;
-        padding: .3rem .25rem;
+      #secHoras .time-input-group input[type="time"] {
+        font-size: 15px;
+        height: 40px;
+        padding: .35rem .45rem;
+      }
+    }
+
+    @media(max-width: 380px) {
+      #secHoras .time-inputs-row {
+        grid-template-columns: 1fr;
+        gap: .7rem;
       }
     }
 
@@ -2374,27 +2384,42 @@
       font-weight: 600;
     }
 
-    /* ── Mobile form overflow fix v3 ── */
+    /* ── Registro: móvil (solo #registro; horario vía .time-inputs-row) ── */
     @media (max-width: 600px) {
       #registro .card {
-        overflow: hidden !important;
+        overflow: hidden;
+      }
+
+      /* Sin “levitar” al hover en esta tarjeta (más estable en táctil) */
+      #registro .card:hover {
+        transform: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+      }
+
+      .registro-hero {
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .registro-hero-title {
+        font-size: 1.2rem;
       }
 
       #formTurno,
       #formTurno .form-row,
       #formTurno .form-group,
       #secHoras,
-      #secHoras .form-row,
-      #secHoras .form-group {
-        min-width: 0 !important;
-        max-width: 100% !important;
-        width: 100% !important;
+      #secHoras .time-inputs-row,
+      #secHoras .time-input-group {
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
       }
 
       #formTurno .form-row.col2 {
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: 1rem !important;
-        overflow: visible !important;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
       }
 
       #formTurno .inp,
@@ -2509,6 +2534,155 @@
     .ai-empty-icon {
       color: var(--accent);
       opacity: .75;
+    }
+
+    /* ── Registro rediseñado ── */
+    .reg-card {
+      padding: 1.35rem 1.25rem 1.25rem;
+    }
+
+    .reg-header {
+      margin-bottom: 1.1rem;
+      display: flex;
+      align-items: baseline;
+      gap: .65rem;
+    }
+
+    .reg-title {
+      font-family: var(--font-sans);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.3px;
+    }
+
+    .reg-sub {
+      font-size: .72rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .reg-label {
+      display: block;
+      font-size: .58rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .3rem;
+    }
+
+    .reg-pill-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .65rem;
+      margin-bottom: .75rem;
+    }
+
+    .reg-field-wrap { min-width: 0; }
+
+    .reg-inp {
+      border-radius: 14px !important;
+      padding: .65rem .85rem !important;
+      font-size: .82rem !important;
+      background: var(--surface2) !important;
+      border: 1.5px solid transparent !important;
+      transition: border-color .2s, box-shadow .2s !important;
+    }
+
+    .reg-inp:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px var(--accent-dim) !important;
+      background: var(--surface) !important;
+    }
+
+    /* Bloque horario compacto y pulido */
+    .reg-time-block {
+      background: var(--surface2) !important;
+      border: 1.5px solid var(--border) !important;
+      border-radius: 18px !important;
+      border-left: 3px solid var(--accent) !important;
+      padding: .85rem .9rem !important;
+      margin: .6rem 0 .85rem !important;
+    }
+
+    .reg-time-header {
+      font-size: .58rem;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: .65rem;
+    }
+
+    .reg-time-row {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: .45rem !important;
+    }
+
+    .reg-tg {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .reg-tg .time-label {
+      font-size: .48rem !important;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .reg-tg input[type="time"] {
+      width: 100%;
+      min-width: 0;
+      padding: .35rem .3rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: .78rem;
+      font-weight: 600;
+      outline: none;
+      height: 38px;
+      text-align: center;
+      -webkit-appearance: none;
+      appearance: none;
+      transition: border-color .2s, box-shadow .2s;
+      box-sizing: border-box;
+    }
+
+    .reg-tg input[type="time"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .reg-submit {
+      width: 100% !important;
+      padding: .9rem !important;
+      margin-top: 0 !important;
+      font-size: .8rem !important;
+      border-radius: 14px !important;
+      letter-spacing: .06em !important;
+    }
+
+    /* En móvil pequeño, el header queda en columna */
+    @media (max-width: 480px) {
+      .reg-header { flex-direction: column; gap: .1rem; margin-bottom: .9rem; }
+      .reg-pill-row { grid-template-columns: 1fr 1fr; gap: .5rem; }
+      .reg-inp { padding: .6rem .7rem !important; font-size: .8rem !important; }
+    }
+
+    @media (max-width: 360px) {
+      .reg-pill-row { grid-template-columns: 1fr; }
+      .reg-time-row { grid-template-columns: repeat(2, 1fr) !important; gap: .4rem !important; }
     }
   </style>
 </head>
@@ -2894,65 +3068,66 @@
 
     <!-- ═══ REGISTRO ═══ -->
     <div id="registro" class="tab-content">
-      <div class="card">
-        <div style="margin-bottom:1.75rem;">
-          <div
-            style="font-family:var(--font-sans);font-size:1.5rem;font-weight:600;color:var(--text);margin-bottom:.25rem;">
-            Registrar Día</div>
-          <div style="font-size:.8rem;color:var(--muted);">Ingresa los datos del turno o estado del día</div>
+      <div class="card reg-card">
+
+        <!-- Header compacto -->
+        <div class="reg-header">
+          <div class="reg-title">Registrar Día</div>
+          <div class="reg-sub">Turno o estado del día</div>
         </div>
 
         <form id="formTurno">
-          <div class="form-row col2">
-            <div class="form-group">
-              <label class="form-label">Fecha de inicio</label>
-              <input type="date" id="fecha" required class="inp">
+
+          <!-- Fila fecha + estado como pill-row -->
+          <div class="reg-pill-row">
+            <div class="reg-field-wrap">
+              <label class="reg-label">Fecha</label>
+              <input type="date" id="fecha" required class="inp reg-inp">
             </div>
-            <div class="form-group">
-              <label class="form-label">Estado del día</label>
-              <select id="tipoDia" onchange="toggleTipoDia()" class="inp">
+            <div class="reg-field-wrap">
+              <label class="reg-label">Estado</label>
+              <select id="tipoDia" onchange="toggleTipoDia()" class="inp reg-inp">
                 <option value="NORMAL">Turno Laborado</option>
-                <option value="COMPENSATORIO">Compensatorio Remunerado</option>
+                <option value="COMPENSATORIO">Compensatorio</option>
                 <option value="INCAPACIDAD">Incapacidad</option>
-                <option value="NO_LABORADO">Día No Citado</option>
+                <option value="NO_LABORADO">No Citado</option>
               </select>
             </div>
           </div>
 
+          <!-- Diagnóstico (condicional) -->
           <div id="secDiagnostico" class="hidden">
-            <div class="diag-block">
-              <label class="form-label" style="color:var(--danger);">Diagnóstico / Motivo</label>
-              <input type="text" id="diagnostico" placeholder="Escribe el diagnóstico o motivo..." class="inp"
-                style="background:transparent;border-color:rgba(224,90,90,0.3);color:var(--text);">
+            <div class="diag-block" style="margin-bottom:.75rem;">
+              <label class="reg-label" style="color:var(--danger);">Diagnóstico / Motivo</label>
+              <input type="text" id="diagnostico" placeholder="Diagnóstico o motivo..." class="inp reg-inp"
+                style="border-color:rgba(217,108,96,0.3);">
             </div>
           </div>
 
-          <div id="secHoras" class="time-block">
-            <div
-              style="font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem;">
-              Horario del Turno</div>
-            <div class="time-inputs-row">
-              <div class="time-input-group">
+          <!-- Bloque horario rediseñado -->
+          <div id="secHoras" class="time-block reg-time-block">
+            <div class="reg-time-header">Horario del Turno</div>
+            <div class="time-inputs-row reg-time-row">
+              <div class="time-input-group reg-tg">
                 <span class="time-label">Entrada</span>
                 <input type="time" id="hInicio">
               </div>
-              <div class="time-input-group">
+              <div class="time-input-group reg-tg">
                 <span class="time-label">Desc. inicio</span>
                 <input type="time" id="hBreakOut">
               </div>
-              <div class="time-input-group">
+              <div class="time-input-group reg-tg">
                 <span class="time-label">Desc. fin</span>
                 <input type="time" id="hBreakIn">
               </div>
-              <div class="time-input-group">
+              <div class="time-input-group reg-tg">
                 <span class="time-label">Salida</span>
                 <input type="time" id="hFin">
               </div>
             </div>
           </div>
 
-          <button type="submit" id="btnGuardar" class="btn btn-primary"
-            style="width:100%;padding:1.1rem;margin-top:.5rem;font-size:.85rem;">
+          <button type="submit" id="btnGuardar" class="btn btn-primary reg-submit">
             Guardar en Quincena
           </button>
         </form>
@@ -4826,6 +5001,239 @@ REGLAS:
     setTimeout(() => {
       updateIndicator(document.querySelector('.nav-btn.active'));
     }, 100);
+
+    // ── Banner de instalación PWA ──────────────────────────────────
+    (function initInstallBanner() {
+      const DISMISS_KEY = 'nomina_install_dismissed';
+      let deferredPrompt = null;
+
+      // Si ya dijo "no", no mostrar nunca más
+      try { if (localStorage.getItem(DISMISS_KEY)) return; } catch(e){}
+
+      // Crear el banner en el DOM
+      const banner = document.createElement('div');
+      banner.id = 'pwa-install-banner';
+      banner.style.cssText = [
+        'position:fixed','top:0','left:0','right:0',
+        'z-index:99999',
+        'background:var(--surface)',
+        'border-bottom:1.5px solid var(--border)',
+        'box-shadow:0 4px 24px rgba(184,150,90,0.13)',
+        'display:flex','align-items:center','gap:.85rem',
+        'padding:.9rem 1.1rem',
+        'font-family:var(--font-sans)',
+        'animation:slideDownBanner .4s cubic-bezier(0.16,1,0.3,1)'
+      ].join(';');
+
+      banner.innerHTML = `
+        <style>
+          @keyframes slideDownBanner {
+            from { transform: translateY(-100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+          }
+          #pwa-install-banner .pwa-icon {
+            width: 42px; height: 42px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(184,150,90,0.28);
+          }
+          #pwa-install-banner .pwa-icon svg {
+            width: 22px; height: 22px; stroke: #fff; fill: none;
+            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+          }
+          #pwa-install-banner .pwa-text { flex: 1; min-width: 0; }
+          #pwa-install-banner .pwa-title {
+            font-weight: 700; font-size: .88rem; color: var(--text);
+            letter-spacing: -.2px; line-height: 1.2;
+          }
+          #pwa-install-banner .pwa-sub {
+            font-size: .72rem; color: var(--muted); margin-top: .1rem;
+            font-weight: 400; line-height: 1.3;
+          }
+          #pwa-install-banner .pwa-actions {
+            display: flex; align-items: center; gap: .5rem; flex-shrink: 0;
+          }
+          #pwa-install-banner .pwa-btn-yes {
+            background: var(--accent);
+            color: #fff;
+            border: none; border-radius: 9999px;
+            padding: .45rem 1rem;
+            font-family: var(--font-sans); font-weight: 700;
+            font-size: .75rem; letter-spacing: .04em; text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(184,150,90,.3);
+            transition: all .25s;
+          }
+          #pwa-install-banner .pwa-btn-yes:hover {
+            background: var(--accent2); transform: translateY(-1px);
+          }
+          #pwa-install-banner .pwa-btn-no {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--muted);
+            border-radius: 9999px;
+            padding: .4rem .8rem;
+            font-family: var(--font-sans); font-weight: 600;
+            font-size: .72rem; letter-spacing: .04em; text-transform: uppercase;
+            cursor: pointer;
+            transition: all .25s;
+          }
+          #pwa-install-banner .pwa-btn-no:hover {
+            border-color: var(--border2); color: var(--text);
+          }
+        </style>
+        <div class="pwa-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3v11m0 0l-4-4m4 4l4-4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="pwa-text">
+          <div class="pwa-title">Mi Nomina</div>
+          <div class="pwa-sub">Descarga la app para acceso rapido</div>
+        </div>
+        <div class="pwa-actions">
+          <button class="pwa-btn-no" id="pwa-btn-no">No ahora</button>
+          <button class="pwa-btn-yes" id="pwa-btn-yes">Descargar</button>
+        </div>
+      `;
+
+      document.body.appendChild(banner);
+
+      // Ajustar el contenido principal para que no quede tapado
+      function adjustBodyPadding(add) {
+        const h = banner.offsetHeight || 68;
+        document.body.style.paddingTop = add ? h + 'px' : '';
+      }
+      adjustBodyPadding(true);
+
+      function dismissBanner(save) {
+        if (save) {
+          try { localStorage.setItem(DISMISS_KEY, '1'); } catch(e){}
+        }
+        banner.style.animation = 'none';
+        banner.style.transition = 'transform .35s ease, opacity .35s ease';
+        banner.style.transform = 'translateY(-100%)';
+        banner.style.opacity = '0';
+        adjustBodyPadding(false);
+        setTimeout(() => banner.remove(), 380);
+      }
+
+      // Botón "No ahora" — guarda la preferencia, no vuelve a aparecer
+      document.getElementById('pwa-btn-no').addEventListener('click', () => {
+        dismissBanner(true);
+      });
+
+      // Botón "Agregar" — intenta el prompt nativo o muestra instrucciones
+      document.getElementById('pwa-btn-yes').addEventListener('click', async () => {
+        if (deferredPrompt) {
+          // Android / Chrome: prompt nativo
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          dismissBanner(outcome === 'accepted');
+        } else {
+          // iOS / otros: mostrar instrucciones manuales
+          showIosInstallTip();
+          dismissBanner(false);
+        }
+      });
+
+      // Capturar el evento nativo de Chrome/Android
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+      });
+
+      // Cuando se instala, ocultar el banner
+      window.addEventListener('appinstalled', () => dismissBanner(true));
+
+      // Si ya está instalada como PWA, no mostrar nada
+      if (window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true) {
+        dismissBanner(true);
+        return;
+      }
+
+      function showIosInstallTip() {
+        const tip = document.createElement('div');
+        tip.style.cssText = [
+          'position:fixed','bottom:5.5rem','left:50%','transform:translateX(-50%)',
+          'z-index:99998','max-width:340px','width:calc(100% - 2rem)',
+          'background:var(--surface)','border:1.5px solid var(--border)',
+          'border-radius:var(--radius-sm)','padding:1rem 1.15rem',
+          'box-shadow:0 8px 32px rgba(0,0,0,0.1)',
+          'font-family:var(--font-sans)','font-size:.8rem','color:var(--text)',
+          'line-height:1.5','animation:slideDownBanner .3s ease'
+        ].join(';');
+        tip.innerHTML = `
+          <div style="font-weight:700;margin-bottom:.4rem;font-size:.85rem;">
+            Como agregar al inicio
+          </div>
+          <div style="color:var(--muted);">
+            En Safari: toca <strong style="color:var(--accent)">Compartir</strong>
+            y luego <strong style="color:var(--accent)">Agregar a inicio</strong>.
+            El nombre de la app sera <strong>Mi Nomina</strong>.
+          </div>
+          <button onclick="this.parentElement.remove()" style="
+            margin-top:.75rem; width:100%;
+            background:var(--surface2); border:1.5px solid var(--border);
+            border-radius:9999px; padding:.4rem;
+            font-family:var(--font-sans); font-weight:600; font-size:.75rem;
+            color:var(--muted); cursor:pointer; letter-spacing:.05em; text-transform:uppercase;
+          ">Entendido</button>
+        `;
+        document.body.appendChild(tip);
+        setTimeout(() => { if (tip.parentElement) tip.remove(); }, 8000);
+      }
+    })();
+  </script>
+
+  <!-- Manifest para PWA (nombre "Mi Nomina") -->
+  <script>
+    (function injectManifest() {
+      const manifest = {
+        name: 'Mi Nomina',
+        short_name: 'Mi Nomina',
+        start_url: './',
+        display: 'standalone',
+        background_color: '#fafafa',
+        theme_color: '#b8965a',
+        icons: [
+          {
+            src: "data:image/svg+xml," + encodeURIComponent(`
+              <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'>
+                <rect width='192' height='192' rx='40' fill='%23b8965a'/>
+                <text x='96' y='130' font-size='110' text-anchor='middle'
+                  font-family='Georgia,serif' fill='white' font-weight='700'>N</text>
+              </svg>`),
+            sizes: '192x192', type: 'image/svg+xml'
+          }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('link');
+      link.rel = 'manifest'; link.href = url;
+      document.head.appendChild(link);
+
+      // Theme color meta
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color'; meta.content = '#b8965a';
+      document.head.appendChild(meta);
+
+      // Apple PWA metas
+      const appleMeta = document.createElement('meta');
+      appleMeta.name = 'apple-mobile-web-app-capable';
+      appleMeta.content = 'yes';
+      document.head.appendChild(appleMeta);
+
+      const appleTitle = document.createElement('meta');
+      appleTitle.name = 'apple-mobile-web-app-title';
+      appleTitle.content = 'Mi Nomina';
+      document.head.appendChild(appleTitle);
+    })();
   </script>
 
 </body>
