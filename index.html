@@ -33,6 +33,10 @@
       --success: #57a787;
       --success-dim: rgba(87, 167, 135, 0.08);
       --info: #5878c0;
+      --summary-number-color: #000000;
+      --dashboard-number-color: #000000;
+      --picker-icon-filter: none;
+      --picker-icon-opacity: 0.75;
       --radius: 24px;
       --radius-sm: 16px;
       --font-serif: 'Playfair Display', Georgia, serif;
@@ -223,6 +227,14 @@
 
     .inp::placeholder {
       color: var(--border2);
+    }
+
+    /* Date/Time picker icons legibles en claro/oscuro */
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: var(--picker-icon-filter);
+      opacity: var(--picker-icon-opacity);
+      cursor: pointer;
     }
 
     @media(max-width: 480px) {
@@ -450,7 +462,7 @@
       border: 1px solid color-mix(in srgb, var(--border) 60%, rgba(255, 255, 255, 0.4));
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 2px 4px rgba(255, 255, 255, 0.3);
       z-index: 0;
-      transition: transform 0.5s cubic-bezier(0.34, 1.15, 0.64, 1), width 0.5s cubic-bezier(0.34, 1.15, 0.64, 1);
+      transition: transform 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), width 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), height 0.42s cubic-bezier(0.34, 1.15, 0.64, 1);
       pointer-events: none;
       opacity: 0;
     }
@@ -497,6 +509,12 @@
       background: transparent;
       color: var(--text);
       font-weight: 700;
+    }
+
+    /* ── Nav — DESKTOP (fill full width) ── */
+    @media (min-width: 769px) {
+      .nav { width: 100%; justify-content: space-between; }
+      .nav-btn { flex: 1; flex-shrink: 1; text-align: center; }
     }
 
     /* ── Nav — MOBILE (floating pill bottom tab bar) ── */
@@ -1079,6 +1097,24 @@
       color: #ffffff;
     }
 
+    /* ── Ajuste solicitado: Resumen (números negros) ── */
+    #resumen .stat-card .stat-val {
+      color: var(--summary-number-color) !important;
+    }
+    #resumen .stat-card.featured {
+      background: var(--surface);
+      border-color: var(--border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+    }
+    #resumen .stat-card.featured::after {
+      background: var(--accent);
+      height: 2px;
+    }
+    #resumen .stat-card.featured .stat-label,
+    #resumen .stat-card.featured .stat-val {
+      color: var(--summary-number-color) !important;
+    }
+
     /* ── Table ── */
     .table {
       width: 100%;
@@ -1566,6 +1602,15 @@
       color: var(--info);
     }
 
+    /* ── Ajuste solicitado: Dashboard (Resumen) ── */
+    /* Todos los números negros excepto "Mejor Día" al color del tema */
+    #dashboard .dash-kpi-grid .kpi-val {
+      color: var(--dashboard-number-color) !important;
+    }
+    #dashboard #dashMejorDia {
+      color: var(--accent) !important;
+    }
+
     .kpi-sub {
       font-size: .7rem;
       color: var(--muted);
@@ -1640,21 +1685,21 @@
     }
 
     .ritmo-ok {
-      background: var(--success-dim);
-      color: var(--success);
-      border: 1px solid rgba(74, 155, 122, 0.2);
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
     }
 
     .ritmo-low {
-      background: var(--danger-dim);
-      color: var(--danger);
-      border: 1px solid rgba(192, 86, 74, 0.2);
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
     }
 
     .ritmo-great {
       background: var(--accent-dim);
       color: var(--accent);
-      border: 1px solid rgba(184, 150, 90, 0.2);
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
     }
 
     /* Bar chart */
@@ -1827,8 +1872,6 @@
       color: var(--accent);
       flex-shrink: 0;
     }
-
-    .ai-avatar-pulse {}
 
     .chat-window {
       background: color-mix(in srgb, var(--bg) 15%, transparent);
@@ -3514,23 +3557,233 @@
 
   <!-- Temas de color (global, antes del módulo Firebase) -->
   <script>
+    // Cada tema define la paleta COMPLETA.
+    // light/dark = fondos y superficies para modo claro y oscuro.
+    // Dorado no toca fondos (null), los demás sí.
     var THEMES = {
-      gold:  { accent:'#b8965a', accent2:'#d4ae74', dim:'rgba(184,150,90,0.10)', glow:'rgba(184,150,90,0.18)' },
-      lila:  { accent:'#8b6bbf', accent2:'#b39ddb', dim:'rgba(139,107,191,0.10)', glow:'rgba(139,107,191,0.18)' },
-      rose:  { accent:'#c2607a', accent2:'#e8a0b0', dim:'rgba(194,96,122,0.10)', glow:'rgba(194,96,122,0.18)' },
-      teal:  { accent:'#3d9ea8', accent2:'#72c7cf', dim:'rgba(61,158,168,0.10)', glow:'rgba(61,158,168,0.18)' },
-      slate: { accent:'#5870a0', accent2:'#8898c8', dim:'rgba(88,112,160,0.10)', glow:'rgba(88,112,160,0.18)' },
-      ember: { accent:'#c05a3a', accent2:'#e08060', dim:'rgba(192,90,58,0.10)', glow:'rgba(192,90,58,0.18)' },
+
+      // ── DORADO: intacto ───────────────────────────────────────────────────
+      gold: {
+        accent:'#b8965a', accent2:'#d4ae74',
+        dim:'rgba(184,150,90,0.10)', glow:'rgba(184,150,90,0.18)',
+        danger:'#d96c60',  dangerDim:'rgba(217,108,96,0.08)',
+        success:'#57a787', successDim:'rgba(87,167,135,0.08)',
+        info:'#5878c0',
+        dangerDk:'#d96c60',  dangerDimDk:'rgba(217,108,96,0.10)',
+        successDk:'#57a787', successDimDk:'rgba(87,167,135,0.10)',
+        infoDk:'#5878c0',
+        light: null,
+        dark:  null,
+      },
+
+      // ── LILA ─────────────────────────────────────────────────────────────
+      // Universo: violetas y malvas. Danger=malva rojizo, Success=violeta frío,
+      // Info=lavanda. Todo dentro de la familia púrpura.
+      lila: {
+        accent:'#9b8ad9', accent2:'#c9bff0',
+        dim:'rgba(155,138,217,0.08)', glow:'rgba(155,138,217,0.14)',
+        // claro — pastel, minimalista (menos tinte)
+        danger:'#b17a96',  dangerDim:'rgba(177,122,150,0.08)',
+        success:'#7d74b8', successDim:'rgba(125,116,184,0.08)',
+        info:'#7a92d8',
+        // oscuro — misma familia, apagados y más profundos
+        dangerDk:'#7b5569',  dangerDimDk:'rgba(123,85,105,0.14)',
+        successDk:'#5a5688', successDimDk:'rgba(90,86,136,0.14)',
+        infoDk:'#5267a3',
+        light: {
+          bg:'#fbfaff', surface:'#ffffff', surface2:'#f6f4fb',
+          border:'#ebe7f7', border2:'#d7d2ea',
+          text:'#1a1824', muted:'#746f86',
+        },
+        dark: {
+          bg:'#0c0c10', surface:'#111018', surface2:'#16151e',
+          border:'#222030', border2:'#2e2c3e',
+          text:'#edeaf8', muted:'#706c88',
+        },
+      },
+
+      // ── ROSA ─────────────────────────────────────────────────────────────
+      // Universo: rosas y carmines. Danger=carmín oscuro, Success=rosa pálido
+      // apagado, Info=durazno rosado. Todo dentro de la familia rosada-cálida.
+      rose: {
+        accent:'#d58aa1', accent2:'#f0c0cd',
+        dim:'rgba(213,138,161,0.08)', glow:'rgba(213,138,161,0.14)',
+        // claro — pastel
+        danger:'#b87486',  dangerDim:'rgba(184,116,134,0.08)',
+        success:'#d7a0b1', successDim:'rgba(215,160,177,0.08)',
+        info:'#c08aa0',
+        // oscuro — apagados y oscuros
+        dangerDk:'#7a4e5c',  dangerDimDk:'rgba(122,78,92,0.14)',
+        successDk:'#8a6673', successDimDk:'rgba(138,102,115,0.14)',
+        infoDk:'#7a5a6a',
+        light: {
+          bg:'#fffafb', surface:'#ffffff', surface2:'#faf4f6',
+          border:'#f1e4ea', border2:'#e2d0d8',
+          text:'#20141a', muted:'#88727a',
+        },
+        dark: {
+          bg:'#0e0b0d', surface:'#141012', surface2:'#1a1518',
+          border:'#2a2020', border2:'#38282e',
+          text:'#f4eef2', muted:'#907880',
+        },
+      },
+
+      // ── TEAL ─────────────────────────────────────────────────────────────
+      // Universo: cianes y azul-verdoso. Danger=teal-gris apagado, Success=cian
+      // más oscuro, Info=azul-teal. Todo dentro de la familia fría/acuática.
+      teal: {
+        accent:'#6fbbc3', accent2:'#b7e6ea',
+        dim:'rgba(111,187,195,0.08)', glow:'rgba(111,187,195,0.14)',
+        // claro — pastel
+        danger:'#7fa5ae',  dangerDim:'rgba(127,165,174,0.08)',
+        success:'#5aae9c', successDim:'rgba(90,174,156,0.08)',
+        info:'#7ea5d6',
+        // oscuro — muy apagados, casi grafito teñido
+        dangerDk:'#3e6670',  dangerDimDk:'rgba(62,102,112,0.14)',
+        successDk:'#2e6156', successDimDk:'rgba(46,97,86,0.14)',
+        infoDk:'#4a6c98',
+        light: {
+          bg:'#f8feff', surface:'#ffffff', surface2:'#f1fafb',
+          border:'#dff1f3', border2:'#c7e5e8',
+          text:'#0c1e22', muted:'#537375',
+        },
+        dark: {
+          bg:'#090d0e', surface:'#0d1214', surface2:'#121819',
+          border:'#1a2628', border2:'#223235',
+          text:'#e4f4f5', muted:'#507275',
+        },
+      },
+
+      // ── SLATE ────────────────────────────────────────────────────────────
+      // Universo: azules y añil. Danger=azul-malva apagado, Success=azul-cian
+      // oscuro, Info=índigo. Todo dentro de la familia azul fría.
+      slate: {
+        accent:'#7b93d6', accent2:'#b9c6f0',
+        dim:'rgba(123,147,214,0.08)', glow:'rgba(123,147,214,0.14)',
+        // claro
+        danger:'#8a92b8',  dangerDim:'rgba(138,146,184,0.08)',
+        success:'#6eaac8', successDim:'rgba(110,170,200,0.08)',
+        info:'#7a86c8',
+        // oscuro — muy apagados y neutros
+        dangerDk:'#56608a',  dangerDimDk:'rgba(86,96,138,0.14)',
+        successDk:'#3e6f84', successDimDk:'rgba(62,111,132,0.14)',
+        infoDk:'#54609a',
+        light: {
+          bg:'#fafbff', surface:'#ffffff', surface2:'#f3f6fd',
+          border:'#e4e9f8', border2:'#d1d9f0',
+          text:'#0e1222', muted:'#626a86',
+        },
+        dark: {
+          bg:'#090a10', surface:'#0d0f18', surface2:'#12141e',
+          border:'#1c2030', border2:'#262c3e',
+          text:'#eaeef8', muted:'#606888',
+        },
+      },
+
+      // ── EMBER ────────────────────────────────────────────────────────────
+      // Universo: tierras y cobres. Danger=cobre oscuro/borgoña tierra,
+      // Success=ocre/bronce apagado, Info=marrón-cobre. Todo en familia cálida.
+      ember: {
+        accent:'#d9a08a', accent2:'#f2ccbc',
+        dim:'rgba(217,160,138,0.08)', glow:'rgba(217,160,138,0.14)',
+        // claro
+        danger:'#b8857a',  dangerDim:'rgba(184,133,122,0.08)',
+        success:'#c0a07a', successDim:'rgba(192,160,122,0.08)',
+        info:'#b09688',
+        // oscuro — muy apagados, tierra oscura
+        dangerDk:'#7a4a3f',  dangerDimDk:'rgba(122,74,63,0.14)',
+        successDk:'#7a5f3e', successDimDk:'rgba(122,95,62,0.14)',
+        infoDk:'#6a554d',
+        light: {
+          bg:'#fffaf7', surface:'#ffffff', surface2:'#fbf2ee',
+          border:'#f3e1d6', border2:'#e6cec1',
+          text:'#201210', muted:'#886a60',
+        },
+        dark: {
+          bg:'#0e0a08', surface:'#140e0a', surface2:'#1a1310',
+          border:'#281e18', border2:'#342820',
+          text:'#f4ece6', muted:'#9a7868',
+        },
+      },
     };
 
-    function applyTheme(name, btn) {
+    window.applyTheme = function applyTheme(name, btn) {
       var t = THEMES[name];
       if (!t) return;
       var r = document.documentElement.style;
+      var isLightNow = (typeof lightMode !== 'undefined') ? lightMode : true;
+      var scaleRgbaAlpha = function(v, factor) {
+        if (!v) return v;
+        var m = v.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/i);
+        if (!m) return v;
+        var a = Math.max(0, Math.min(1, parseFloat(m[4]) * factor));
+        return 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + a.toFixed(3) + ')';
+      };
+
+      // ── Acento ──
       r.setProperty('--accent',      t.accent);
       r.setProperty('--accent2',     t.accent2);
-      r.setProperty('--accent-dim',  t.dim);
-      r.setProperty('--accent-glow', t.glow);
+      var isGoldTheme = name === 'gold';
+      var dimLight = isGoldTheme ? t.dim : scaleRgbaAlpha(t.dim, 0.45);
+      var glowLight = isGoldTheme ? t.glow : scaleRgbaAlpha(t.glow, 0.40);
+      var dimDark = isGoldTheme ? (t.dimDk || scaleRgbaAlpha(t.dim, 0.35)) : (t.dimDk || scaleRgbaAlpha(t.dim, 0.12));
+      var glowDark = isGoldTheme ? (t.glowDk || scaleRgbaAlpha(t.glow, 0.32)) : (t.glowDk || scaleRgbaAlpha(t.glow, 0.10));
+      r.setProperty('--accent-dim',  isLightNow ? dimLight : dimDark);
+      r.setProperty('--accent-glow', isLightNow ? glowLight : glowDark);
+
+      // ── Colores funcionales (distintos en claro y oscuro) ──
+      r.setProperty('--danger',      isLightNow ? t.danger      : (t.dangerDk      || t.danger));
+      r.setProperty('--danger-dim',  isLightNow ? t.dangerDim   : (t.dangerDimDk   || t.dangerDim));
+      r.setProperty('--success',     isLightNow ? t.success     : (t.successDk     || t.success));
+      r.setProperty('--success-dim', isLightNow ? t.successDim  : (t.successDimDk  || t.successDim));
+      r.setProperty('--info',        isLightNow ? t.info        : (t.infoDk        || t.info));
+
+      // ── Fondos y superficies (según modo actual) ──
+      var isLight = (typeof lightMode !== 'undefined') ? lightMode : true;
+      var palette = t[isLight ? 'light' : 'dark'];
+      if (palette) {
+        r.setProperty('--bg',       palette.bg);
+        r.setProperty('--surface',  palette.surface);
+        r.setProperty('--surface2', palette.surface2);
+        r.setProperty('--border',   palette.border);
+        r.setProperty('--border2',  palette.border2);
+        r.setProperty('--text',     palette.text);
+        r.setProperty('--muted',    palette.muted);
+        // En oscuro para temas no dorados: base neutra casi negra + acentos del tema
+        if (!isLight && name !== 'gold') {
+          r.setProperty('--bg', '#0b0b0d');
+          r.setProperty('--surface', '#121216');
+          r.setProperty('--surface2', '#191920');
+          r.setProperty('--border', '#252530');
+          r.setProperty('--border2', '#333341');
+          r.setProperty('--text', '#efedf4');
+          r.setProperty('--muted', '#8a8898');
+          r.setProperty('--s-op-1', '0.004');
+          r.setProperty('--s-op-2', '0.0026');
+          r.setProperty('--s-op-3', '0.0012');
+        } else if (isLight && name !== 'gold') {
+          r.setProperty('--s-op-1', '0.014');
+          r.setProperty('--s-op-2', '0.009');
+          r.setProperty('--s-op-3', '0.005');
+        }
+      } else {
+        // dorado: restaurar fondos neutros según modo
+        if (isLight) {
+          r.setProperty('--bg','#fafafa'); r.setProperty('--surface','#ffffff');
+          r.setProperty('--surface2','#f4f4f4'); r.setProperty('--border','#eaeaea');
+          r.setProperty('--border2','#d5d5d5'); r.setProperty('--text','#1a1a1a');
+          r.setProperty('--muted','#7a7a7a');
+        } else {
+          r.setProperty('--bg','#0e0e10'); r.setProperty('--surface','#16161a');
+          r.setProperty('--surface2','#1e1e24'); r.setProperty('--border','#2a2a33');
+          r.setProperty('--border2','#3a3a46'); r.setProperty('--text','#f0efe8');
+          r.setProperty('--muted','#7a7a8a');
+        }
+      }
+
+      // Guardar nombre del tema activo para que toggleDarkMode lo reaplique
+      window._currentThemeName = name;
+
       document.querySelectorAll('.theme-swatch').forEach(function(s){ s.classList.remove('active'); });
       if (btn) {
         btn.classList.add('active');
@@ -3539,7 +3792,7 @@
         if (target) target.classList.add('active');
       }
       try { localStorage.setItem('nomina_color_theme', name); } catch(e){}
-    }
+    };
 
     // Cargar tema al iniciar (antes que nada)
     (function(){
@@ -3547,10 +3800,49 @@
         var saved = localStorage.getItem('nomina_color_theme') || 'gold';
         var t = THEMES[saved] || THEMES['gold'];
         var r = document.documentElement.style;
+        var isLight = true; // al arrancar siempre claro (applyDarkLight lo ajustará después)
+        var scaleRgbaAlpha = function(v, factor) {
+          if (!v) return v;
+          var m = v.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/i);
+          if (!m) return v;
+          var a = Math.max(0, Math.min(1, parseFloat(m[4]) * factor));
+          return 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + a.toFixed(3) + ')';
+        };
         r.setProperty('--accent',      t.accent);
         r.setProperty('--accent2',     t.accent2);
-        r.setProperty('--accent-dim',  t.dim);
-        r.setProperty('--accent-glow', t.glow);
+        var savedMode = localStorage.getItem('nomina_darkmode');
+        var isLightStart = savedMode ? savedMode === 'light' : true;
+        var isGoldTheme = saved === 'gold';
+        var dimLight = isGoldTheme ? t.dim : scaleRgbaAlpha(t.dim, 0.45);
+        var glowLight = isGoldTheme ? t.glow : scaleRgbaAlpha(t.glow, 0.40);
+        var dimDark = isGoldTheme ? (t.dimDk || scaleRgbaAlpha(t.dim, 0.35)) : (t.dimDk || scaleRgbaAlpha(t.dim, 0.12));
+        var glowDark = isGoldTheme ? (t.glowDk || scaleRgbaAlpha(t.glow, 0.32)) : (t.glowDk || scaleRgbaAlpha(t.glow, 0.10));
+        r.setProperty('--accent-dim',  isLightStart ? dimLight : dimDark);
+        r.setProperty('--accent-glow', isLightStart ? glowLight : glowDark);
+        r.setProperty('--danger',      isLightStart ? t.danger      : (t.dangerDk      || t.danger));
+        r.setProperty('--danger-dim',  isLightStart ? t.dangerDim   : (t.dangerDimDk   || t.dangerDim));
+        r.setProperty('--success',     isLightStart ? t.success     : (t.successDk     || t.success));
+        r.setProperty('--success-dim', isLightStart ? t.successDim  : (t.successDimDk  || t.successDim));
+        r.setProperty('--info',        isLightStart ? t.info        : (t.infoDk        || t.info));
+        var palette = t[isLightStart ? 'light' : 'dark'];
+        if (palette) {
+          r.setProperty('--bg', palette.bg); r.setProperty('--surface', palette.surface);
+          r.setProperty('--surface2', palette.surface2); r.setProperty('--border', palette.border);
+          r.setProperty('--border2', palette.border2); r.setProperty('--text', palette.text);
+          r.setProperty('--muted', palette.muted);
+          if (!isLightStart && saved !== 'gold') {
+            r.setProperty('--bg', '#0b0b0d'); r.setProperty('--surface', '#121216');
+            r.setProperty('--surface2', '#191920'); r.setProperty('--border', '#252530');
+            r.setProperty('--border2', '#333341'); r.setProperty('--text', '#efedf4');
+            r.setProperty('--muted', '#8a8898');
+            r.setProperty('--s-op-1', '0.004'); r.setProperty('--s-op-2', '0.0026');
+            r.setProperty('--s-op-3', '0.0012');
+          } else if (isLightStart && saved !== 'gold') {
+            r.setProperty('--s-op-1', '0.014'); r.setProperty('--s-op-2', '0.009');
+            r.setProperty('--s-op-3', '0.005');
+          }
+        }
+        window._currentThemeName = saved;
       } catch(e){}
     })();
   </script>
@@ -3889,6 +4181,10 @@
         document.documentElement.style.setProperty('--border2', '#d5d5d5');
         document.documentElement.style.setProperty('--text', '#1a1a1a');
         document.documentElement.style.setProperty('--muted', '#7a7a7a');
+        document.documentElement.style.setProperty('--summary-number-color', '#000000');
+        document.documentElement.style.setProperty('--dashboard-number-color', '#000000');
+        document.documentElement.style.setProperty('--picker-icon-filter', 'none');
+        document.documentElement.style.setProperty('--picker-icon-opacity', '0.72');
         document.documentElement.style.setProperty('--s-op-1', '0.03');
         document.documentElement.style.setProperty('--s-op-2', '0.02');
         document.documentElement.style.setProperty('--s-op-3', '0.015');
@@ -3901,6 +4197,10 @@
         document.documentElement.style.setProperty('--border2', '#3a3a46');
         document.documentElement.style.setProperty('--text', '#f0efe8');
         document.documentElement.style.setProperty('--muted', '#7a7a8a');
+        document.documentElement.style.setProperty('--summary-number-color', '#f0efe8');
+        document.documentElement.style.setProperty('--dashboard-number-color', '#f0efe8');
+        document.documentElement.style.setProperty('--picker-icon-filter', 'invert(0.92) brightness(1.12)');
+        document.documentElement.style.setProperty('--picker-icon-opacity', '0.95');
         document.documentElement.style.setProperty('--s-op-1', '0.015');
         document.documentElement.style.setProperty('--s-op-2', '0.01');
         document.documentElement.style.setProperty('--s-op-3', '0.005');
@@ -3917,10 +4217,18 @@
       lightMode = true;
     }
     applyDarkLight(lightMode);
+    // Reaplicar tema de color sobre los fondos de modo claro/oscuro
+    if (window._currentThemeName && window.applyTheme) {
+      window.applyTheme(window._currentThemeName, null);
+    }
 
     function toggleDarkMode() {
       lightMode = !lightMode;
       applyDarkLight(lightMode);
+      // Reaplicar la paleta del tema activo (fondos, bordes, etc.) después de cambiar modo
+      if (window._currentThemeName && typeof applyTheme !== 'undefined') {
+        applyTheme(window._currentThemeName, null);
+      }
       try { localStorage.setItem('nomina_darkmode', lightMode ? 'light' : 'dark'); } catch (e) { }
       if (myChart) renderAll();
     }
@@ -3933,6 +4241,7 @@
       if (targetBtn) {
         targetBtn.classList.add('active');
         updateIndicator(targetBtn);
+        requestAnimationFrame(() => updateIndicator(targetBtn));
       }
       if (t === 'resumen') renderAll();
       if (t === 'dashboard') renderDashboard();
@@ -3942,11 +4251,16 @@
 
     function updateIndicator(btn) {
       const ind = document.getElementById('navIndicator');
-      if (!ind || !btn) return;
+      const nav = document.getElementById('mainNav');
+      if (!ind || !btn || !nav) return;
+      const navRect = nav.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      const isDesktop = window.matchMedia('(min-width: 769px)').matches;
+      const pad = isDesktop ? 2 : 0;
       ind.style.opacity = '1';
-      ind.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
-      ind.style.width = `${btn.offsetWidth}px`;
-      ind.style.height = `${btn.offsetHeight}px`;
+      ind.style.transform = `translate(${(btnRect.left - navRect.left) + nav.scrollLeft - pad}px, ${(btnRect.top - navRect.top) + nav.scrollTop - pad}px)`;
+      ind.style.width = `${btnRect.width + (pad * 2)}px`;
+      ind.style.height = `${btnRect.height + (pad * 2)}px`;
     }
 
     // Swipe interactions on the nav bar
@@ -4752,7 +5066,16 @@ REGLAS:
     function renderChart(sumas) {
       const ctx = document.getElementById('nominaChart').getContext('2d');
       const labelsMap = { ordD: 'H. Ordinaria', ordN: 'Rec. Noct.', extD: 'Ex. Diurna', extN: 'Ex. Nocturna', domD: 'Dom/Fest Diur.', domN: 'Dom/Fest Noc.', edd: 'Ex. Dom. Diur.', edn: 'Ex. Dom. Noc.', INCAP: 'Incapacidad', COMPENSATORIO: 'Compensatorio' };
-      const colors = { ordD: '#c4a06a', ordN: '#a67f45', extD: '#5ebc8a', extN: '#3a8b63', domD: '#5a8fd4', domN: '#2d5fa3', edd: '#c87060', edn: '#9a4a3a', INCAP: '#8a8a7a', COMPENSATORIO: '#a894b8' };
+      const currentTheme = window._currentThemeName || 'gold';
+      const colorsByTheme = {
+        gold: { ordD: '#c4a06a', ordN: '#a67f45', extD: '#5ebc8a', extN: '#3a8b63', domD: '#5a8fd4', domN: '#2d5fa3', edd: '#c87060', edn: '#9a4a3a', INCAP: '#8a8a7a', COMPENSATORIO: '#a894b8' },
+        lila: { ordD: '#9b8ad9', ordN: '#7d74b8', extD: '#8f84c8', extN: '#5a5688', domD: '#7a92d8', domN: '#5267a3', edd: '#b17a96', edn: '#7b5569', INCAP: '#9a97aa', COMPENSATORIO: '#c9bff0' },
+        rose: { ordD: '#d58aa1', ordN: '#b87486', extD: '#d7a0b1', extN: '#8a6673', domD: '#c08aa0', domN: '#7a5a6a', edd: '#b87486', edn: '#7a4e5c', INCAP: '#a59aa1', COMPENSATORIO: '#f0c0cd' },
+        teal: { ordD: '#6fbbc3', ordN: '#5aae9c', extD: '#7fa5ae', extN: '#2e6156', domD: '#7ea5d6', domN: '#4a6c98', edd: '#7fa5ae', edn: '#3e6670', INCAP: '#93a7ab', COMPENSATORIO: '#b7e6ea' },
+        slate: { ordD: '#7b93d6', ordN: '#6eaac8', extD: '#8a92b8', extN: '#3e6f84', domD: '#7a86c8', domN: '#54609a', edd: '#8a92b8', edn: '#56608a', INCAP: '#97a0ba', COMPENSATORIO: '#b9c6f0' },
+        ember: { ordD: '#d9a08a', ordN: '#c0a07a', extD: '#d4b29a', extN: '#7a5f3e', domD: '#b09688', domN: '#6a554d', edd: '#b8857a', edn: '#7a4a3f', INCAP: '#a89a93', COMPENSATORIO: '#f2ccbc' }
+      };
+      const colors = colorsByTheme[currentTheme] || colorsByTheme.gold;
       const dataLabels = [], dataValues = [], bgColors = [];
       for (let k in sumas) { dataLabels.push(labelsMap[k] || k); dataValues.push(sumas[k].v); bgColors.push(colors[k] || '#555'); }
       if (myChart) myChart.destroy();
@@ -5428,6 +5751,9 @@ REGLAS:
     setTimeout(() => {
       updateIndicator(document.querySelector('.nav-btn.active'));
     }, 100);
+    window.addEventListener('resize', () => {
+      updateIndicator(document.querySelector('.nav-btn.active'));
+    });
 
     // ── Banner de instalación PWA ──────────────────────────────────
     (function initInstallBanner() {
