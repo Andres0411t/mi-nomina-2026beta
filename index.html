@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mi Nómina</title>
+  <meta name="theme-color" content="#b8965a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mi Nomina">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -5989,51 +5994,7 @@ REGLAS:
     }
   </script>
 
-  <!-- Manifest para PWA (nombre "Mi Nomina") -->
-  <script>
-    (function injectManifest() {
-      const manifest = {
-        name: 'Mi Nomina',
-        short_name: 'Mi Nomina',
-        start_url: './',
-        display: 'standalone',
-        background_color: '#fafafa',
-        theme_color: '#b8965a',
-        icons: [
-          {
-            src: "data:image/svg+xml," + encodeURIComponent(`
-              <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'>
-                <rect width='192' height='192' rx='40' fill='%23b8965a'/>
-                <text x='96' y='130' font-size='110' text-anchor='middle'
-                  font-family='Georgia,serif' fill='white' font-weight='700'>N</text>
-              </svg>`),
-            sizes: '192x192', type: 'image/svg+xml'
-          }
-        ]
-      };
-      const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-      const url  = URL.createObjectURL(blob);
-      const link = document.createElement('link');
-      link.rel = 'manifest'; link.href = url;
-      document.head.appendChild(link);
-
-      // Theme color meta
-      const meta = document.createElement('meta');
-      meta.name = 'theme-color'; meta.content = '#b8965a';
-      document.head.appendChild(meta);
-
-      // Apple PWA metas
-      const appleMeta = document.createElement('meta');
-      appleMeta.name = 'apple-mobile-web-app-capable';
-      appleMeta.content = 'yes';
-      document.head.appendChild(appleMeta);
-
-      const appleTitle = document.createElement('meta');
-      appleTitle.name = 'apple-mobile-web-app-title';
-      appleTitle.content = 'Mi Nomina';
-      document.head.appendChild(appleTitle);
-    })();
-  </script>
+  <!-- Manifest PWA inyectado en <head> como archivo estático -->
 
 </body>
 
