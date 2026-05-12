@@ -3009,9 +3009,27 @@
 
     /* ── Refined Responsive Fixes (< 380px) ── */
     /* ── Definitive Structural Fixes ── */
-    #tab-nomina {
+    #tab-nomina, #resumen {
       max-width: 100% !important;
       overflow-x: hidden !important;
+    }
+
+    /* Fix for the history search bar breaking layout */
+    .hist-search {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 600px) {
+      .hist-search {
+        flex-direction: column !important;
+      }
+      .hist-search .inp, .hist-search .btn {
+        width: 100% !important;
+        margin: 0 !important;
+      }
     }
 
     /* ── Global Compact Optimization (< 382px) ── */
