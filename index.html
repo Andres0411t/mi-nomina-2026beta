@@ -2387,7 +2387,7 @@
     /* ── Registro: móvil (solo #registro; horario vía .time-inputs-row) ── */
     @media (max-width: 600px) {
       #registro .card {
-        overflow: hidden;
+        overflow: visible;
       }
 
       /* Sin “levitar” al hover en esta tarjeta (más estable en táctil) */
@@ -2536,6 +2536,63 @@
       opacity: .75;
     }
 
+    /* ── Temas de color ── */
+    .theme-picker {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .65rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .theme-swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .45rem;
+      padding: .75rem .5rem;
+      background: var(--surface2);
+      border: 2px solid transparent;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all .22s cubic-bezier(0.16,1,0.3,1);
+      font-family: var(--font-sans);
+    }
+
+    .theme-swatch:hover {
+      background: var(--surface);
+      border-color: var(--border2);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+    }
+
+    .theme-swatch.active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .swatch-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: block;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+      transition: transform .2s;
+    }
+
+    .theme-swatch:hover .swatch-circle { transform: scale(1.1); }
+    .theme-swatch.active .swatch-circle { transform: scale(1.08); box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+
+    .swatch-name {
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .theme-swatch.active .swatch-name { color: var(--accent); }
+
     /* ── Fecha input: tamaño fijo aunque esté vacío ── */
     .reg-date-inp {
       min-height: 42px !important;
@@ -2594,20 +2651,18 @@
     }
 
     .cdd-menu {
-      position: absolute;
-      top: calc(100% + 6px);
-      left: 0;
-      right: 0;
+      position: fixed;
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 16px;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.09);
-      overflow: hidden;
-      z-index: 500;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+      overflow: visible;
+      z-index: 9999;
       opacity: 0;
       transform: translateY(-6px) scale(.98);
       pointer-events: none;
       transition: opacity .18s ease, transform .18s cubic-bezier(0.16,1,0.3,1);
+      min-width: 180px;
     }
 
     .cdd-menu.open {
@@ -3418,6 +3473,35 @@
         </div>
 
         <div class="divider"></div>
+        <div class="config-section-title">Tema de Color</div>
+        <div class="theme-picker" id="themePicker">
+          <button class="theme-swatch active" data-theme="gold" onclick="applyTheme('gold',this)" title="Dorado">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#b8965a,#d4ae74)"></span>
+            <span class="swatch-name">Dorado</span>
+          </button>
+          <button class="theme-swatch" data-theme="lila" onclick="applyTheme('lila',this)" title="Lila">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#8b6bbf,#b39ddb)"></span>
+            <span class="swatch-name">Lila</span>
+          </button>
+          <button class="theme-swatch" data-theme="rose" onclick="applyTheme('rose',this)" title="Rosa">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#c2607a,#e8a0b0)"></span>
+            <span class="swatch-name">Rosa</span>
+          </button>
+          <button class="theme-swatch" data-theme="teal" onclick="applyTheme('teal',this)" title="Verde azul">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#3d9ea8,#72c7cf)"></span>
+            <span class="swatch-name">Verde</span>
+          </button>
+          <button class="theme-swatch" data-theme="slate" onclick="applyTheme('slate',this)" title="Pizarra">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#5870a0,#8898c8)"></span>
+            <span class="swatch-name">Azul</span>
+          </button>
+          <button class="theme-swatch" data-theme="ember" onclick="applyTheme('ember',this)" title="Ember">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#c05a3a,#e08060)"></span>
+            <span class="swatch-name">Coral</span>
+          </button>
+        </div>
+
+        <div class="divider"></div>
         <div class="config-section-title">Días Festivos 2026</div>
         <div class="festivos-wrap" id="festivosList" style="margin-bottom:2rem;"></div>
 
@@ -3427,6 +3511,49 @@
     </div>
 
   </div>
+
+  <!-- Temas de color (global, antes del módulo Firebase) -->
+  <script>
+    var THEMES = {
+      gold:  { accent:'#b8965a', accent2:'#d4ae74', dim:'rgba(184,150,90,0.10)', glow:'rgba(184,150,90,0.18)' },
+      lila:  { accent:'#8b6bbf', accent2:'#b39ddb', dim:'rgba(139,107,191,0.10)', glow:'rgba(139,107,191,0.18)' },
+      rose:  { accent:'#c2607a', accent2:'#e8a0b0', dim:'rgba(194,96,122,0.10)', glow:'rgba(194,96,122,0.18)' },
+      teal:  { accent:'#3d9ea8', accent2:'#72c7cf', dim:'rgba(61,158,168,0.10)', glow:'rgba(61,158,168,0.18)' },
+      slate: { accent:'#5870a0', accent2:'#8898c8', dim:'rgba(88,112,160,0.10)', glow:'rgba(88,112,160,0.18)' },
+      ember: { accent:'#c05a3a', accent2:'#e08060', dim:'rgba(192,90,58,0.10)', glow:'rgba(192,90,58,0.18)' },
+    };
+
+    function applyTheme(name, btn) {
+      var t = THEMES[name];
+      if (!t) return;
+      var r = document.documentElement.style;
+      r.setProperty('--accent',      t.accent);
+      r.setProperty('--accent2',     t.accent2);
+      r.setProperty('--accent-dim',  t.dim);
+      r.setProperty('--accent-glow', t.glow);
+      document.querySelectorAll('.theme-swatch').forEach(function(s){ s.classList.remove('active'); });
+      if (btn) {
+        btn.classList.add('active');
+      } else {
+        var target = document.querySelector('.theme-swatch[data-theme="' + name + '"]');
+        if (target) target.classList.add('active');
+      }
+      try { localStorage.setItem('nomina_color_theme', name); } catch(e){}
+    }
+
+    // Cargar tema al iniciar (antes que nada)
+    (function(){
+      try {
+        var saved = localStorage.getItem('nomina_color_theme') || 'gold';
+        var t = THEMES[saved] || THEMES['gold'];
+        var r = document.documentElement.style;
+        r.setProperty('--accent',      t.accent);
+        r.setProperty('--accent2',     t.accent2);
+        r.setProperty('--accent-dim',  t.dim);
+        r.setProperty('--accent-glow', t.glow);
+      } catch(e){}
+    })();
+  </script>
 
   <!-- Firebase + Logic -->
   <script type="module">
@@ -3752,7 +3879,7 @@
     let myChart = null;
     let lightMode = true;
 
-    function applyTheme(isLight) {
+    function applyDarkLight(isLight) {
       const btn = document.getElementById('modeBtn');
       if (isLight) {
         document.documentElement.style.setProperty('--bg', '#fafafa');
@@ -3784,17 +3911,17 @@
 
     // Restore saved theme on load. Claro es el tema principal por defecto.
     try {
-      const savedTheme = localStorage.getItem('nomina_theme');
+      const savedTheme = localStorage.getItem('nomina_darkmode');
       lightMode = savedTheme ? savedTheme === 'light' : true;
     } catch (e) {
       lightMode = true;
     }
-    applyTheme(lightMode);
+    applyDarkLight(lightMode);
 
     function toggleDarkMode() {
       lightMode = !lightMode;
-      applyTheme(lightMode);
-      try { localStorage.setItem('nomina_theme', lightMode ? 'light' : 'dark'); } catch (e) { }
+      applyDarkLight(lightMode);
+      try { localStorage.setItem('nomina_darkmode', lightMode ? 'light' : 'dark'); } catch (e) { }
       if (myChart) renderAll();
     }
 
@@ -4248,17 +4375,35 @@ REGLAS:
       const trigger = document.getElementById('cddTrigger');
       const menu    = document.getElementById('cddMenu');
       const isOpen  = menu.classList.contains('open');
-      if (isOpen) { closeCdd(); } else {
-        trigger.classList.add('open');
-        menu.classList.add('open');
-        // Cerrar al click fuera
-        setTimeout(() => document.addEventListener('click', closeCddOutside, { once: true }), 0);
-      }
+      if (isOpen) { closeCdd(); return; }
+      // Posicionar el menú fixed justo debajo del trigger
+      const rect = trigger.getBoundingClientRect();
+      menu.style.top   = (rect.bottom + 6) + 'px';
+      menu.style.left  = rect.left + 'px';
+      menu.style.width = rect.width + 'px';
+      trigger.classList.add('open');
+      menu.classList.add('open');
+      // Reposicionar si hay scroll
+      menu._scrollHandler = () => {
+        const r2 = trigger.getBoundingClientRect();
+        menu.style.top  = (r2.bottom + 6) + 'px';
+        menu.style.left = r2.left + 'px';
+      };
+      window.addEventListener('scroll', menu._scrollHandler, { passive: true });
+      setTimeout(() => document.addEventListener('click', closeCddOutside, { once: true }), 0);
     }
 
     function closeCdd() {
-      document.getElementById('cddTrigger')?.classList.remove('open');
-      document.getElementById('cddMenu')?.classList.remove('open');
+      const trigger = document.getElementById('cddTrigger');
+      const menu    = document.getElementById('cddMenu');
+      if (trigger) trigger.classList.remove('open');
+      if (menu) {
+        menu.classList.remove('open');
+        if (menu._scrollHandler) {
+          window.removeEventListener('scroll', menu._scrollHandler);
+          menu._scrollHandler = null;
+        }
+      }
     }
 
     function closeCddOutside(e) {
@@ -4293,12 +4438,45 @@ REGLAS:
       });
     }
 
+    function animateSection(el, show) {
+      if (show) {
+        el.classList.remove('hidden');
+        el.style.overflow = 'hidden';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-8px)';
+        el.style.maxHeight = '0';
+        el.style.transition = 'none';
+        requestAnimationFrame(() => {
+          el.style.transition = 'max-height .32s cubic-bezier(0.16,1,0.3,1), opacity .25s ease, transform .28s cubic-bezier(0.16,1,0.3,1)';
+          el.style.maxHeight = el.scrollHeight + 40 + 'px';
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+          setTimeout(() => { el.style.maxHeight = ''; el.style.overflow = ''; }, 340);
+        });
+      } else {
+        el.style.overflow = 'hidden';
+        el.style.maxHeight = el.scrollHeight + 'px';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+        requestAnimationFrame(() => {
+          el.style.transition = 'max-height .28s cubic-bezier(0.4,0,1,1), opacity .2s ease, transform .22s ease';
+          el.style.maxHeight = '0';
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(-6px)';
+          setTimeout(() => { el.classList.add('hidden'); el.style.cssText = ''; }, 290);
+        });
+      }
+    }
+
     function toggleTipoDia() {
       const tipo = document.getElementById('tipoDia').value;
       const secH = document.getElementById('secHoras');
       const secD = document.getElementById('secDiagnostico');
-      secH.classList.toggle('hidden', tipo !== 'NORMAL');
-      secD.classList.toggle('hidden', tipo !== 'INCAPACIDAD' && tipo !== 'COMPENSATORIO');
+      const showH = tipo === 'NORMAL';
+      const showD = tipo === 'INCAPACIDAD' || tipo === 'COMPENSATORIO';
+      const isHidden = el => el.classList.contains('hidden');
+      if (showH !== !isHidden(secH)) animateSection(secH, showH);
+      if (showD !== !isHidden(secD)) animateSection(secD, showD);
     }
 
     function isNocturno(d) { let h = d.getHours(); return h >= 19 || h < 6; }
@@ -5183,6 +5361,16 @@ REGLAS:
     setInterval(updateClock, 1000);
     updateClock();
     if (window.lucide) lucide.createIcons();
+
+    // Marcar swatch activo según tema guardado
+    (function syncActiveSwatch() {
+      try {
+        const saved = localStorage.getItem('nomina_color_theme') || 'gold';
+        document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
+        const active = document.querySelector(`.theme-swatch[data-theme="${saved}"]`);
+        if (active) active.classList.add('active');
+      } catch(e){}
+    })();
 
     // Fecha actual por defecto
     (function setTodayDate() {
