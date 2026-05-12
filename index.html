@@ -3008,99 +3008,27 @@
     }
 
     /* ── Refined Responsive Fixes (< 380px) ── */
-    @media (max-width: 380px) {
+    /* ── Definitive Structural Fixes ── */
+    #tab-nomina {
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+    }
+
+    /* ── Global Compact Optimization (< 382px) ── */
+    @media (max-width: 382px) {
       .header {
         padding: 0.55rem 0.9rem !important;
         border-radius: 9999px !important;
-        /* Back to bubble shape as requested */
         top: 0.5rem !important;
         gap: 0.5rem !important;
       }
 
       .header-logo {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
       }
 
       .header-sub {
-        font-size: 0.58rem !important;
-        margin-top: 0.1rem !important;
-      }
-
-      .header-actions {
-        gap: 0.35rem !important;
-      }
-
-      #liveClock {
-        font-size: 0.7rem !important;
-        padding-right: 0 !important;
-      }
-
-      .header-actions .btn-danger {
-        padding: 0.25rem 0.5rem !important;
-        font-size: 0.58rem !important;
-      }
-
-      .icon-btn {
-        min-width: 24px !important;
-        min-height: 24px !important;
-        width: 24px !important;
-        height: 24px !important;
-        font-size: 0.65rem !important;
-      }
-
-      .festivo-tag {
-        flex: 1 0 30%;
-        text-align: center;
-        padding: 0.2rem 0.4rem !important;
-        font-size: 0.6rem !important;
-      }
-
-      .reg-item {
-        padding: 0.85rem 1rem !important;
-      }
-
-      .reg-type {
-        font-size: 0.85rem !important;
-      }
-
-      .reg-amount {
-        font-size: 0.9rem !important;
-      }
-
-      .reg-actions .icon-btn {
-        width: 26px !important;
-        height: 26px !important;
-        min-width: 26px !important;
-        min-height: 26px !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
-
-      .reg-actions .tab-icon {
-        width: 14px !important;
-        height: 14px !important;
-      }
-
-      .reg-date,
-      .reg-time {
-        font-size: 0.65rem !important;
-      }
-
-      .section-title {
-        font-size: 0.9rem !important;
-        margin-top: 1.5rem !important;
-      }
-
-      .config-grid .inp {
-        padding: 0.6rem 0.85rem !important;
-        font-size: 0.85rem !important;
-        min-height: 40px !important;
-      }
-
-      .form-label {
-        font-size: 0.6rem !important;
+        font-size: 0.55rem !important;
       }
 
       .nav {
@@ -3110,149 +3038,33 @@
       }
 
       .nav-btn {
-        font-size: 0.42rem !important;
+        font-size: 0.4rem !important;
         padding: 0.35rem 0.05rem !important;
-        gap: 0.1rem !important;
-      }
-
-      .nav-btn .tab-icon {
-        font-size: 0.95rem !important;
-      }
-
-      .reg-pill {
-        font-size: 0.72rem !important;
-        padding: 0.5rem !important;
-      }
-
-      /* Nómina Section Reductions */
-      /* Nómina Section Reductions */
-      .concepts-table th,
-      .concepts-table td {
-        font-size: 0.68rem !important;
-        padding: 0.45rem 0.35rem !important;
-      }
-
-      .payroll-total {
-        font-size: 0.95rem !important;
-      }
-
-      .deductions-title {
-        font-size: 0.8rem !important;
-      }
-
-      .deduction-item {
-        font-size: 0.62rem !important;
-      }
-
-      .stat-card,
-      .kpi-card {
-        padding: 1.15rem 0.9rem !important;
-      }
-
-      /* Proyección Section */
-      #projValue {
-        font-size: 1.1rem !important;
-      }
-
-      #tab-nomina .card div[style*="font-size:1.1rem"] {
-        font-size: 0.85rem !important;
-      }
-
-      /* Past Periods Search (Bitácoras) */
-      #pastPeriodsCard {
-        padding: 1.1rem 0.85rem !important;
-      }
-      #pastPeriodsCard > div:last-child {
-        padding: 0.85rem !important;
-      }
-      #pastPeriodsCard div[style*="display:grid"] {
-        gap: 0.5rem !important;
-      }
-      #pastPeriodsCard .inp {
-        padding: 0.4rem 0.55rem !important;
-        font-size: 0.7rem !important;
-        min-height: 32px !important;
-      }
-      #pastPeriodsCard .btn {
-        padding: 0.45rem 0.75rem !important;
-        font-size: 0.7rem !important;
-      }
-      #pastPeriodsCard .form-label {
-        font-size: 0.55rem !important;
-        margin-bottom: 0.2rem !important;
-      }
-
-      .stat-val,
-      .kpi-val {
-        font-size: 1.4rem !important;
-      }
-
-      #editModal {
-        align-items: flex-start !important;
-        padding: 1.5rem 0.75rem !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-      }
-
-      .modal-card {
-        padding: 1.75rem 1.25rem !important;
-        margin-top: auto !important;
-        margin-bottom: auto !important;
-      }
-
-      /* Footer Buttons (Exportar / Cerrar) */
-      .payroll-footer .btn {
-        padding: 0.4rem 0.65rem !important;
-        font-size: 0.68rem !important;
-        flex: 1;
-      }
-
-      .payroll-footer {
-        gap: 0.4rem !important;
-        margin-top: 0.85rem !important;
-      }
-
-      /* Assistant & General Buttons */
-      .assistant-icon {
-        font-size: 2rem !important;
-        margin-bottom: 0.5rem !important;
-      }
-
-      #tab-asistente h2 {
-        font-size: 1.2rem !important;
-      }
-
-      #tab-asistente .card {
-        padding: 2rem 1.25rem !important;
-      }
-
-      .btn {
-        padding: 0.6rem 1rem !important;
-        font-size: 0.75rem !important;
-      }
-    }
-
-    @media (max-width: 340px) {
-      .header {
-        padding: 0.4rem 0.7rem !important;
-      }
-
-      .nav {
-        max-width: 300px !important;
-        padding: 0.25rem !important;
-      }
-
-      .nav-btn {
-        font-size: 0.38rem !important;
-        padding: 0.3rem 0.05rem !important;
-      }
-
-      .nav {
-        max-width: 290px !important;
       }
 
       .nav-btn .tab-icon {
         font-size: 0.9rem !important;
+      }
+
+      body {
+        font-size: 0.88rem !important;
+      }
+
+      .section-title {
+        font-size: 0.8rem !important;
+        margin-top: 1.25rem !important;
+      }
+
+      .stat-val,
+      .kpi-val {
+        font-size: 1.15rem !important;
+      }
+
+      .reg-actions .icon-btn {
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px !important;
+        min-height: 26px !important;
       }
 
       .reg-pill {
@@ -3260,109 +3072,77 @@
         padding: 0.45rem !important;
       }
 
-      .header-logo {
-        font-size: 1rem !important;
-      }
-
-      .header-sub {
-        font-size: 0.52rem !important;
-      }
-
-      #liveClock {
-        display: none !important;
-        /* Hide clock on absolute smallest screens to keep it slim */
-      }
-
-      .stat-val,
-      .kpi-val {
-        font-size: 1.25rem !important;
-      }
-
-      .modal-card {
-        padding: 1.25rem 1rem !important;
-      }
-
-      .deductions-grid {
-        grid-template-columns: 1fr !important;
-      }
-
       .concepts-table th,
       .concepts-table td {
-        font-size: 0.6rem !important;
-        padding: 0.3rem 0.15rem !important;
-      }
-
-      .payroll-total {
-        font-size: 0.8rem !important;
+        font-size: 0.62rem !important;
+        padding: 0.4rem 0.3rem !important;
       }
 
       #projValue {
         font-size: 0.95rem !important;
       }
 
-      .reg-item {
-        padding: 0.7rem 0.85rem !important;
-      }
-
-      .reg-type {
+      .payroll-total {
         font-size: 0.8rem !important;
       }
 
-      .reg-amount {
-        font-size: 0.85rem !important;
-      }
-
-      .reg-actions .icon-btn {
-        width: 24px !important;
-        height: 24px !important;
-        min-width: 24px !important;
-        min-height: 24px !important;
-      }
-
-      .reg-actions .tab-icon {
-        width: 12px !important;
-        height: 12px !important;
-      }
-
-      .config-grid .inp {
-        padding: 0.55rem 0.75rem !important;
-        font-size: 0.8rem !important;
+      /* Force single column for Bitácoras on compact screens */
+      #pastPeriodsCard div[style*="display:grid"] {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
       }
 
       #pastPeriodsCard {
-        padding: 1rem !important;
+        padding: 1rem 0.85rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      #pastPeriodsCard > div:last-child {
+        padding: 0.75rem !important; /* Reduced from 1.5rem to give more space */
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
 
       #pastPeriodsCard .inp {
-        padding: 0.35rem 0.55rem !important;
-        font-size: 0.68rem !important;
-        min-height: 32px !important;
-      }
-
-      #pastPeriodsCard .btn {
-        padding: 0.4rem 0.6rem !important;
-      }
-
-      .payroll-footer .btn {
-        padding: 0.3rem 0.5rem !important;
-        font-size: 0.62rem !important;
+        font-size: 0.75rem !important;
+        min-height: 36px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
 
       .assistant-icon {
-        font-size: 1.5rem !important;
+        font-size: 1.6rem !important;
       }
 
-      #tab-asistente h2 {
-        font-size: 1rem !important;
-      }
-
-      #tab-asistente .card {
-        padding: 1.5rem 1rem !important;
+      .inp {
+        font-size: 0.75rem !important;
       }
 
       .btn {
-        padding: 0.5rem 0.8rem !important;
-        font-size: 0.7rem !important;
+        font-size: 0.68rem !important;
+        padding: 0.5rem 0.75rem !important;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .header-logo {
+        font-size: 0.9rem !important;
+      }
+
+      .nav-btn {
+        font-size: 0.36rem !important;
+      }
+
+      .stat-val,
+      .kpi-val {
+        font-size: 1.05rem !important;
+      }
+
+      #projValue {
+        font-size: 0.85rem !important;
       }
     }
   </style>
