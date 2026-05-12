@@ -2536,6 +2536,121 @@
       opacity: .75;
     }
 
+    /* ── Fecha input: tamaño fijo aunque esté vacío ── */
+    .reg-date-inp {
+      min-height: 42px !important;
+      height: 42px !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+
+    /* ── Custom dropdown Estado ── */
+    .cdd-wrap {
+      position: relative;
+    }
+
+    .cdd-trigger {
+      width: 100%;
+      min-height: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .4rem;
+      padding: 0 .85rem;
+      background: var(--surface2);
+      border: 1.5px solid transparent;
+      border-radius: 14px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: .82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+      text-align: left;
+    }
+
+    .cdd-trigger:hover {
+      border-color: var(--border2);
+      background: var(--surface);
+    }
+
+    .cdd-trigger.open {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+      background: var(--surface);
+    }
+
+    .cdd-arrow {
+      width: 16px;
+      height: 16px;
+      color: var(--muted);
+      flex-shrink: 0;
+      transition: transform .22s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    .cdd-trigger.open .cdd-arrow {
+      transform: rotate(180deg);
+    }
+
+    .cdd-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.09);
+      overflow: hidden;
+      z-index: 500;
+      opacity: 0;
+      transform: translateY(-6px) scale(.98);
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    .cdd-menu.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+
+    .cdd-opt {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .72rem .9rem;
+      background: transparent;
+      border: none;
+      font-family: var(--font-sans);
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      transition: background .15s;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cdd-opt:last-child { border-bottom: none; }
+
+    .cdd-opt:hover { background: var(--surface2); }
+
+    .cdd-opt.cdd-opt-active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .cdd-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
     /* ── Registro rediseñado ── */
     .reg-card {
       padding: 1.35rem 1.25rem 1.25rem;
@@ -3078,20 +3193,44 @@
 
         <form id="formTurno">
 
-          <!-- Fila fecha + estado como pill-row -->
+          <!-- Fila fecha + estado -->
           <div class="reg-pill-row">
             <div class="reg-field-wrap">
               <label class="reg-label">Fecha</label>
-              <input type="date" id="fecha" required class="inp reg-inp">
+              <input type="date" id="fecha" required class="inp reg-inp reg-date-inp">
             </div>
             <div class="reg-field-wrap">
               <label class="reg-label">Estado</label>
-              <select id="tipoDia" onchange="toggleTipoDia()" class="inp reg-inp">
+              <!-- Select oculto para mantener compatibilidad con el resto del JS -->
+              <select id="tipoDia" onchange="toggleTipoDia()" style="display:none;">
                 <option value="NORMAL">Turno Laborado</option>
                 <option value="COMPENSATORIO">Compensatorio</option>
                 <option value="INCAPACIDAD">Incapacidad</option>
                 <option value="NO_LABORADO">No Citado</option>
               </select>
+              <!-- Dropdown custom -->
+              <div class="cdd-wrap" id="cddWrap">
+                <button type="button" class="cdd-trigger" id="cddTrigger" onclick="toggleCdd()">
+                  <span id="cddLabel">Turno Laborado</span>
+                  <svg class="cdd-arrow" id="cddArrow" viewBox="0 0 20 20" fill="none">
+                    <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <div class="cdd-menu" id="cddMenu">
+                  <button type="button" class="cdd-opt cdd-opt-active" data-val="NORMAL" onclick="selectCdd(this)">
+                    <span class="cdd-dot" style="background:var(--accent)"></span>Turno Laborado
+                  </button>
+                  <button type="button" class="cdd-opt" data-val="COMPENSATORIO" onclick="selectCdd(this)">
+                    <span class="cdd-dot" style="background:var(--info)"></span>Compensatorio
+                  </button>
+                  <button type="button" class="cdd-opt" data-val="INCAPACIDAD" onclick="selectCdd(this)">
+                    <span class="cdd-dot" style="background:var(--danger)"></span>Incapacidad
+                  </button>
+                  <button type="button" class="cdd-opt" data-val="NO_LABORADO" onclick="selectCdd(this)">
+                    <span class="cdd-dot" style="background:var(--muted)"></span>No Citado
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -4063,6 +4202,56 @@ REGLAS:
       document.getElementById('dashTip').innerHTML = tip;
     }
 
+    // ── Custom dropdown Estado ──────────────────────────────────────
+    function toggleCdd() {
+      const trigger = document.getElementById('cddTrigger');
+      const menu    = document.getElementById('cddMenu');
+      const isOpen  = menu.classList.contains('open');
+      if (isOpen) { closeCdd(); } else {
+        trigger.classList.add('open');
+        menu.classList.add('open');
+        // Cerrar al click fuera
+        setTimeout(() => document.addEventListener('click', closeCddOutside, { once: true }), 0);
+      }
+    }
+
+    function closeCdd() {
+      document.getElementById('cddTrigger')?.classList.remove('open');
+      document.getElementById('cddMenu')?.classList.remove('open');
+    }
+
+    function closeCddOutside(e) {
+      if (!document.getElementById('cddWrap')?.contains(e.target)) closeCdd();
+      else document.addEventListener('click', closeCddOutside, { once: true });
+    }
+
+    function selectCdd(btn) {
+      const val   = btn.dataset.val;
+      const label = btn.textContent.trim();
+      // Actualizar label visible
+      document.getElementById('cddLabel').textContent = label;
+      // Sincronizar select oculto
+      const sel = document.getElementById('tipoDia');
+      sel.value = val;
+      // Marcar activo
+      document.querySelectorAll('.cdd-opt').forEach(o => o.classList.remove('cdd-opt-active'));
+      btn.classList.add('cdd-opt-active');
+      closeCdd();
+      toggleTipoDia();
+    }
+
+    // Sincronizar dropdown custom cuando el JS interno setea tipoDia.value
+    // (edición de registros existentes)
+    function syncCddFromSelect() {
+      const sel = document.getElementById('tipoDia');
+      const val = sel.value;
+      const labels = { NORMAL:'Turno Laborado', COMPENSATORIO:'Compensatorio', INCAPACIDAD:'Incapacidad', NO_LABORADO:'No Citado' };
+      document.getElementById('cddLabel').textContent = labels[val] || 'Turno Laborado';
+      document.querySelectorAll('.cdd-opt').forEach(o => {
+        o.classList.toggle('cdd-opt-active', o.dataset.val === val);
+      });
+    }
+
     function toggleTipoDia() {
       const tipo = document.getElementById('tipoDia').value;
       const secH = document.getElementById('secHoras');
@@ -4324,6 +4513,7 @@ REGLAS:
       if (!r) return;
       document.getElementById('fecha').value = r.fecha;
       document.getElementById('tipoDia').value = r.tipo;
+      syncCddFromSelect();
       toggleTipoDia();
       if (r.tipo === 'NORMAL' && r.rawHoras) {
         document.getElementById('hInicio').value = r.rawHoras.hI || '';
