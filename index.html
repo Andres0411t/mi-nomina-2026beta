@@ -3586,42 +3586,83 @@
     // ── SYNC ──────────────────────────────────────────────────────────────────
     window.syncReady = false;
 
-    async function syncFromCloud() {
+    async function syncFromCloud(intento = 1) {
       if (!window.currentUser) return;
-      const docSnap = await getDoc(doc(fb_db, 'usuarios', window.currentUser.uid));
-      if (docSnap.exists()) {
-        const d = docSnap.data();
-        window.db = d.db || [];
-        window.historialDB = d.historial || [];
-        let cfgCargada = d.cfg || window.cfgDefault;
 
-        // ── Migración automática de valores legales ──────────────────
-        // Si la cfg guardada tiene valores desactualizados (de períodos anteriores),
-        // se actualizan silenciosamente para que reflejen la ley vigente.
-        // Solo se migran los campos controlados por ley; los personalizados (hora, rn, hed, hen) se respetan.
-        const hoy = new Date();
-        let huboCambioLegal = false;
-        if (hoy >= window.CORTE_DOM90) {
-          if (cfgCargada.dom < 90)   { cfgCargada.dom  = 90;  huboCambioLegal = true; }
-          if (cfgCargada.hedd < 115) { cfgCargada.hedd = 115; huboCambioLegal = true; }
-          if (cfgCargada.hend < 165) { cfgCargada.hend = 165; huboCambioLegal = true; }
+      // Mostrar indicador de carga en el header si tarda
+      const loadingTimer = setTimeout(() => {
+        const sub = document.getElementById('headerSubText');
+        if (sub && !sub.dataset.original) {
+          sub.dataset.original = sub.innerText;
+          sub.innerText = 'Cargando datos...';
         }
-        if (hoy >= window.CORTE_42H) {
-          if (cfgCargada.hora <= 7959)              { cfgCargada.hora = 8337;            huboCambioLegal = true; }
-          if (cfgCargada.auxTranspMensual < 249095) { cfgCargada.auxTranspMensual = 249095; huboCambioLegal = true; }
+      }, 600);
+
+      try {
+        const docSnap = await getDoc(doc(fb_db, 'usuarios', window.currentUser.uid));
+
+        clearTimeout(loadingTimer);
+        // Restaurar texto del header si se cambió
+        const sub = document.getElementById('headerSubText');
+        if (sub && sub.dataset.original) {
+          sub.innerText = sub.dataset.original;
+          delete sub.dataset.original;
         }
-        window.cfg = cfgCargada;
-        window.syncReady = true;
-        // Si hubo migración legal, persistir inmediatamente en Firebase
-        if (huboCambioLegal && window.saveToCloud) await window.saveToCloud();
-        document.getElementById('cfgHora').value = window.cfg.hora;
-        document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
-        document.getElementById('cfgRN').value = window.cfg.rn;
-        document.getElementById('cfgDOM').value = window.cfg.dom;
-        document.getElementById('cfgHED').value = window.cfg.hed;
-        document.getElementById('cfgHEN').value = window.cfg.hen;
-        renderAll(); renderHistorial();
-        if (!document.getElementById('dashboard').classList.contains('hidden')) renderDashboard();
+
+        if (docSnap.exists()) {
+          const d = docSnap.data();
+          window.db = d.db || [];
+          window.historialDB = d.historial || [];
+          let cfgCargada = d.cfg || window.cfgDefault;
+
+          // ── Migración automática de valores legales ──────────────────
+          const hoy = new Date();
+          let huboCambioLegal = false;
+          if (hoy >= window.CORTE_DOM90) {
+            if (cfgCargada.dom < 90)   { cfgCargada.dom  = 90;  huboCambioLegal = true; }
+            if (cfgCargada.hedd < 115) { cfgCargada.hedd = 115; huboCambioLegal = true; }
+            if (cfgCargada.hend < 165) { cfgCargada.hend = 165; huboCambioLegal = true; }
+          }
+          if (hoy >= window.CORTE_42H) {
+            if (cfgCargada.hora <= 7959)              { cfgCargada.hora = 8337;            huboCambioLegal = true; }
+            if (cfgCargada.auxTranspMensual < 249095) { cfgCargada.auxTranspMensual = 249095; huboCambioLegal = true; }
+          }
+          window.cfg = cfgCargada;
+          window.syncReady = true;
+          if (huboCambioLegal && window.saveToCloud) await window.saveToCloud();
+          document.getElementById('cfgHora').value = window.cfg.hora;
+          document.getElementById('cfgTransp').value = window.cfg.auxTranspMensual;
+          document.getElementById('cfgRN').value = window.cfg.rn;
+          document.getElementById('cfgDOM').value = window.cfg.dom;
+          document.getElementById('cfgHED').value = window.cfg.hed;
+          document.getElementById('cfgHEN').value = window.cfg.hen;
+          renderAll(); renderHistorial();
+          if (!document.getElementById('dashboard').classList.contains('hidden')) renderDashboard();
+        }
+      } catch (err) {
+        clearTimeout(loadingTimer);
+        console.warn(`syncFromCloud intento ${intento} falló:`, err);
+
+        const maxIntentos = 4;
+        const delays = [1500, 3000, 6000]; // esperas entre reintentos
+        if (intento <= maxIntentos) {
+          const delay = delays[intento - 1] || 6000;
+          // Mostrar estado de reintento en header
+          const sub = document.getElementById('headerSubText');
+          if (sub) {
+            sub.dataset.original = sub.dataset.original || sub.innerText;
+            sub.innerText = `Reconectando... (${intento}/${maxIntentos})`;
+          }
+          setTimeout(() => syncFromCloud(intento + 1), delay);
+        } else {
+          // Agotados los reintentos — mostrar alerta no bloqueante
+          const sub = document.getElementById('headerSubText');
+          if (sub && sub.dataset.original) {
+            sub.innerText = sub.dataset.original;
+            delete sub.dataset.original;
+          }
+          showToast('No se pudieron cargar los datos. Verifica tu conexión y recarga la página.', 'error', 0);
+        }
       }
     }
 
