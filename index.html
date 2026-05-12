@@ -315,7 +315,7 @@
     .btn-success {
       background: var(--success-dim);
       color: var(--success);
-      border: 1.5px solid rgba(74, 155, 122, 0.18);
+      border: 1.5px solid rgba(122, 138, 102, 0.18);
     }
 
     .btn-success:hover {
@@ -1093,7 +1093,7 @@
     }
 
     .stat-card.featured .stat-val {
-      font-size: 2rem;
+      font-size: 1.6rem;
       color: #ffffff;
     }
 
@@ -3299,36 +3299,13 @@
             </div>
             <div class="reg-field-wrap">
               <label class="reg-label">Estado</label>
-              <!-- Select oculto para mantener compatibilidad con el resto del JS -->
-              <select id="tipoDia" onchange="toggleTipoDia()" style="display:none;">
+              <!-- Select nativo del sistema para una experiencia más estable -->
+              <select id="tipoDia" onchange="toggleTipoDia()" class="inp reg-inp" style="width:100%;min-height:42px;">
                 <option value="NORMAL">Turno Laborado</option>
                 <option value="COMPENSATORIO">Compensatorio</option>
                 <option value="INCAPACIDAD">Incapacidad</option>
                 <option value="NO_LABORADO">No Citado</option>
               </select>
-              <!-- Dropdown custom -->
-              <div class="cdd-wrap" id="cddWrap">
-                <button type="button" class="cdd-trigger" id="cddTrigger" onclick="toggleCdd()">
-                  <span id="cddLabel">Turno Laborado</span>
-                  <svg class="cdd-arrow" id="cddArrow" viewBox="0 0 20 20" fill="none">
-                    <path d="M5 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-                <div class="cdd-menu" id="cddMenu">
-                  <button type="button" class="cdd-opt cdd-opt-active" data-val="NORMAL" onclick="selectCdd(this)">
-                    <span class="cdd-dot" style="background:var(--accent)"></span>Turno Laborado
-                  </button>
-                  <button type="button" class="cdd-opt" data-val="COMPENSATORIO" onclick="selectCdd(this)">
-                    <span class="cdd-dot" style="background:var(--info)"></span>Compensatorio
-                  </button>
-                  <button type="button" class="cdd-opt" data-val="INCAPACIDAD" onclick="selectCdd(this)">
-                    <span class="cdd-dot" style="background:var(--danger)"></span>Incapacidad
-                  </button>
-                  <button type="button" class="cdd-opt" data-val="NO_LABORADO" onclick="selectCdd(this)">
-                    <span class="cdd-dot" style="background:var(--muted)"></span>No Citado
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -3567,11 +3544,11 @@
         accent:'#b8965a', accent2:'#d4ae74',
         dim:'rgba(184,150,90,0.10)', glow:'rgba(184,150,90,0.18)',
         danger:'#d96c60',  dangerDim:'rgba(217,108,96,0.08)',
-        success:'#57a787', successDim:'rgba(87,167,135,0.08)',
-        info:'#5878c0',
+        success:'#62745f', successDim:'rgba(98,116,95,0.08)',
+        info:'#6f748d',
         dangerDk:'#d96c60',  dangerDimDk:'rgba(217,108,96,0.10)',
-        successDk:'#57a787', successDimDk:'rgba(87,167,135,0.10)',
-        infoDk:'#5878c0',
+        successDk:'#62745f', successDimDk:'rgba(98,116,95,0.10)',
+        infoDk:'#6f748d',
         light: null,
         dark:  null,
       },
@@ -4742,16 +4719,6 @@ REGLAS:
 
     // Sincronizar dropdown custom cuando el JS interno setea tipoDia.value
     // (edición de registros existentes)
-    function syncCddFromSelect() {
-      const sel = document.getElementById('tipoDia');
-      const val = sel.value;
-      const labels = { NORMAL:'Turno Laborado', COMPENSATORIO:'Compensatorio', INCAPACIDAD:'Incapacidad', NO_LABORADO:'No Citado' };
-      document.getElementById('cddLabel').textContent = labels[val] || 'Turno Laborado';
-      document.querySelectorAll('.cdd-opt').forEach(o => {
-        o.classList.toggle('cdd-opt-active', o.dataset.val === val);
-      });
-    }
-
     function animateSection(el, show) {
       if (show) {
         el.classList.remove('hidden');
@@ -5046,7 +5013,6 @@ REGLAS:
       if (!r) return;
       document.getElementById('fecha').value = r.fecha;
       document.getElementById('tipoDia').value = r.tipo;
-      syncCddFromSelect();
       toggleTipoDia();
       if (r.tipo === 'NORMAL' && r.rawHoras) {
         document.getElementById('hInicio').value = r.rawHoras.hI || '';
@@ -5116,7 +5082,7 @@ REGLAS:
         let timeStr = '';
         if (r.tipo === 'NORMAL' && r.rawHoras) {
           timeStr = `${r.rawHoras.hI} → ${r.rawHoras.hF}`;
-          if (r.rawHoras.hBO && r.rawHoras.hBI) timeStr += ` · ☕ ${r.rawHoras.hBO}–${r.rawHoras.hBI}`;
+          if (r.rawHoras.hBO && r.rawHoras.hBI) timeStr += ` · <span class="rest-icon-wrapper"><i data-lucide="bed" style="width:14px;height:14px;vertical-align:middle;"></i> ${r.rawHoras.hBO}–${r.rawHoras.hBI}`;
         }
 
         const labelsDesglose = { ordD: 'H. Ordinaria Diurna', ordN: 'Recargo Nocturno', extD: 'Extra Diurna', extN: 'Extra Nocturna', domD: 'Dom/Fest Diurno', domN: 'Dom/Fest Nocturno', edd: 'Extra Dom. Diurno', edn: 'Extra Dom. Nocturno', INCAP: 'Incapacidad', COMPENSATORIO: 'Compensatorio' };
@@ -5166,6 +5132,7 @@ REGLAS:
       });
 
       renderChart(sumas);
+      if (window.lucide) lucide.createIcons();
 
       let tr = (window.cfg.auxTranspMensual / 30) * diasT;
       let de = baseDeducible * 0.08;
