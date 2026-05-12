@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mi Nómina</title>
-  <meta name="theme-color" content="#b8965a">
+  <meta name="theme-color" id="metaThemeColor" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Mi Nomina">
   <link rel="manifest" href="manifest.json">
@@ -3222,6 +3222,15 @@
         font-size: 0.68rem !important;
         padding: 0.5rem 0.75rem !important;
       }
+
+      .reg-submit {
+        width: 100% !important;
+        padding: 0.85rem !important;
+        font-size: 0.75rem !important;
+        border-radius: 9999px !important;
+        margin-top: 0.75rem !important;
+        letter-spacing: 0.05em !important;
+      }
     }
 
     @media (max-width: 320px) {
@@ -4121,6 +4130,13 @@
         if (target) target.classList.add('active');
       }
       try { localStorage.setItem('nomina_color_theme', name); } catch (e) { }
+
+      // Sincronizar color de la barra del sistema (Chrome Android)
+      setTimeout(function() {
+        var isLight = (typeof lightMode !== 'undefined') ? lightMode : true;
+        var m = document.getElementById('metaThemeColor');
+        if (m) m.setAttribute('content', isLight ? '#ffffff' : '#000000');
+      }, 50);
     };
 
     // Cargar tema al iniciar (antes que nada)
@@ -4172,6 +4188,12 @@
           }
         }
         window._currentThemeName = saved;
+
+        // Sincronizar meta tag al arrancar
+        setTimeout(function() {
+          var m = document.getElementById('metaThemeColor');
+          if (m) m.setAttribute('content', isLightStart ? '#ffffff' : '#000000');
+        }, 100);
       } catch (e) { }
     })();
   </script>
@@ -4536,6 +4558,10 @@
         if (btn) btn.innerHTML = '<i data-lucide="sun"></i>';
       }
       if (window.lucide) lucide.createIcons();
+
+      // Sincronizar meta tag al cambiar modo claro/oscuro
+      var m = document.getElementById('metaThemeColor');
+      if (m) m.setAttribute('content', isLight ? '#ffffff' : '#000000');
     }
 
     // Restore saved theme on load. Claro es el tema principal por defecto.
