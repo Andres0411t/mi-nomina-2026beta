@@ -3412,9 +3412,9 @@
           </label>
         </div>
         <div style="background:var(--accent-dim);border:1.5px solid rgba(184,150,90,0.25);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:2rem;">
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;">⚙ Corrección de Cálculo</div>
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;">Corrección de Cálculo</div>
           <div style="font-size:.8rem;color:var(--muted);margin-bottom:.85rem;line-height:1.5;">Si tienes registros guardados con una versión anterior de la app, usa este botón para recalcularlos con el motor corregido (descanso, límites diarios y contador semanal de 44h). Los datos se actualizan en orden cronológico y se guardan automáticamente.</div>
-          <button onclick="recalcularQuincena()" class="btn btn-primary" style="width:100%;">🔄 Recalcular quincena actual</button>
+          <button onclick="recalcularQuincena()" class="btn btn-primary" style="width:100%;">Recalcular quincena actual</button>
         </div>
 
         <div class="divider"></div>
@@ -4505,7 +4505,7 @@ REGLAS:
       renderAll();
       e.target.reset();
       toggleTipoDia();
-      showToast('✅ Guardado correctamente en la nube', 'success');
+      showToast('Guardado correctamente en la nube', 'success');
     };
 
     function editReg(fecha) {
@@ -4817,7 +4817,7 @@ REGLAS:
       if (window.saveToCloud) await window.saveToCloud();
       closeEditModal();
       renderAll();
-      showToast('✅ Registro actualizado correctamente', 'success');
+      showToast('Registro actualizado correctamente', 'success');
     };
 
     // ═══════════════════════════════════════════════════════════════
@@ -4872,13 +4872,13 @@ REGLAS:
         window.db = window.db.filter(x => x.fecha !== f);
         if (window.saveToCloud) await window.saveToCloud();
         renderAll();
-        showToast('🗑️ Registro eliminado', 'info');
+        showToast('Registro eliminado', 'info');
       }
     }
 
     async function clearQuincena() {
-      if (window.db.length === 0) { showToast('⚠️ No hay registros para cerrar.', 'warning'); return; }
-      if (confirm("⚠️ ¿Deseas cerrar esta quincena? Se guardará el total en el historial y se limpiarán los días.")) {
+      if (window.db.length === 0) { showToast('No hay registros para cerrar.', 'warning'); return; }
+      if (confirm("¿Deseas cerrar esta quincena? Se guardará el total en el historial y se limpiarán los días.")) {
         let ibc = 0, baseDeducible = 0, diasT = 0;
         window.db.forEach(r => {
           ibc += r.pagoSalarial;
@@ -4893,7 +4893,7 @@ REGLAS:
         setUnsavedData(false);
         if (window.saveToCloud) await window.saveToCloud();
         renderAll(); renderHistorial();
-        showToast('✅ Quincena cerrada y guardada en historial', 'success');
+        showToast('Quincena cerrada y guardada en historial', 'success');
       }
     }
 
@@ -4965,7 +4965,7 @@ REGLAS:
       window.cfg.hed = parseFloat(document.getElementById('cfgHED').value);
       window.cfg.hen = parseFloat(document.getElementById('cfgHEN').value);
       if (window.saveToCloud) await window.saveToCloud();
-      showToast('✅ Configuración guardada en la nube', 'success');
+      showToast('Configuración guardada en la nube', 'success');
       renderAll();
     }
 
@@ -4987,10 +4987,10 @@ REGLAS:
           if (imported.registros && imported.historial) {
             window.db = imported.registros; window.historialDB = imported.historial;
             if (imported.configuracion) window.cfg = imported.configuracion;
-            showToast('✅ Backup completo restaurado', 'success');
+            showToast('Backup completo restaurado', 'success');
           } else if (Array.isArray(imported)) {
             window.db = imported;
-            showToast('✅ Días restaurados (archivo antiguo)', 'success');
+            showToast('Días restaurados (archivo antiguo)', 'success');
           }
           if (window.saveToCloud) await window.saveToCloud();
           renderAll(); renderHistorial();
@@ -5142,6 +5142,14 @@ REGLAS:
     setInterval(updateClock, 1000);
     updateClock();
     if (window.lucide) lucide.createIcons();
+
+    // Fecha actual por defecto
+    (function setTodayDate() {
+      const fechaInput = document.getElementById('fecha');
+      if (fechaInput && !fechaInput.value) {
+        fechaInput.value = new Date().toLocaleDateString('en-CA');
+      }
+    })();
 
     // ── Banner automático cambio de jornada jul-2026 ──────────────
     (function checkJulio2026Banner() {
