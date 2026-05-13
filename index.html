@@ -3,11 +3,11 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Mi Nómina</title>
-  <meta name="theme-color" id="metaThemeColorLight" media="(prefers-color-scheme: light)" content="#fafafa">
-  <meta name="theme-color" id="metaThemeColorDark"  media="(prefers-color-scheme: dark)"  content="#0b0b0d">
+  <meta name="theme-color" id="metaThemeColor" content="#fafafa">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mi Nomina">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png?v=2">
@@ -354,6 +354,7 @@
     @media(max-width: 600px) {
       .wrapper {
         padding: 1rem 0.75rem;
+        padding-top: calc(1rem + env(safe-area-inset-top, 0px));
       }
     }
 
@@ -379,7 +380,7 @@
       .header {
         padding: .8rem 1.1rem;
         margin-bottom: 1rem;
-        top: 0.5rem;
+        top: calc(0.5rem + env(safe-area-inset-top, 0px));
       }
 
       .header-logo {
@@ -4135,7 +4136,7 @@
       setTimeout(function() {
         var isLight = (typeof lightMode !== 'undefined') ? lightMode : true;
         var m = document.getElementById('metaThemeColor');
-        if (m) m.setAttribute('content', isLight ? '#ffffff' : '#000000');
+        if (m) m.setAttribute('content', isLight ? '#fafafa' : '#0b0b0d');
       }, 50);
     };
 
@@ -4192,7 +4193,7 @@
         // Sincronizar meta tag al arrancar
         setTimeout(function() {
           var m = document.getElementById('metaThemeColor');
-          if (m) m.setAttribute('content', isLightStart ? '#ffffff' : '#000000');
+          if (m) m.setAttribute('content', isLightStart ? '#fafafa' : '#0b0b0d');
         }, 100);
       } catch (e) { }
     })();
@@ -4560,10 +4561,8 @@
       if (window.lucide) lucide.createIcons();
 
       // Sincronizar meta tag al cambiar modo claro/oscuro
-      var mLight = document.getElementById('metaThemeColorLight');
-      var mDark  = document.getElementById('metaThemeColorDark');
-      if (mLight) mLight.setAttribute('content', isLight ? '#fafafa' : '#0b0b0d');
-      if (mDark)  mDark.setAttribute('content',  isLight ? '#fafafa' : '#0b0b0d');
+      var m = document.getElementById('metaThemeColor');
+      if (m) m.setAttribute('content', isLight ? '#fafafa' : '#0b0b0d');
     }
 
     // Restore saved theme on load. Claro es el tema principal por defecto.
