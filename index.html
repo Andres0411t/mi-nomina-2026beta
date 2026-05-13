@@ -5,12 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mi Nómina</title>
-  <meta name="theme-color" id="metaThemeColor" content="#ffffff">
+  <meta name="theme-color" id="metaThemeColorLight" media="(prefers-color-scheme: light)" content="#fafafa">
+  <meta name="theme-color" id="metaThemeColorDark"  media="(prefers-color-scheme: dark)"  content="#0b0b0d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Mi Nomina">
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon"
-    href="data:image/png;base64,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">
+  <link rel="apple-touch-icon" href="icon-192.png?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -4560,8 +4560,10 @@
       if (window.lucide) lucide.createIcons();
 
       // Sincronizar meta tag al cambiar modo claro/oscuro
-      var m = document.getElementById('metaThemeColor');
-      if (m) m.setAttribute('content', isLight ? '#ffffff' : '#000000');
+      var mLight = document.getElementById('metaThemeColorLight');
+      var mDark  = document.getElementById('metaThemeColorDark');
+      if (mLight) mLight.setAttribute('content', isLight ? '#fafafa' : '#0b0b0d');
+      if (mDark)  mDark.setAttribute('content',  isLight ? '#fafafa' : '#0b0b0d');
     }
 
     // Restore saved theme on load. Claro es el tema principal por defecto.
