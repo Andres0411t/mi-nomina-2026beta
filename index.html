@@ -3636,6 +3636,12 @@
 
     <!-- ═══ REGISTRO ═══ -->
     <div id="registro" class="tab-content">
+
+      <!-- Banner alerta horas semanales -->
+      <div id="bannerHorasSemana" style="display:none;margin-bottom:1rem;padding:.7rem 1rem;border-left:3px solid var(--danger);background:var(--accent-dim);border-radius:var(--radius-sm);align-items:center;gap:.65rem;">
+        <span id="bannerHorasSemanaText" style="font-size:.82rem;font-weight:600;color:var(--danger);line-height:1.3;"></span>
+      </div>
+
       <div class="card reg-card">
 
         <!-- Header compacto -->
@@ -3670,6 +3676,11 @@
               <label class="reg-label" style="color:var(--danger);">Diagnóstico / Motivo</label>
               <input type="text" id="diagnostico" placeholder="Diagnóstico o motivo..." class="inp reg-inp"
                 style="border-color:rgba(217,108,96,0.3);">
+            </div>
+            <div id="secDiaIncap" class="diag-block" style="margin-bottom:.75rem; display:none;">
+              <label class="reg-label" style="color:var(--danger);">Cantidad de días de incapacidad</label>
+              <input type="number" id="numDiasIncap" min="1" max="4" value="1" class="inp reg-inp"
+                style="border-color:rgba(217,108,96,0.3);margin-top:.4rem;" placeholder="Ej: 3">
             </div>
           </div>
 
@@ -5132,11 +5143,13 @@ REGLAS:
       const tipo = document.getElementById('tipoDia').value;
       const secH = document.getElementById('secHoras');
       const secD = document.getElementById('secDiagnostico');
+      const secDiaIncap = document.getElementById('secDiaIncap');
       const showH = tipo === 'NORMAL';
-      const showD = tipo === 'INCAPACIDAD' || tipo === 'COMPENSATORIO';
+      const showD = tipo === 'INCAPACIDAD';
       const isHidden = el => el.classList.contains('hidden');
       if (showH !== !isHidden(secH)) animateSection(secH, showH);
       if (showD !== !isHidden(secD)) animateSection(secD, showD);
+      if (secDiaIncap) secDiaIncap.style.display = (tipo === 'INCAPACIDAD') ? 'block' : 'none';
     }
 
     function isNocturno(d) { let h = d.getHours(); return h >= 19 || h < 6; }
@@ -5361,12 +5374,36 @@ REGLAS:
         registro.desglose = desglose;
         registro.pagoSalarial = pagoSalarial;
       } else if (tipo === 'INCAPACIDAD') {
-        registro.diag = document.getElementById('diagnostico').value || "Incapacidad General";
-        registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
-        registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial };
+        const diagText = document.getElementById('diagnostico').value || "Incapacidad General";
+        const numDias = Math.min(4, Math.max(1, parseInt(document.getElementById('numDiasIncap')?.value || '1', 10) || 1));
+        const salarioDiario = window.cfg.hora * 7.55;
+        const valor = salarioDiario; // siempre 100%
+        const fechaBase = new Date(fecha + 'T12:00:00');
+        // Eliminar registros existentes en el rango antes de insertar
+        for (let i = 0; i < numDias; i++) {
+          const d = new Date(fechaBase); d.setDate(d.getDate() + i);
+          window.db = window.db.filter(x => x.fecha !== d.toLocaleDateString('en-CA'));
+        }
+        // Insertar un registro por cada día de incapacidad al 100%
+        for (let i = 0; i < numDias; i++) {
+          const d = new Date(fechaBase); d.setDate(d.getDate() + i);
+          const fStr = d.toLocaleDateString('en-CA');
+          window.db.push({
+            fecha: fStr, tipo: 'INCAPACIDAD',
+            pagoSalarial: valor, pagaTransporte: false,
+            diag: diagText, rawHoras: null,
+            desglose: { INCAP: { h: 0, v: valor, pct: '100%' } }
+          });
+        }
+        window.db.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        if (window.saveToCloud) await window.saveToCloud();
+        const btn = document.getElementById('btnGuardar');
+        btn.innerText = 'Guardar en Quincena'; btn.style.background = '';
+        renderAll(); e.target.reset(); toggleTipoDia();
+        showToast(`${numDias} día(s) de incapacidad guardados`, 'success');
+        return;
       } else if (tipo === 'COMPENSATORIO') {
         registro.pagaTransporte = true;
-        registro.diag = document.getElementById('diagnostico').value || "Día compensatorio";
         const valorComp = 58364;
         registro.pagoSalarial = valorComp;
         registro.desglose['COMPENSATORIO'] = { h: 7.55, v: valorComp };
@@ -5473,9 +5510,12 @@ REGLAS:
         if (hasDesglose) {
           desgloseHtml = desgloseKeys.map(k => {
             const d = r.desglose[k];
+            const horasLabel = k === 'INCAP'
+              ? (d.pct || (parseFloat(d.h) === 0 ? '—' : parseFloat(d.h).toFixed(2) + 'h'))
+              : `${parseFloat(d.h).toFixed(2)}h`;
             return `<div class="desglose-row">
             <span class="desglose-label">${labelsDesglose[k] || k}</span>
-            <span class="desglose-horas">${parseFloat(d.h).toFixed(2)}h</span>
+            <span class="desglose-horas">${horasLabel}</span>
             <span class="desglose-valor">${format.format(d.v)}</span>
           </div>`;
           }).join('');
@@ -5530,9 +5570,73 @@ REGLAS:
 
       const table = document.getElementById('resDetalleTable');
       table.innerHTML = '';
+      // Contar días de incapacidad para mostrarlos en la columna "Horas"
+      const diasIncap = window.db.filter(r => r.tipo === 'INCAPACIDAD').length;
       for (let k in sumas) {
-        table.innerHTML += `<tr><td style="font-weight:600;">${labels[k] || k}</td><td class="center">${sumas[k].h.toFixed(2)}</td><td class="right">${format.format(sumas[k].v)}</td></tr>`;
+        // Para incapacidad: mostrar cantidad de días en vez de horas (que siempre es 0)
+        const horasCol = k === 'INCAP'
+          ? `${diasIncap} día${diasIncap !== 1 ? 's' : ''}`
+          : sumas[k].h.toFixed(2);
+        table.innerHTML += `<tr><td style="font-weight:600;">${labels[k] || k}</td><td class="center">${horasCol}</td><td class="right">${format.format(sumas[k].v)}</td></tr>`;
       }
+
+      // ── Alerta horas semanales ──────────────────────────────────────
+      (function checkHorasSemanales() {
+        const banner = document.getElementById('bannerHorasSemana');
+        const bannerText = document.getElementById('bannerHorasSemanaText');
+        if (!banner || !bannerText) return;
+
+        const db = window.db || [];
+        if (db.length === 0) { banner.style.display = 'none'; return; }
+
+        // Misma lógica de semanas que calcularAcumuladoSemanal:
+        // el ciclo arranca desde el primer registro (cualquier tipo)
+        const sorted = [...db].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        const primerDia = new Date(sorted[0].fecha + 'T00:00:00');
+
+        // Usar la fecha del último registro normal para saber en qué semana estamos
+        const normales = sorted.filter(r => r.tipo === 'NORMAL');
+        if (normales.length === 0) { banner.style.display = 'none'; return; }
+        const ultimaFecha = normales[normales.length - 1].fecha;
+        const fechaUlt = new Date(ultimaFecha + 'T00:00:00');
+
+        const diasDesdeInicio = Math.floor((fechaUlt - primerDia) / (1000 * 60 * 60 * 24));
+        const semanaActual = Math.floor(diasDesdeInicio / 7);
+        const inicioSemana = new Date(primerDia);
+        inicioSemana.setDate(inicioSemana.getDate() + semanaActual * 7);
+        const finSemana = new Date(inicioSemana);
+        finSemana.setDate(finSemana.getDate() + 7);
+
+        // Sumar horas ordinarias de todos los turnos normales en esa semana
+        let totalSemana = 0;
+        normales.forEach(r => {
+          const rf = new Date(r.fecha + 'T00:00:00');
+          if (rf < inicioSemana || rf >= finSemana) return;
+          const d = r.desglose || {};
+          totalSemana += parseFloat(d.ordD?.h || 0) + parseFloat(d.ordN?.h || 0)
+            + parseFloat(d.domD?.h || 0) + parseFloat(d.domN?.h || 0);
+        });
+
+        const limite = fechaUlt >= window.CORTE_42H ? 42 : 44;
+        const umbralAviso = limite * 0.9;
+
+        if (totalSemana > limite) {
+          bannerText.textContent = `Límite de ${limite}h semanales superado`;
+          banner.style.display = 'flex';
+          banner.style.borderLeftColor = 'var(--danger)';
+          banner.style.background = 'var(--accent-dim)';
+          bannerText.style.color = 'var(--danger)';
+        } else if (totalSemana >= umbralAviso) {
+          const restante = (limite - totalSemana).toFixed(1);
+          bannerText.textContent = `Cerca del límite semanal · faltan ${restante}h`;
+          banner.style.display = 'flex';
+          banner.style.borderLeftColor = 'var(--accent)';
+          banner.style.background = 'var(--accent-dim)';
+          bannerText.style.color = 'var(--accent)';
+        } else {
+          banner.style.display = 'none';
+        }
+      })();
     }
 
     function toggleDesglose(id) {
@@ -5635,6 +5739,10 @@ REGLAS:
         document.getElementById('editHFin').value = r.rawHoras.hF || '';
       } else {
         document.getElementById('editDiagnostico').value = r.diag || '';
+        if (r.tipo === 'INCAPACIDAD') {
+          const editDiaIncap = document.getElementById('editDiaIncap');
+          if (editDiaIncap) editDiaIncap.value = r.diaIncap || 1;
+        }
       }
       document.getElementById('editModal').classList.add('open');
     }
@@ -5652,8 +5760,10 @@ REGLAS:
       const tipo = document.getElementById('editTipoDia').value;
       const secH = document.getElementById('editSecHoras');
       const secD = document.getElementById('editSecDiagnostico');
+      const secDiaIncap = document.getElementById('editSecDiaIncap');
       secH.classList.toggle('hidden', tipo !== 'NORMAL');
-      secD.classList.toggle('hidden', tipo !== 'INCAPACIDAD' && tipo !== 'COMPENSATORIO');
+      secD.classList.toggle('hidden', tipo !== 'INCAPACIDAD');
+      if (secDiaIncap) secDiaIncap.style.display = 'none';
     }
 
     document.getElementById('formEditModal').onsubmit = async (e) => {
@@ -5689,11 +5799,12 @@ REGLAS:
         registro.pagoSalarial = pagoEdit;
       } else if (tipo === 'INCAPACIDAD') {
         registro.diag = document.getElementById('editDiagnostico').value || "Incapacidad General";
-        registro.pagoSalarial = (window.cfg.hora * 7.58) * 1;
-        registro.desglose['INCAP'] = { h: 1, v: registro.pagoSalarial };
+        const salarioDiario = window.cfg.hora * 7.55;
+        const valorIncap = salarioDiario; // siempre 100%
+        registro.pagoSalarial = valorIncap;
+        registro.desglose['INCAP'] = { h: 0, v: valorIncap, pct: '100%' };
       } else if (tipo === 'COMPENSATORIO') {
         registro.pagaTransporte = true;
-        registro.diag = document.getElementById('editDiagnostico').value || "Día compensatorio";
         const valorComp = 58364;
         registro.pagoSalarial = valorComp;
         registro.desglose['COMPENSATORIO'] = { h: 7.55, v: valorComp };
