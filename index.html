@@ -3884,9 +3884,9 @@
             <span class="swatch-circle" style="background:linear-gradient(135deg,#3d9ea8,#72c7cf)"></span>
             <span class="swatch-name">Verde</span>
           </button>
-          <button class="theme-swatch" data-theme="sage" onclick="applyTheme('sage',this)" title="Salvia">
-            <span class="swatch-circle" style="background:linear-gradient(135deg,#7aab8a,#b2d4bc)"></span>
-            <span class="swatch-name">Salvia</span>
+          <button class="theme-swatch" data-theme="pearl" onclick="applyTheme('pearl',this)" title="Perla">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#b0a4be,#d8d0e8)"></span>
+            <span class="swatch-name">Perla</span>
           </button>
           <button class="theme-swatch" data-theme="ember" onclick="applyTheme('ember',this)" title="Ember">
             <span class="swatch-circle" style="background:linear-gradient(135deg,#c05a3a,#e08060)"></span>
@@ -4030,29 +4030,30 @@
         },
       },
 
-      // ── SAGE ─────────────────────────────────────────────────────────────
-      // Universo: verde salvia desaturado. Danger=arcilla rosada apagada,
-      // Success=musgo oscuro, Info=azul-gris suave. Minimalista y orgánico.
-      sage: {
-        accent: '#7aab8a', accent2: '#b2d4bc',
-        dim: 'rgba(122,171,138,0.08)', glow: 'rgba(122,171,138,0.14)',
-        // claro — pastel vegetal
-        danger: '#a07878', dangerDim: 'rgba(160,120,120,0.08)',
-        success: '#5a8c6e', successDim: 'rgba(90,140,110,0.08)',
-        info: '#7a9ab0',
-        // oscuro — musgo profundo y apagado
-        dangerDk: '#6a4a4a', dangerDimDk: 'rgba(106,74,74,0.14)',
-        successDk: '#3a6050', successDimDk: 'rgba(58,96,80,0.14)',
-        infoDk: '#4a6878',
+      // ── PEARL ────────────────────────────────────────────────────────────
+      // Universo: perla y marfil irisado. Acento lila-plateado muy suave,
+      // complemento lila nacarado. Danger=rosa empolvado, Success=gris-verde
+      // perla, Info=lavanda nacarada. Ultra minimalista, joyería fina.
+      pearl: {
+        accent: '#b0a4be', accent2: '#d8d0e8',
+        dim: 'rgba(176,164,190,0.08)', glow: 'rgba(176,164,190,0.16)',
+        // claro — polvoso, nacarado
+        danger: '#c4a0a8', dangerDim: 'rgba(196,160,168,0.08)',
+        success: '#9ab0a8', successDim: 'rgba(154,176,168,0.08)',
+        info: '#a0aec8',
+        // oscuro — grafito con toque irisado
+        dangerDk: '#7a5860', dangerDimDk: 'rgba(122,88,96,0.14)',
+        successDk: '#4a6860', successDimDk: 'rgba(74,104,96,0.14)',
+        infoDk: '#586090',
         light: {
-          bg: '#f8fbf8', surface: '#ffffff', surface2: '#f1f6f2',
-          border: '#daeade', border2: '#c4d9c9',
-          text: '#111a14', muted: '#5a7060',
+          bg: '#fdfcfe', surface: '#ffffff', surface2: '#f7f5fa',
+          border: '#ece8f4', border2: '#ddd8ec',
+          text: '#17141e', muted: '#7a7488',
         },
         dark: {
-          bg: '#090d0a', surface: '#0d120e', surface2: '#121814',
-          border: '#1a261c', border2: '#223028',
-          text: '#e6f0e8', muted: '#567060',
+          bg: '#0c0b0f', surface: '#121018', surface2: '#17151e',
+          border: '#221f2c', border2: '#2e2a3c',
+          text: '#f0eef6', muted: '#7a7490',
         },
       },
 
@@ -4177,11 +4178,19 @@
       }, 50);
     };
 
-    // Cargar tema al iniciar (antes que nada)
+    // Cargar tema al iniciar — normalizar gold→slate y delegar en applyTheme
+    document.addEventListener('DOMContentLoaded', function () {
+      try {
+        var saved = localStorage.getItem('nomina_color_theme') || 'slate';
+        if (saved === 'gold' || !THEMES[saved]) { saved = 'slate'; localStorage.setItem('nomina_color_theme', 'slate'); }
+        applyTheme(saved, null);
+      } catch (e) { }
+    });
+    // bloque legacy — conservar solo para evitar FOUC en primera carga
     (function () {
       try {
         var saved = localStorage.getItem('nomina_color_theme') || 'slate';
-        if (saved === 'gold') { saved = 'slate'; localStorage.setItem('nomina_color_theme', 'slate'); }
+        if (saved === 'gold') { saved = 'slate'; }
         var t = THEMES[saved] || THEMES['slate'];
         var r = document.documentElement.style;
         var isLight = true; // al arrancar siempre claro (applyDarkLight lo ajustará después)
@@ -5482,6 +5491,7 @@ REGLAS:
         rose: { ordD: '#d58aa1', ordN: '#b87486', extD: '#d7a0b1', extN: '#8a6673', domD: '#c08aa0', domN: '#7a5a6a', edd: '#b87486', edn: '#7a4e5c', INCAP: '#a59aa1', COMPENSATORIO: '#f0c0cd' },
         teal: { ordD: '#6fbbc3', ordN: '#5aae9c', extD: '#7fa5ae', extN: '#2e6156', domD: '#7ea5d6', domN: '#4a6c98', edd: '#7fa5ae', edn: '#3e6670', INCAP: '#93a7ab', COMPENSATORIO: '#b7e6ea' },
         slate: { ordD: '#7b93d6', ordN: '#6eaac8', extD: '#8a92b8', extN: '#3e6f84', domD: '#7a86c8', domN: '#54609a', edd: '#8a92b8', edn: '#56608a', INCAP: '#97a0ba', COMPENSATORIO: '#b9c6f0' },
+        pearl: { ordD: '#b0a4be', ordN: '#9ab0a8', extD: '#c4a0a8', extN: '#7a5860', domD: '#a0aec8', domN: '#586090', edd: '#c8b4d0', edn: '#8a7098', INCAP: '#c0bcc8', COMPENSATORIO: '#d8d0e8' },
         ember: { ordD: '#d9a08a', ordN: '#c0a07a', extD: '#d4b29a', extN: '#7a5f3e', domD: '#b09688', domN: '#6a554d', edd: '#b8857a', edn: '#7a4a3f', INCAP: '#a89a93', COMPENSATORIO: '#f2ccbc' }
       };
       const colors = colorsByTheme[currentTheme] || colorsByTheme.gold;
@@ -6169,19 +6179,7 @@ REGLAS:
     updateClock();
     if (window.lucide) lucide.createIcons();
 
-    // Marcar swatch activo según tema guardado
-    (function syncActiveSwatch() {
-      try {
-        const saved = (() => {
-          let v = localStorage.getItem('nomina_color_theme') || 'slate';
-          if (v === 'gold') { v = 'slate'; try { localStorage.setItem('nomina_color_theme', 'slate'); } catch(e){} }
-          return v;
-        })();
-        document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
-        const active = document.querySelector(`.theme-swatch[data-theme="${saved}"]`);
-        if (active) active.classList.add('active');
-      } catch (e) { }
-    })();
+    // El swatch activo lo marca applyTheme al cargar (DOMContentLoaded)
 
     // Fecha actual por defecto
     (function setTodayDate() {
