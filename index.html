@@ -3884,6 +3884,10 @@
             <span class="swatch-circle" style="background:linear-gradient(135deg,#3d9ea8,#72c7cf)"></span>
             <span class="swatch-name">Verde</span>
           </button>
+          <button class="theme-swatch" data-theme="sage" onclick="applyTheme('sage',this)" title="Salvia">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#7aab8a,#b2d4bc)"></span>
+            <span class="swatch-name">Salvia</span>
+          </button>
           <button class="theme-swatch" data-theme="ember" onclick="applyTheme('ember',this)" title="Ember">
             <span class="swatch-circle" style="background:linear-gradient(135deg,#c05a3a,#e08060)"></span>
             <span class="swatch-name">Coral</span>
@@ -4023,6 +4027,32 @@
           bg: '#090a10', surface: '#0d0f18', surface2: '#12141e',
           border: '#1c2030', border2: '#262c3e',
           text: '#eaeef8', muted: '#606888',
+        },
+      },
+
+      // ── SAGE ─────────────────────────────────────────────────────────────
+      // Universo: verde salvia desaturado. Danger=arcilla rosada apagada,
+      // Success=musgo oscuro, Info=azul-gris suave. Minimalista y orgánico.
+      sage: {
+        accent: '#7aab8a', accent2: '#b2d4bc',
+        dim: 'rgba(122,171,138,0.08)', glow: 'rgba(122,171,138,0.14)',
+        // claro — pastel vegetal
+        danger: '#a07878', dangerDim: 'rgba(160,120,120,0.08)',
+        success: '#5a8c6e', successDim: 'rgba(90,140,110,0.08)',
+        info: '#7a9ab0',
+        // oscuro — musgo profundo y apagado
+        dangerDk: '#6a4a4a', dangerDimDk: 'rgba(106,74,74,0.14)',
+        successDk: '#3a6050', successDimDk: 'rgba(58,96,80,0.14)',
+        infoDk: '#4a6878',
+        light: {
+          bg: '#f8fbf8', surface: '#ffffff', surface2: '#f1f6f2',
+          border: '#daeade', border2: '#c4d9c9',
+          text: '#111a14', muted: '#5a7060',
+        },
+        dark: {
+          bg: '#090d0a', surface: '#0d120e', surface2: '#121814',
+          border: '#1a261c', border2: '#223028',
+          text: '#e6f0e8', muted: '#567060',
         },
       },
 
