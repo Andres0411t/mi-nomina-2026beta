@@ -5148,30 +5148,23 @@ REGLAS:
     function animateSection(el, show) {
       if (show) {
         el.classList.remove('hidden');
-        el.style.overflow = 'hidden';
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(-8px)';
-        el.style.maxHeight = '0';
-        el.style.transition = 'none';
-        requestAnimationFrame(() => {
+        el.style.cssText = 'overflow:hidden;opacity:0;transform:translateY(-8px);max-height:0;transition:none';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
           el.style.transition = 'max-height .32s cubic-bezier(0.16,1,0.3,1), opacity .25s ease, transform .28s cubic-bezier(0.16,1,0.3,1)';
           el.style.maxHeight = el.scrollHeight + 40 + 'px';
           el.style.opacity = '1';
           el.style.transform = 'translateY(0)';
-          setTimeout(() => { el.style.maxHeight = ''; el.style.overflow = ''; }, 340);
-        });
+          setTimeout(() => { el.style.maxHeight = ''; el.style.overflow = ''; el.style.transition = ''; }, 340);
+        }));
       } else {
-        el.style.overflow = 'hidden';
-        el.style.maxHeight = el.scrollHeight + 'px';
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
-        requestAnimationFrame(() => {
+        el.style.cssText = 'overflow:hidden;max-height:' + el.scrollHeight + 'px;opacity:1;transform:translateY(0);transition:none';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
           el.style.transition = 'max-height .28s cubic-bezier(0.4,0,1,1), opacity .2s ease, transform .22s ease';
           el.style.maxHeight = '0';
           el.style.opacity = '0';
           el.style.transform = 'translateY(-6px)';
           setTimeout(() => { el.classList.add('hidden'); el.style.cssText = ''; }, 290);
-        });
+        }));
       }
     }
 
