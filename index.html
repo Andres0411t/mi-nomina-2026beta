@@ -30,10 +30,10 @@
       --border2: #d5d5d5;
       --text: #1a1a1a;
       --muted: #7a7a7a;
-      --accent: #b8965a;
-      --accent2: #d4ae74;
-      --accent-dim: rgba(184, 150, 90, 0.10);
-      --accent-glow: rgba(184, 150, 90, 0.18);
+      --accent: #7b93d6;
+      --accent2: #b9c6f0;
+      --accent-dim: rgba(123, 147, 214, 0.10);
+      --accent-glow: rgba(123, 147, 214, 0.18);
       --danger: #d96c60;
       --danger-dim: rgba(217, 108, 96, 0.08);
       --success: #57a787;
@@ -437,7 +437,7 @@
       border-color: var(--accent);
       color: var(--text);
       background: var(--accent-dim);
-      box-shadow: 0 2px 6px rgba(184, 150, 90, 0.12);
+      box-shadow: 0 2px 6px rgba(123, 147, 214, 0.12);
     }
 
     /* ── Nav — DESKTOP (top bar) ── */
@@ -2143,7 +2143,7 @@
       border-color: var(--accent);
       color: var(--accent);
       background: var(--accent-dim);
-      box-shadow: 0 3px 8px rgba(184, 150, 90, 0.12);
+      box-shadow: 0 3px 8px rgba(123, 147, 214, 0.12);
       transform: translateY(-1px);
     }
 
@@ -3302,7 +3302,7 @@
       <div class="auth-sub">Solicitar acceso</div>
       <div class="auth-divider"></div>
       <div
-        style="background:var(--accent-dim);border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:.75rem 1rem;font-size:.78rem;color:var(--accent);margin-bottom:.5rem;line-height:1.5;">
+        style="background:var(--accent-dim);border:1px solid rgba(123,147,214,0.25);border-radius:10px;padding:.75rem 1rem;font-size:.78rem;color:var(--accent);margin-bottom:.5rem;line-height:1.5;">
         ⏳ Tu cuenta quedará <strong>pendiente de aprobación</strong>. Podrás ingresar una vez que el administrador la
         active.
       </div>
@@ -3511,7 +3511,7 @@
 
         <!-- Barra de estado del servidor -->
         <div id="serverStatus"
-          style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;background:var(--accent-dim);border:1px solid rgba(201,168,76,0.2);border-radius:8px;margin-bottom:.6rem;font-size:.72rem;color:var(--accent);font-weight:600;">
+          style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;background:var(--accent-dim);border:1px solid rgba(123,147,214,0.2);border-radius:8px;margin-bottom:.6rem;font-size:.72rem;color:var(--accent);font-weight:600;">
           <span
             style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite;flex-shrink:0;"></span>
           <span id="serverStatusText">Calentando el asistente, un momento...</span>
@@ -3853,7 +3853,7 @@
           </label>
         </div>
         <div
-          style="background:var(--accent-dim);border:1.5px solid rgba(184,150,90,0.25);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:2rem;">
+          style="background:var(--accent-dim);border:1.5px solid rgba(123,147,214,0.25);border-radius:var(--radius-sm);padding:1rem 1.25rem;margin-bottom:2rem;">
           <div
             style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;">
             Corrección de Cálculo</div>
@@ -3868,9 +3868,9 @@
         <div class="divider"></div>
         <div class="config-section-title">Tema de Color</div>
         <div class="theme-picker" id="themePicker">
-          <button class="theme-swatch active" data-theme="gold" onclick="applyTheme('gold',this)" title="Dorado">
-            <span class="swatch-circle" style="background:linear-gradient(135deg,#b8965a,#d4ae74)"></span>
-            <span class="swatch-name">Dorado</span>
+          <button class="theme-swatch active" data-theme="slate" onclick="applyTheme('slate',this)" title="Azul">
+            <span class="swatch-circle" style="background:linear-gradient(135deg,#5870a0,#8898c8)"></span>
+            <span class="swatch-name">Azul</span>
           </button>
           <button class="theme-swatch" data-theme="lila" onclick="applyTheme('lila',this)" title="Lila">
             <span class="swatch-circle" style="background:linear-gradient(135deg,#8b6bbf,#b39ddb)"></span>
@@ -3883,10 +3883,6 @@
           <button class="theme-swatch" data-theme="teal" onclick="applyTheme('teal',this)" title="Verde azul">
             <span class="swatch-circle" style="background:linear-gradient(135deg,#3d9ea8,#72c7cf)"></span>
             <span class="swatch-name">Verde</span>
-          </button>
-          <button class="theme-swatch" data-theme="slate" onclick="applyTheme('slate',this)" title="Pizarra">
-            <span class="swatch-circle" style="background:linear-gradient(135deg,#5870a0,#8898c8)"></span>
-            <span class="swatch-name">Azul</span>
           </button>
           <button class="theme-swatch" data-theme="ember" onclick="applyTheme('ember',this)" title="Ember">
             <span class="swatch-circle" style="background:linear-gradient(135deg,#c05a3a,#e08060)"></span>
@@ -4154,8 +4150,9 @@
     // Cargar tema al iniciar (antes que nada)
     (function () {
       try {
-        var saved = localStorage.getItem('nomina_color_theme') || 'gold';
-        var t = THEMES[saved] || THEMES['gold'];
+        var saved = localStorage.getItem('nomina_color_theme') || 'slate';
+        if (saved === 'gold') { saved = 'slate'; localStorage.setItem('nomina_color_theme', 'slate'); }
+        var t = THEMES[saved] || THEMES['slate'];
         var r = document.documentElement.style;
         var isLight = true; // al arrancar siempre claro (applyDarkLight lo ajustará después)
         var scaleRgbaAlpha = function (v, factor) {
@@ -5470,7 +5467,7 @@ REGLAS:
           animation: { animateScale: true, animateRotate: true, duration: 1200, easing: 'easeOutQuart' },
           plugins: {
             legend: { position: 'bottom', labels: { color: isDark ? '#7a7a8a' : '#7a7a6a', font: { weight: '600', size: 11, family: 'DM Sans' }, padding: 16, usePointStyle: true, boxWidth: 8, boxHeight: 8 } },
-            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${format.format(ctx.raw)}` }, backgroundColor: 'rgba(20, 20, 24, 0.9)', titleColor: '#d4ae74', bodyColor: '#ffffff', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, padding: 12, cornerRadius: 12 }
+            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${format.format(ctx.raw)}` }, backgroundColor: 'rgba(20, 20, 24, 0.9)', titleColor: '#b9c6f0', bodyColor: '#ffffff', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, padding: 12, cornerRadius: 12 }
           },
           cutout: '72%'
         }
@@ -6023,7 +6020,7 @@ REGLAS:
       });
 
       // Table
-      doc.autoTable({ startY: 32, head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']], body: rows, headStyles: { fillColor: [201, 168, 76], textColor: [30, 20, 0], fontSize: 8, halign: 'center' }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } }, theme: 'striped', styles: { fontSize: 7.5 } });
+      doc.autoTable({ startY: 32, head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']], body: rows, headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8, halign: 'center' }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } }, theme: 'striped', styles: { fontSize: 7.5 } });
 
       let fy = doc.lastAutoTable.finalY || 40;
 
@@ -6100,7 +6097,7 @@ REGLAS:
         tC += parseFloat(d.COMPENSATORIO?.h || 0); tT += hh;
         return [r.fecha, t, horario, descanso, hh.toFixed(2), format.format(r.pagoSalarial)];
       });
-      doc.autoTable({ startY: 40, head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']], body: rows, headStyles: { fillColor: [201, 168, 76], textColor: [30, 20, 0], fontSize: 8, halign: 'center' }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } }, theme: 'striped', styles: { fontSize: 7.5 } });
+      doc.autoTable({ startY: 40, head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']], body: rows, headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8, halign: 'center' }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } }, theme: 'striped', styles: { fontSize: 7.5 } });
       let fy = doc.lastAutoTable.finalY || 40;
       doc.setFontSize(10); doc.setTextColor(50); doc.text("Resumen:", 14, fy + 10); doc.setFontSize(9);
       doc.text(`Total: ${tT.toFixed(2)}`, 14, fy + 16); doc.text(`Diurnas: ${tD.toFixed(2)}`, 14, fy + 22); doc.text(`Nocturnas: ${tN.toFixed(2)}`, 14, fy + 28); doc.text(`Festivas: ${tF.toFixed(2)}`, 14, fy + 34); doc.text(`Compensatorio: ${tC.toFixed(2)}`, 14, fy + 40);
@@ -6145,7 +6142,11 @@ REGLAS:
     // Marcar swatch activo según tema guardado
     (function syncActiveSwatch() {
       try {
-        const saved = localStorage.getItem('nomina_color_theme') || 'gold';
+        const saved = (() => {
+          let v = localStorage.getItem('nomina_color_theme') || 'slate';
+          if (v === 'gold') { v = 'slate'; try { localStorage.setItem('nomina_color_theme', 'slate'); } catch(e){} }
+          return v;
+        })();
         document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
         const active = document.querySelector(`.theme-swatch[data-theme="${saved}"]`);
         if (active) active.classList.add('active');
@@ -6187,9 +6188,9 @@ REGLAS:
       banner.style.cssText = [
         'position:fixed', 'bottom:5.5rem', 'left:50%', 'transform:translateX(-50%)',
         'z-index:9000', 'max-width:420px', 'width:calc(100% - 2rem)',
-        'background:#b8965a', 'color:#fff', 'border-radius:16px',
+        'background:#7b93d6', 'color:#fff', 'border-radius:16px',
         'padding:.85rem 1.1rem', 'font-size:.78rem', 'font-weight:600',
-        'box-shadow:0 8px 24px rgba(184,150,90,.35)',
+        'box-shadow:0 8px 24px rgba(123,147,214,.35)',
         'display:flex', 'align-items:center', 'gap:.75rem', 'line-height:1.4'
       ].join(';');
       banner.innerHTML = `
@@ -6228,7 +6229,7 @@ REGLAS:
         'z-index:99999',
         'background:var(--surface)',
         'border-bottom:1.5px solid var(--border)',
-        'box-shadow:0 4px 24px rgba(184,150,90,0.13)',
+        'box-shadow:0 4px 24px rgba(123,147,214,0.13)',
         'display:flex', 'align-items:center', 'gap:.85rem',
         'padding:.9rem 1.1rem',
         'font-family:var(--font-sans)',
@@ -6246,7 +6247,7 @@ REGLAS:
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(184,150,90,0.28);
+            box-shadow: 0 4px 12px rgba(123,147,214,0.28);
           }
           #pwa-install-banner .pwa-icon svg {
             width: 22px; height: 22px; stroke: #fff; fill: none;
@@ -6272,7 +6273,7 @@ REGLAS:
             font-family: var(--font-sans); font-weight: 700;
             font-size: .75rem; letter-spacing: .04em; text-transform: uppercase;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(184,150,90,.3);
+            box-shadow: 0 4px 12px rgba(123,147,214,.3);
             transition: all .25s;
           }
           #pwa-install-banner .pwa-btn-yes:hover {
