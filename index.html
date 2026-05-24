@@ -5600,15 +5600,102 @@ REGLAS:
 
       const table = document.getElementById('resDetalleTable');
       table.innerHTML = '';
-      // Contar días de incapacidad para mostrarlos en la columna "Horas"
-      const diasIncap = window.db.filter(r => r.tipo === 'INCAPACIDAD').length;
-      for (let k in sumas) {
-        // Para incapacidad: mostrar cantidad de días en vez de horas (que siempre es 0)
-        const horasCol = k === 'INCAP'
-          ? `${diasIncap} día${diasIncap !== 1 ? 's' : ''}`
-          : sumas[k].h.toFixed(2);
-        table.innerHTML += `<tr><td style="font-weight:600;">${labels[k] || k}</td><td class="center">${horasCol}</td><td class="right">${format.format(sumas[k].v)}</td></tr>`;
-      }
+
+      // ── Construir conceptos estilo empresa ───────────────────────────
+      // Separar domingo vs festivo usando la fecha de cada registro
+      let acumPanel = {
+        hBase: 0, vBase: 0,       // nómina amano (todas las horas al precio base)
+        hNoc: 0,  vNoc: 0,        // recargo nocturno
+        hDomD: 0, vDomD: 0,       // dominical diurno (solo domingos)
+        hDomN: 0, vDomN: 0,       // dominical nocturno (solo domingos)
+        hFestD: 0, vFestD: 0,     // festivo diurno (festivos no domingo)
+        hFestN: 0, vFestN: 0,     // festivo nocturno
+        hExtD: 0, vExtD: 0,
+        hExtN: 0, vExtN: 0,
+        hEdd: 0,  vEdd: 0,
+        hEdn: 0,  vEdn: 0,
+        vIncap: 0, diasIncap: 0,
+        hComp: 0, vComp: 0, unidComp: 0
+      };
+
+      const hora = window.cfg.hora;
+      const pRN  = hora * (window.cfg.rn  / 100);
+      const pDOM = hora * (window.cfg.dom  / 100);
+
+      window.db.forEach(r => {
+        const d = r.desglose || {};
+        if (r.tipo === 'INCAPACIDAD') {
+          acumPanel.vIncap += r.pagoSalarial;
+          acumPanel.diasIncap++;
+          return;
+        }
+        if (r.tipo === 'COMPENSATORIO') {
+          acumPanel.hComp += parseFloat(d.COMPENSATORIO?.h || 0);
+          acumPanel.vComp += d.COMPENSATORIO?.v || 0;
+          acumPanel.unidComp++;
+          return;
+        }
+        // Para turnos normales: separar domingo vs festivo
+        const fechaDate = new Date(r.fecha + 'T12:00:00');
+        const esDomingo = fechaDate.getDay() === 0;
+        const esFestivo = festivos.includes(r.fecha);
+        const esSoloDomingo = esDomingo && !esFestivo; // domingo que no cayó en festivo listado
+        const esSoloFestivo = !esDomingo && esFestivo; // festivo que no es domingo
+        const esAmbos = esDomingo && esFestivo;        // domingo que también es festivo (se trata como festivo)
+
+        // Horas base (ordinarias + dom/fest al precio base)
+        const hOrdD = parseFloat(d.ordD?.h || 0);
+        const hOrdN = parseFloat(d.ordN?.h || 0);
+        const hDomD = parseFloat(d.domD?.h || 0);
+        const hDomN = parseFloat(d.domN?.h || 0);
+
+        acumPanel.hBase += hOrdD + hOrdN + hDomD + hDomN;
+        acumPanel.vBase += (hOrdD + hOrdN + hDomD + hDomN) * hora;
+
+        // Recargo nocturno
+        acumPanel.hNoc += hOrdN + hDomN;
+        acumPanel.vNoc += (hOrdN + hDomN) * pRN;
+
+        // Dominical vs Festivo (recargo DOM)
+        if (esSoloDomingo || esAmbos) {
+          // Si es domingo (con o sin festivo) → va a dominical
+          acumPanel.hDomD += hDomD;
+          acumPanel.vDomD += hDomD * pDOM;
+          acumPanel.hDomN += hDomN;
+          acumPanel.vDomN += hDomN * pDOM;
+        } else if (esSoloFestivo) {
+          acumPanel.hFestD += hDomD;
+          acumPanel.vFestD += hDomD * pDOM;
+          acumPanel.hFestN += hDomN;
+          acumPanel.vFestN += hDomN * pDOM;
+        }
+
+        // Extras
+        acumPanel.hExtD += parseFloat(d.extD?.h || 0); acumPanel.vExtD += d.extD?.v || 0;
+        acumPanel.hExtN += parseFloat(d.extN?.h || 0); acumPanel.vExtN += d.extN?.v || 0;
+        acumPanel.hEdd  += parseFloat(d.edd?.h  || 0); acumPanel.vEdd  += d.edd?.v  || 0;
+        acumPanel.hEdn  += parseFloat(d.edn?.h  || 0); acumPanel.vEdn  += d.edn?.v  || 0;
+      });
+
+      const addPanelRow = (concepto, unidades, unidLabel, valor) => {
+        if (valor <= 0 && unidades <= 0) return;
+        table.innerHTML += `<tr>
+          <td style="font-weight:600;">${concepto}</td>
+          <td class="center">${unidades !== null ? `${typeof unidades === 'number' ? unidades.toFixed(3).replace(/\.?0+$/, '') : unidades} ${unidLabel}` : ''}</td>
+          <td class="right">${format.format(Math.round(valor))}</td>
+        </tr>`;
+      };
+
+      if (acumPanel.hBase  > 0) addPanelRow('Nómina amano',               acumPanel.hBase,    'HOR', acumPanel.vBase);
+      if (acumPanel.hNoc   > 0) addPanelRow('Recargo nocturno 35%',        acumPanel.hNoc,     'HOR', acumPanel.vNoc);
+      if (acumPanel.hDomD + acumPanel.hDomN > 0) addPanelRow('Dominical trabajado', acumPanel.hDomD + acumPanel.hDomN, 'HOR', acumPanel.vDomD + acumPanel.vDomN);
+      if (acumPanel.hFestD + acumPanel.hFestN > 0) addPanelRow('Festivo trabajado',   acumPanel.hFestD + acumPanel.hFestN, 'HOR', acumPanel.vFestD + acumPanel.vFestN);
+      if (acumPanel.hExtD  > 0) addPanelRow('Hora extra diurna',           acumPanel.hExtD,    'HOR', acumPanel.vExtD);
+      if (acumPanel.hExtN  > 0) addPanelRow('Hora extra nocturna',         acumPanel.hExtN,    'HOR', acumPanel.vExtN);
+      if (acumPanel.hEdd   > 0) addPanelRow('Hora extra festiva diurna',   acumPanel.hEdd,     'HOR', acumPanel.vEdd);
+      if (acumPanel.hEdn   > 0) addPanelRow('Hora extra festiva nocturna', acumPanel.hEdn,     'HOR', acumPanel.vEdn);
+      if (acumPanel.diasIncap > 0) addPanelRow('Gasto de incapacidad',     acumPanel.diasIncap,'DIA', acumPanel.vIncap);
+      if (acumPanel.unidComp  > 0) addPanelRow('Descanso compensatorio',   acumPanel.unidComp, 'UNI', acumPanel.vComp);
 
       // ── Alerta horas semanales ──────────────────────────────────────
       (function checkHorasSemanales() {
@@ -6033,64 +6120,130 @@ REGLAS:
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      // Title
-      doc.setFontSize(16); doc.text("REPORTE DE NOMINA ACTUAL", 14, 20);
-      doc.setFontSize(9); doc.setTextColor(100); doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 26);
+      // ── Título ──────────────────────────────────────────────────────
+      doc.setFontSize(16); doc.setTextColor(30);
+      doc.text("REPORTE DETALLADO DE NÓMINA", 14, 20);
+      doc.setFontSize(9); doc.setTextColor(100);
+      const periodoDesde = window.db.length ? window.db[0].fecha : '---';
+      const periodoHasta = window.db.length ? window.db[window.db.length - 1].fecha : '---';
+      doc.text(`Período: ${periodoDesde} al ${periodoHasta}`, 14, 27);
 
-      // Calculate totals
-      let tD = 0, tN = 0, tF = 0, tC = 0, tT = 0;
+      // ── Tabla de días ────────────────────────────────────────────────
       const rows = window.db.map(r => {
         let h = Object.entries(r.desglose).reduce((a, [k, v]) => k === 'INCAP' ? a : a + parseFloat(v.h || 0), 0);
         let t = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
         let horario = '---', descanso = '---';
-        if (r.tipo === 'NORMAL' && r.rawHoras) { horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`; if (r.rawHoras.hBO && r.rawHoras.hBI) descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`; }
-        let d = r.desglose || {};
-        tD += parseFloat(d.ordD?.h || 0) + parseFloat(d.extD?.h || 0);
-        tN += parseFloat(d.ordN?.h || 0) + parseFloat(d.extN?.h || 0);
-        tF += parseFloat(d.domD?.h || 0) + parseFloat(d.domN?.h || 0) + parseFloat(d.edd?.h || 0) + parseFloat(d.edn?.h || 0);
-        tC += parseFloat(d.COMPENSATORIO?.h || 0); tT += h;
+        if (r.tipo === 'NORMAL' && r.rawHoras) {
+          horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`;
+          if (r.rawHoras.hBO && r.rawHoras.hBI) descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;
+        }
         return [r.fecha, t, horario, descanso, h.toFixed(2), format.format(r.pagoSalarial)];
       });
 
-      // Table
-      doc.autoTable({ startY: 32, head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']], body: rows, headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8, halign: 'center' }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } }, theme: 'striped', styles: { fontSize: 7.5 } });
+      doc.autoTable({
+        startY: 33,
+        head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']],
+        body: rows,
+        headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8, halign: 'center' },
+        columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } },
+        theme: 'striped', styles: { fontSize: 7.5 }
+      });
 
       let fy = doc.lastAutoTable.finalY || 40;
 
-      // Summary
-      doc.setFontSize(10); doc.setTextColor(50); doc.text("Resumen de Horas:", 14, fy + 10); doc.setFontSize(9);
-      doc.text(`Total: ${tT.toFixed(2)}`, 14, fy + 16); doc.text(`Diurnas: ${tD.toFixed(2)}`, 14, fy + 22); doc.text(`Nocturnas: ${tN.toFixed(2)}`, 14, fy + 28); doc.text(`Festivas: ${tF.toFixed(2)}`, 14, fy + 34); doc.text(`Compensatorio: ${tC.toFixed(2)}`, 14, fy + 40);
+      // ── Acumular separando domingo vs festivo ────────────────────────
+      const hora = window.cfg.hora;
+      const pRN  = hora * (window.cfg.rn  / 100);
+      const pDOM = hora * (window.cfg.dom  / 100);
 
-      // Add chart image if chart exists
-      const chartCanvas = document.getElementById('nominaChart');
-      if (chartCanvas) {
-        try {
-          const chartImg = chartCanvas.toDataURL('image/png', 1.0);
-          // Get actual chart dimensions for proper aspect ratio
-          const chartWidth = chartCanvas.width;
-          const chartHeight = chartCanvas.height;
-          // Scale to fit nicely in PDF (max width 180mm, maintain aspect ratio)
-          const maxWidth = 180;
-          const scale = maxWidth / chartWidth;
-          const imgWidth = maxWidth;
-          const imgHeight = chartHeight * scale;
-          // Center the chart horizontally
-          const pageWidth = doc.internal.pageSize.getWidth();
-          const xPos = (pageWidth - imgWidth) / 2;
-          // Position chart below summary
-          const chartY = fy + 50;
-          doc.addImage(chartImg, 'PNG', xPos, chartY, imgWidth, imgHeight);
+      let ap = { hBase:0,vBase:0, hNoc:0,vNoc:0, hDomD:0,vDomD:0, hDomN:0,vDomN:0, hFestD:0,vFestD:0, hFestN:0,vFestN:0, hExtD:0,vExtD:0, hExtN:0,vExtN:0, hEdd:0,vEdd:0, hEdn:0,vEdn:0, vIncap:0,diasIncap:0, vComp:0,unidComp:0 };
+      let diasT = 0;
 
-          // Add legend below chart, centered
-          doc.setFontSize(9); doc.setTextColor(80);
-          doc.text("Distribución por concepto", pageWidth / 2, chartY + imgHeight + 8, { align: 'center' });
-        } catch (e) {
-          console.warn('Could not add chart to PDF:', e);
+      window.db.forEach(r => {
+        if (r.pagaTransporte) diasT++;
+        const d = r.desglose || {};
+        if (r.tipo === 'INCAPACIDAD') { ap.vIncap += r.pagoSalarial; ap.diasIncap++; return; }
+        if (r.tipo === 'COMPENSATORIO') { ap.vComp += r.pagoSalarial; ap.unidComp++; return; }
+
+        const fechaDate = new Date(r.fecha + 'T12:00:00');
+        const esDomingo = fechaDate.getDay() === 0;
+        const esFestivo = festivos.includes(r.fecha);
+
+        const hOrdD = parseFloat(d.ordD?.h || 0), hOrdN = parseFloat(d.ordN?.h || 0);
+        const hDomD = parseFloat(d.domD?.h || 0), hDomN = parseFloat(d.domN?.h || 0);
+
+        ap.hBase += hOrdD + hOrdN + hDomD + hDomN;
+        ap.vBase += (hOrdD + hOrdN + hDomD + hDomN) * hora;
+        ap.hNoc  += hOrdN + hDomN;
+        ap.vNoc  += (hOrdN + hDomN) * pRN;
+
+        if (esDomingo) {
+          ap.hDomD += hDomD; ap.vDomD += hDomD * pDOM;
+          ap.hDomN += hDomN; ap.vDomN += hDomN * pDOM;
+        } else if (esFestivo) {
+          ap.hFestD += hDomD; ap.vFestD += hDomD * pDOM;
+          ap.hFestN += hDomN; ap.vFestN += hDomN * pDOM;
         }
-      }
+
+        ap.hExtD += parseFloat(d.extD?.h || 0); ap.vExtD += d.extD?.v || 0;
+        ap.hExtN += parseFloat(d.extN?.h || 0); ap.vExtN += d.extN?.v || 0;
+        ap.hEdd  += parseFloat(d.edd?.h  || 0); ap.vEdd  += d.edd?.v  || 0;
+        ap.hEdn  += parseFloat(d.edn?.h  || 0); ap.vEdn  += d.edn?.v  || 0;
+      });
+
+      const vTransp  = (window.cfg.auxTranspMensual / 30) * diasT;
+      let ibc = 0, baseDeducible = 0;
+      window.db.forEach(r => { ibc += r.pagoSalarial; if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial; });
+      const vSalud = baseDeducible * 0.04, vPension = baseDeducible * 0.04;
+      const vDeduc = vSalud + vPension, vNeto = ibc + vTransp - vDeduc;
+
+      // ── Tabla de conceptos estilo empresa ───────────────────────────
+      const conceptRows = [];
+      const addRow = (concepto, unidades, unidLabel, devengos, deducciones) => {
+        conceptRows.push([concepto, `${typeof unidades === 'number' ? unidades.toFixed ? unidades.toFixed(3).replace(/\.?0+$/,'') : unidades : unidades} ${unidLabel}`, devengos > 0 ? format.format(Math.round(devengos)) : '', deducciones > 0 ? format.format(Math.round(deducciones)) : '']);
+      };
+
+      if (ap.hBase > 0)                    addRow('Nómina amano',               ap.hBase,                   'HOR', ap.vBase,  0);
+      if (ap.hNoc  > 0)                    addRow('Recargo nocturno 35%',        ap.hNoc,                    'HOR', ap.vNoc,   0);
+      if (ap.hDomD + ap.hDomN > 0)         addRow('Dominical trabajado',         ap.hDomD + ap.hDomN,        'HOR', ap.vDomD + ap.vDomN, 0);
+      if (ap.hFestD + ap.hFestN > 0)       addRow('Festivo trabajado',           ap.hFestD + ap.hFestN,      'HOR', ap.vFestD + ap.vFestN, 0);
+      if (ap.hExtD  > 0)                   addRow('Hora extra diurna',           ap.hExtD,                   'HOR', ap.vExtD,  0);
+      if (ap.hExtN  > 0)                   addRow('Hora extra nocturna',         ap.hExtN,                   'HOR', ap.vExtN,  0);
+      if (ap.hEdd   > 0)                   addRow('Hora extra festiva diurna',   ap.hEdd,                    'HOR', ap.vEdd,   0);
+      if (ap.hEdn   > 0)                   addRow('Hora extra festiva nocturna', ap.hEdn,                    'HOR', ap.vEdn,   0);
+      if (ap.diasIncap > 0)                addRow('Gasto de incapacidad',        ap.diasIncap,               'DIA', ap.vIncap, 0);
+      if (ap.unidComp  > 0)                addRow('Descanso compensatorio',      ap.unidComp,                'UNI', ap.vComp,  0);
+      if (vTransp > 0)                     addRow('Subsidio de transporte',      diasT,                      'DIA', vTransp,   0);
+      if (vSalud   > 0)                    addRow('Aporte salud (4%)',           4,                          '%',   0, vSalud);
+      if (vPension > 0)                    addRow('Aporte pensión (4%)',         4,                          '%',   0, vPension);
+
+      fy += 10;
+      doc.setFontSize(10); doc.setTextColor(30);
+      doc.text("Conceptos de Nómina", 14, fy);
+
+      doc.autoTable({
+        startY: fy + 4,
+        head: [['Concepto', 'Unidades', 'Devengos', 'Deducciones']],
+        body: conceptRows,
+        headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8 },
+        columnStyles: { 0: { cellWidth: 78 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 38, halign: 'right' }, 3: { cellWidth: 38, halign: 'right' } },
+        theme: 'striped', styles: { fontSize: 7.5 }
+      });
+
+      fy = doc.lastAutoTable.finalY || fy;
+      fy += 6;
+      doc.setDrawColor(180); doc.line(14, fy, 196, fy); fy += 5;
+      doc.setFont(undefined, 'bold'); doc.setTextColor(30); doc.setFontSize(9);
+      doc.text('TOTALES:', 14, fy);
+      doc.text(format.format(Math.round(ibc + vTransp)), 130, fy, { align: 'right' });
+      doc.text(format.format(Math.round(vDeduc)), 196, fy, { align: 'right' });
+      fy += 7; doc.setFontSize(10);
+      doc.text('NETO A PAGAR:', 14, fy);
+      doc.text(format.format(Math.round(vNeto)), 196, fy, { align: 'right' });
+      doc.setFont(undefined, 'normal');
 
       doc.save(`Nomina_${new Date().toISOString().split('T')[0]}.pdf`);
-      showToast('PDF exportado con gráfica', 'success');
+      showToast('PDF exportado', 'success');
     }
 
     function exportarExcel() {
@@ -6115,25 +6268,128 @@ REGLAS:
     function exportarPDFHistorial(id) {
       const h = window.historialDB.find(x => x.id === id);
       if (!h || !h.registros) { showToast('No hay datos detallados.', 'warning'); return; }
-      const { jsPDF } = window.jspdf; const doc = new jsPDF();
-      doc.setFontSize(16); doc.text("REPORTE DETALLADO DE NÓMINA", 14, 20); doc.setFontSize(10); doc.setTextColor(100);
-      doc.text(`Período: ${h.desde} al ${h.hasta}`, 14, 28); doc.text(`Total Neto: ${format.format(h.neto)}`, 14, 34);
-      let tD = 0, tN = 0, tF = 0, tC = 0, tT = 0;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // ── Título ──────────────────────────────────────────────────────
+      doc.setFontSize(16); doc.setTextColor(30);
+      doc.text("REPORTE DETALLADO DE NÓMINA", 14, 20);
+      doc.setFontSize(9); doc.setTextColor(100);
+      doc.text(`Período: ${h.desde} al ${h.hasta}`, 14, 27);
+
+      // ── Tabla de días ────────────────────────────────────────────────
       const rows = h.registros.map(r => {
         let hh = Object.entries(r.desglose || {}).reduce((a, [k, v]) => k === 'INCAP' ? a : a + parseFloat(v.h || 0), 0);
         let t = r.tipo === 'NORMAL' ? 'Turno Laborado' : (r.tipo === 'COMPENSATORIO' ? 'Compensatorio' : r.diag || r.tipo);
         let horario = '---', descanso = '---';
-        if (r.tipo === 'NORMAL' && r.rawHoras) { horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`; if (r.rawHoras.hBO && r.rawHoras.hBI) descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`; }
-        let d = r.desglose || {};
-        tD += parseFloat(d.ordD?.h || 0) + parseFloat(d.extD?.h || 0); tN += parseFloat(d.ordN?.h || 0) + parseFloat(d.extN?.h || 0);
-        tF += parseFloat(d.domD?.h || 0) + parseFloat(d.domN?.h || 0) + parseFloat(d.edd?.h || 0) + parseFloat(d.edn?.h || 0);
-        tC += parseFloat(d.COMPENSATORIO?.h || 0); tT += hh;
+        if (r.tipo === 'NORMAL' && r.rawHoras) {
+          horario = `${r.rawHoras.hI} - ${r.rawHoras.hF}`;
+          if (r.rawHoras.hBO && r.rawHoras.hBI) descanso = `${r.rawHoras.hBO} - ${r.rawHoras.hBI}`;
+        }
         return [r.fecha, t, horario, descanso, hh.toFixed(2), format.format(r.pagoSalarial)];
       });
-      doc.autoTable({ startY: 40, head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']], body: rows, headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8, halign: 'center' }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } }, theme: 'striped', styles: { fontSize: 7.5 } });
+
+      doc.autoTable({
+        startY: 33,
+        head: [['Fecha', 'Estado', 'Entrada-Salida', 'Descanso', 'Hrs', 'Valor']],
+        body: rows,
+        headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8, halign: 'center' },
+        columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 35 }, 2: { cellWidth: 32, halign: 'center' }, 3: { cellWidth: 32, halign: 'center' }, 4: { cellWidth: 15, halign: 'center' }, 5: { halign: 'right' } },
+        theme: 'striped', styles: { fontSize: 7.5 }
+      });
+
       let fy = doc.lastAutoTable.finalY || 40;
-      doc.setFontSize(10); doc.setTextColor(50); doc.text("Resumen:", 14, fy + 10); doc.setFontSize(9);
-      doc.text(`Total: ${tT.toFixed(2)}`, 14, fy + 16); doc.text(`Diurnas: ${tD.toFixed(2)}`, 14, fy + 22); doc.text(`Nocturnas: ${tN.toFixed(2)}`, 14, fy + 28); doc.text(`Festivas: ${tF.toFixed(2)}`, 14, fy + 34); doc.text(`Compensatorio: ${tC.toFixed(2)}`, 14, fy + 40);
+
+      // ── Acumular separando domingo vs festivo ───────────────────────
+      const hora = window.cfg.hora;
+      const pRN  = hora * (window.cfg.rn  / 100);
+      const pDOM = hora * (window.cfg.dom  / 100);
+
+      let ap = { hBase:0,vBase:0, hNoc:0,vNoc:0, hDomD:0,vDomD:0, hDomN:0,vDomN:0, hFestD:0,vFestD:0, hFestN:0,vFestN:0, hExtD:0,vExtD:0, hExtN:0,vExtN:0, hEdd:0,vEdd:0, hEdn:0,vEdn:0, vIncap:0,diasIncap:0, vComp:0,unidComp:0 };
+      let diasT = 0;
+
+      h.registros.forEach(r => {
+        if (r.pagaTransporte) diasT++;
+        const d = r.desglose || {};
+        if (r.tipo === 'INCAPACIDAD') { ap.vIncap += r.pagoSalarial; ap.diasIncap++; return; }
+        if (r.tipo === 'COMPENSATORIO') { ap.vComp += r.pagoSalarial; ap.unidComp++; return; }
+
+        const fechaDate = new Date(r.fecha + 'T12:00:00');
+        const esDomingo = fechaDate.getDay() === 0;
+        const esFestivo = festivos.includes(r.fecha);
+
+        const hOrdD = parseFloat(d.ordD?.h || 0), hOrdN = parseFloat(d.ordN?.h || 0);
+        const hDomD = parseFloat(d.domD?.h || 0), hDomN = parseFloat(d.domN?.h || 0);
+
+        ap.hBase += hOrdD + hOrdN + hDomD + hDomN;
+        ap.vBase += (hOrdD + hOrdN + hDomD + hDomN) * hora;
+        ap.hNoc  += hOrdN + hDomN;
+        ap.vNoc  += (hOrdN + hDomN) * pRN;
+
+        if (esDomingo) {
+          ap.hDomD += hDomD; ap.vDomD += hDomD * pDOM;
+          ap.hDomN += hDomN; ap.vDomN += hDomN * pDOM;
+        } else if (esFestivo) {
+          ap.hFestD += hDomD; ap.vFestD += hDomD * pDOM;
+          ap.hFestN += hDomN; ap.vFestN += hDomN * pDOM;
+        }
+
+        ap.hExtD += parseFloat(d.extD?.h || 0); ap.vExtD += d.extD?.v || 0;
+        ap.hExtN += parseFloat(d.extN?.h || 0); ap.vExtN += d.extN?.v || 0;
+        ap.hEdd  += parseFloat(d.edd?.h  || 0); ap.vEdd  += d.edd?.v  || 0;
+        ap.hEdn  += parseFloat(d.edn?.h  || 0); ap.vEdn  += d.edn?.v  || 0;
+      });
+
+      const vTransp  = (window.cfg.auxTranspMensual / 30) * diasT;
+      let ibc = 0, baseDeducible = 0;
+      h.registros.forEach(r => { ibc += r.pagoSalarial; if (r.tipo !== 'INCAPACIDAD') baseDeducible += r.pagoSalarial; });
+      const vSalud = baseDeducible * 0.04, vPension = baseDeducible * 0.04;
+      const vDeduc = vSalud + vPension, vNeto = ibc + vTransp - vDeduc;
+
+      const conceptRows = [];
+      const addRow = (concepto, unidades, unidLabel, devengos, deducciones) => {
+        conceptRows.push([concepto, `${typeof unidades === 'number' && unidades % 1 !== 0 ? unidades.toFixed(3).replace(/\.?0+$/,'') : unidades} ${unidLabel}`, devengos > 0 ? format.format(Math.round(devengos)) : '', deducciones > 0 ? format.format(Math.round(deducciones)) : '']);
+      };
+
+      if (ap.hBase > 0)               addRow('Nómina amano',               ap.hBase,              'HOR', ap.vBase,  0);
+      if (ap.hNoc  > 0)               addRow('Recargo nocturno 35%',        ap.hNoc,               'HOR', ap.vNoc,   0);
+      if (ap.hDomD+ap.hDomN > 0)      addRow('Dominical trabajado',         ap.hDomD+ap.hDomN,     'HOR', ap.vDomD+ap.vDomN, 0);
+      if (ap.hFestD+ap.hFestN > 0)    addRow('Festivo trabajado',           ap.hFestD+ap.hFestN,   'HOR', ap.vFestD+ap.vFestN, 0);
+      if (ap.hExtD > 0)               addRow('Hora extra diurna',           ap.hExtD,              'HOR', ap.vExtD,  0);
+      if (ap.hExtN > 0)               addRow('Hora extra nocturna',         ap.hExtN,              'HOR', ap.vExtN,  0);
+      if (ap.hEdd  > 0)               addRow('Hora extra festiva diurna',   ap.hEdd,               'HOR', ap.vEdd,   0);
+      if (ap.hEdn  > 0)               addRow('Hora extra festiva nocturna', ap.hEdn,               'HOR', ap.vEdn,   0);
+      if (ap.diasIncap > 0)           addRow('Gasto de incapacidad',        ap.diasIncap,          'DIA', ap.vIncap, 0);
+      if (ap.unidComp  > 0)           addRow('Descanso compensatorio',      ap.unidComp,           'UNI', ap.vComp,  0);
+      if (vTransp > 0)                addRow('Subsidio de transporte',      diasT,                 'DIA', vTransp,   0);
+      if (vSalud   > 0)               addRow('Aporte salud (4%)',           4,                     '%',   0, vSalud);
+      if (vPension > 0)               addRow('Aporte pensión (4%)',         4,                     '%',   0, vPension);
+
+      fy += 10;
+      doc.setFontSize(10); doc.setTextColor(30);
+      doc.text("Conceptos de Nómina", 14, fy);
+
+      doc.autoTable({
+        startY: fy + 4,
+        head: [['Concepto', 'Unidades', 'Devengos', 'Deducciones']],
+        body: conceptRows,
+        headStyles: { fillColor: [123, 147, 214], textColor: [10, 20, 50], fontSize: 8 },
+        columnStyles: { 0: { cellWidth: 78 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 38, halign: 'right' }, 3: { cellWidth: 38, halign: 'right' } },
+        theme: 'striped', styles: { fontSize: 7.5 }
+      });
+
+      fy = doc.lastAutoTable.finalY || fy;
+      fy += 6;
+      doc.setDrawColor(180); doc.line(14, fy, 196, fy); fy += 5;
+      doc.setFont(undefined, 'bold'); doc.setTextColor(30); doc.setFontSize(9);
+      doc.text('TOTALES:', 14, fy);
+      doc.text(format.format(Math.round(ibc + vTransp)), 130, fy, { align: 'right' });
+      doc.text(format.format(Math.round(vDeduc)), 196, fy, { align: 'right' });
+      fy += 7; doc.setFontSize(10);
+      doc.text('NETO A PAGAR:', 14, fy);
+      doc.text(format.format(Math.round(vNeto)), 196, fy, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+
       doc.save(`Nomina_${h.desde}_${h.hasta}.pdf`);
       showToast('PDF de historial exportado', 'success');
     }
