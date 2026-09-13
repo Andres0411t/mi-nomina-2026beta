@@ -4,6 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <script>
+    (function () {
+      try {
+        var ua = navigator.userAgent || '';
+        var isTablet = /iPad/i.test(ua) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && screen.width > 600);
+        var isPhone = (/iPhone|iPod|Android/i.test(ua) || (navigator.maxTouchPoints > 0 && screen.width <= 600)) && !isTablet;
+        if (isPhone) {
+          var vp = document.querySelector('meta[name="viewport"]');
+          if (vp) vp.setAttribute('content', 'width=428, user-scalable=no, viewport-fit=cover');
+        }
+      } catch (e) { }
+    })();
+  </script>
   <title>Mi Nómina</title>
   <meta name="theme-color" id="metaThemeColor" content="#fafafa">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2377,6 +2391,199 @@
       flex: 1;
     }
 
+    /* ── Vista Reloj y Fecha ── */
+    #clockModal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(28, 25, 23, 0.4);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 1.5rem 1rem;
+    }
+
+    #clockModal.open {
+      display: flex;
+    }
+
+    .clock-card {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      overflow: hidden;
+      background: var(--surface);
+      border-radius: calc(var(--radius) + 8px);
+      padding: 2.5rem 2rem 2.25rem;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+      text-align: center;
+      animation: modalIn .35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .clock-card.modalOut {
+      animation: modalOut .22s ease forwards;
+    }
+
+    .clock-glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .clock-glow-1 {
+      width: 220px;
+      height: 220px;
+      top: -90px;
+      left: -70px;
+      background: var(--accent);
+      opacity: .16;
+    }
+
+    .clock-glow-2 {
+      width: 180px;
+      height: 180px;
+      bottom: -80px;
+      right: -60px;
+      background: var(--accent2);
+      opacity: .14;
+    }
+
+    .clock-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 2;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+    }
+
+    .clock-close:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .clock-greeting {
+      position: relative;
+      z-index: 1;
+      font-size: .68rem;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.1rem;
+    }
+
+    .clock-time {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: .35rem;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+      letter-spacing: -1px;
+      font-size: 3.6rem;
+    }
+
+    .clock-time .clock-secs {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 1.15rem;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+
+    .clock-divider {
+      position: relative;
+      z-index: 1;
+      width: 44px;
+      height: 2px;
+      margin: 1.4rem auto;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+    }
+
+    .clock-weekday {
+      position: relative;
+      z-index: 1;
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 600;
+      font-size: 1.3rem;
+      color: var(--text);
+      text-transform: capitalize;
+    }
+
+    .clock-date {
+      position: relative;
+      z-index: 1;
+      margin-top: .3rem;
+      font-size: .78rem;
+      font-weight: 500;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .clock-progress-wrap {
+      position: relative;
+      z-index: 1;
+      margin-top: 1.75rem;
+    }
+
+    .clock-progress-track {
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .clock-progress-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .6s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 0%;
+    }
+
+    .clock-progress-label {
+      margin-top: .55rem;
+      font-size: .68rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+
+    #liveClock {
+      cursor: pointer;
+      transition: color .2s;
+      border-radius: 8px;
+      padding: .2rem .4rem;
+    }
+
+    #liveClock:hover {
+      color: var(--accent);
+    }
+
     /* ── History Search ── */
     .hist-search {
       display: flex;
@@ -3357,6 +3564,28 @@
   <!-- ── Toast Container ── -->
   <div id="toastContainer"></div>
 
+  <!-- ── Vista Reloj y Fecha ── -->
+  <div id="clockModal" onclick="if(event.target===this)closeClockModal()">
+    <div class="clock-card" id="clockCard">
+      <div class="clock-glow clock-glow-1"></div>
+      <div class="clock-glow clock-glow-2"></div>
+      <button class="clock-close" onclick="closeClockModal()">✕</button>
+      <div class="clock-greeting" id="clockGreeting">Buen día</div>
+      <div class="clock-time">
+        <span id="clockHM">00:00</span><span class="clock-secs" id="clockSS">00</span>
+      </div>
+      <div class="clock-divider"></div>
+      <div class="clock-weekday" id="clockWeekday">—</div>
+      <div class="clock-date" id="clockDate">—</div>
+      <div class="clock-progress-wrap">
+        <div class="clock-progress-track">
+          <div class="clock-progress-fill" id="clockProgressFill"></div>
+        </div>
+        <div class="clock-progress-label" id="clockProgressLabel">Del día transcurrido</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Edit Modal ── -->
   <div id="editModal">
     <div class="modal-card">
@@ -3432,7 +3661,7 @@
         <div class="header-sub" id="headerSubText">Control Quincenal</div>
       </div>
       <div class="header-actions">
-        <div id="liveClock"
+        <div id="liveClock" onclick="openClockModal()" title="Ver reloj y fecha"
           style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; color: var(--muted); padding-right: 0.2rem; letter-spacing: 0.05em;">
         </div>
         <div class="icon-btn" onclick="toggleDarkMode()" title="Modo claro" id="modeBtn" style="cursor:pointer;">☀</div>
@@ -6426,6 +6655,67 @@ REGLAS:
     }
     setInterval(updateClock, 1000);
     updateClock();
+
+    // ── Vista Reloj y Fecha ──────────────────────────────────────────
+    const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+    function updateClockModal() {
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const secs = String(now.getSeconds()).padStart(2, '0');
+
+      const hmEl = document.getElementById('clockHM');
+      const ssEl = document.getElementById('clockSS');
+      if (hmEl) hmEl.textContent = `${hrs}:${mins}`;
+      if (ssEl) ssEl.textContent = secs;
+
+      const h = now.getHours();
+      const greetEl = document.getElementById('clockGreeting');
+      if (greetEl) {
+        greetEl.textContent = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+      }
+
+      const wdEl = document.getElementById('clockWeekday');
+      if (wdEl) wdEl.textContent = DIAS_SEMANA[now.getDay()];
+
+      const dEl = document.getElementById('clockDate');
+      if (dEl) dEl.textContent = `${now.getDate()} de ${MESES[now.getMonth()]} de ${now.getFullYear()}`;
+
+      const secondsToday = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const pct = Math.min(100, (secondsToday / 86400) * 100);
+      const fillEl = document.getElementById('clockProgressFill');
+      const labelEl = document.getElementById('clockProgressLabel');
+      if (fillEl) fillEl.style.width = pct.toFixed(1) + '%';
+      if (labelEl) labelEl.textContent = `${pct.toFixed(0)}% del día transcurrido`;
+    }
+
+    let clockModalInterval = null;
+
+    function openClockModal() {
+      const modal = document.getElementById('clockModal');
+      const card = document.getElementById('clockCard');
+      if (!modal) return;
+      card.classList.remove('modalOut');
+      modal.classList.add('open');
+      updateClockModal();
+      if (clockModalInterval) clearInterval(clockModalInterval);
+      clockModalInterval = setInterval(updateClockModal, 1000);
+    }
+
+    function closeClockModal() {
+      const modal = document.getElementById('clockModal');
+      const card = document.getElementById('clockCard');
+      if (!modal) return;
+      card.classList.add('modalOut');
+      setTimeout(() => {
+        modal.classList.remove('open');
+        card.classList.remove('modalOut');
+      }, 220);
+      if (clockModalInterval) { clearInterval(clockModalInterval); clockModalInterval = null; }
+    }
+
     if (window.lucide) lucide.createIcons();
 
     // El swatch activo lo marca applyTheme al cargar (DOMContentLoaded)
