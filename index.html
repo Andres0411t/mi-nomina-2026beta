@@ -5,15 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <script>
-    // ── Viewport fijo estilo iPhone 13 Pro Max ──────────────────────────
-    // El diseño se pensó para un ancho lógico de 428px (iPhone 13 Pro Max).
-    // En vez de dejar que cada teléfono use su propio ancho (lo que en
-    // pantallas más angostas, como el S24, activa breakpoints distintos y
-    // "encoge" o reordena la interfaz), fijamos ese mismo ancho lógico en
-    // cualquier teléfono y dejamos que el navegador escale la página entera
-    // para que quepa en la pantalla real. Resultado: mismas proporciones,
-    // mismos tamaños relativos, mismo aspecto que en el iPhone — sin tocar
-    // el resto del CSS. En tablets/desktop no se toca nada.
     (function () {
       try {
         var ua = navigator.userAgent || '';
@@ -28,7 +19,8 @@
     })();
   </script>
   <title>Mi Nómina</title>
-  <meta name="theme-color" id="metaThemeColor" content="#fafafa">
+  <meta name="theme-color" id="metaThemeColor" content="#fafbff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mi Nomina">
@@ -1659,8 +1651,7 @@
       color: var(--info);
     }
 
-    /* ── Ajuste solicitado: Dashboard (Resumen) ── */
-    /* Todos los números negros excepto "Mejor Día" al color del tema */
+    /* ── Dashboard (Resumen) ── */
     #dashboard .dash-kpi-grid .kpi-val {
       color: var(--dashboard-number-color) !important;
     }
@@ -2842,6 +2833,23 @@
       padding: 0 .2rem;
     }
 
+    .tpk-col-ap {
+      max-width: 74px;
+      margin-left: .3rem;
+      border-left: 1px solid var(--border);
+    }
+
+    .tpk-col-ap .tpk-item {
+      font-family: var(--font-sans);
+      font-size: .95rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+
+    .tpk-col-ap .tpk-item.tpk-active {
+      font-size: 1.05rem;
+    }
+
     .tpk-band {
       position: absolute;
       left: 0;
@@ -4012,6 +4020,7 @@
         <div class="tpk-col" id="tpkColH"></div>
         <div class="tpk-colon">:</div>
         <div class="tpk-col" id="tpkColM"></div>
+        <div class="tpk-col tpk-col-ap" id="tpkColAP"></div>
       </div>
       <button type="button" class="btn btn-primary pk-confirm" onclick="confirmTimePicker()">Listo</button>
     </div>
@@ -4788,8 +4797,10 @@
     // franja de color distinta arriba de la pantalla).
     function syncThemeColorMeta() {
       var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-      var m = document.getElementById('metaThemeColor');
-      if (m && bg) m.setAttribute('content', bg);
+      if (!bg) return;
+      document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+        m.setAttribute('content', bg);
+      });
     }
 
     window.applyTheme = function applyTheme(name, btn) {
@@ -7278,7 +7289,7 @@ REGLAS:
         const btn = el.nextElementSibling;
         if (!btn || !btn.classList || !btn.classList.contains('picker-trigger')) return;
         if (f.type === 'time') {
-          if (el.value) pkSetLabel(btn, el.value, false);
+          if (el.value) pkSetLabel(btn, fmtTime12(el.value), false);
           else pkSetLabel(btn, 'Hora', true);
         } else if (f.type === 'date') {
           if (el.value) pkSetLabel(btn, fmtDatePk(el.value), false);
@@ -7291,15 +7302,24 @@ REGLAS:
     }
 
 
-    /* ── Selector de Hora ── */
+    /* ── Selector de Hora (12h con AM/PM; se guarda internamente en 24h) ── */
     let tpkTarget = null;
+    function fmtTime12(val24) {
+      if (!val24 || val24.indexOf(':') === -1) return val24;
+      const [hStr, mStr] = val24.split(':');
+      let h = parseInt(hStr, 10) || 0;
+      const ap = h >= 12 ? 'PM' : 'AM';
+      let h12 = h % 12; if (h12 === 0) h12 = 12;
+      return `${h12}:${mStr} ${ap}`;
+    }
     function initTimePickerPanel() {
       const colH = document.getElementById('tpkColH');
       const colM = document.getElementById('tpkColM');
-      if (!colH || !colM || colH.children.length) return;
-      for (let h = 0; h < 24; h++) {
+      const colAP = document.getElementById('tpkColAP');
+      if (!colH || !colM || !colAP || colH.children.length) return;
+      for (let h = 1; h <= 12; h++) {
         const d = document.createElement('div');
-        d.className = 'tpk-item'; d.dataset.val = pkPad2(h); d.textContent = pkPad2(h);
+        d.className = 'tpk-item'; d.dataset.val = String(h); d.textContent = pkPad2(h);
         colH.appendChild(d);
       }
       for (let m = 0; m < 60; m++) {
@@ -7307,7 +7327,12 @@ REGLAS:
         d.className = 'tpk-item'; d.dataset.val = pkPad2(m); d.textContent = pkPad2(m);
         colM.appendChild(d);
       }
-      [colH, colM].forEach(col => {
+      ['AM', 'PM'].forEach(ap => {
+        const d = document.createElement('div');
+        d.className = 'tpk-item'; d.dataset.val = ap; d.textContent = ap;
+        colAP.appendChild(d);
+      });
+      [colH, colM, colAP].forEach(col => {
         col.addEventListener('click', e => {
           const item = e.target.closest('.tpk-item');
           if (!item) return;
@@ -7336,14 +7361,19 @@ REGLAS:
       overlay.classList.add('open');
       const cur = nativeEl.value || '08:00';
       const parts = cur.split(':');
-      const h = parseInt(parts[0], 10) || 0;
+      const h24 = parseInt(parts[0], 10) || 0;
       const m = parseInt(parts[1], 10) || 0;
+      const idxAP = h24 >= 12 ? 1 : 0;
+      let h12 = h24 % 12; if (h12 === 0) h12 = 12;
+      const idxH = h12 - 1;
       requestAnimationFrame(() => {
         const colH = document.getElementById('tpkColH');
         const colM = document.getElementById('tpkColM');
-        colH.scrollTop = h * 40; colM.scrollTop = m * 40;
-        [...colH.children].forEach((c, i) => c.classList.toggle('tpk-active', i === h));
+        const colAP = document.getElementById('tpkColAP');
+        colH.scrollTop = idxH * 40; colM.scrollTop = m * 40; colAP.scrollTop = idxAP * 40;
+        [...colH.children].forEach((c, i) => c.classList.toggle('tpk-active', i === idxH));
         [...colM.children].forEach((c, i) => c.classList.toggle('tpk-active', i === m));
+        [...colAP.children].forEach((c, i) => c.classList.toggle('tpk-active', i === idxAP));
       });
     }
     function closeTimePicker() {
@@ -7355,12 +7385,18 @@ REGLAS:
     function confirmTimePicker() {
       const colH = document.getElementById('tpkColH');
       const colM = document.getElementById('tpkColM');
-      const idxH = Math.max(0, Math.min(23, Math.round(colH.scrollTop / 40)));
+      const colAP = document.getElementById('tpkColAP');
+      const idxH = Math.max(0, Math.min(11, Math.round(colH.scrollTop / 40)));
       const idxM = Math.max(0, Math.min(59, Math.round(colM.scrollTop / 40)));
-      const val = `${pkPad2(idxH)}:${pkPad2(idxM)}`;
+      const idxAP = Math.max(0, Math.min(1, Math.round(colAP.scrollTop / 40)));
+      const h12 = idxH + 1;
+      const isPM = idxAP === 1;
+      let h24 = h12 % 12;
+      if (isPM) h24 += 12;
+      const val = `${pkPad2(h24)}:${pkPad2(idxM)}`;
       if (tpkTarget) {
         tpkTarget.nativeEl.value = val;
-        pkSetLabel(tpkTarget.triggerBtn, val, false);
+        pkSetLabel(tpkTarget.triggerBtn, fmtTime12(val), false);
         pkFireChange(tpkTarget.nativeEl);
       }
       closeTimePicker();
@@ -7483,7 +7519,7 @@ REGLAS:
       if (!el || el.dataset.pkAttached) return;
       el.dataset.pkAttached = '1';
       const btn = pkMakeTrigger(el, 'clock', 'Hora');
-      if (el.value) pkSetLabel(btn, el.value, false);
+      if (el.value) pkSetLabel(btn, fmtTime12(el.value), false);
       btn.addEventListener('click', () => { btn.classList.add('pt-open'); openTimePicker(id, label); });
     }
     function attachDateField(id, label) {
